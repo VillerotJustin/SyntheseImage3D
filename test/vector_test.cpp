@@ -2,8 +2,8 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
-#include "../Lib/Vector.h"
-#include "../Lib/Vector3.h"
+#include "../Lib/Math/Vector.h"
+#include "../Lib/Math/Vector3.h"
 
 using namespace math;
 

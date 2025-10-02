@@ -2,9 +2,9 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
-#include "../Lib/Quaternion.h"
-#include "../Lib/Vector3.h"
-#include "../Lib/math_common.h"
+#include "../Lib/Math/Quaternion.h"
+#include "../Lib/Math/Vector3.h"
+#include "../Lib/Math/math_common.h"
 
 using namespace math;
 

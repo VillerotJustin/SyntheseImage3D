@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../Lib/Matrix.hpp"
+#include "../Lib/Math/Matrix.hpp"
 
 // Example class to demonstrate the Matrix template
 class TestObject {
