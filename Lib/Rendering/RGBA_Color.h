@@ -5,7 +5,7 @@
 #ifndef RGBA_COLOR_H
 #define RGBA_COLOR_H
 
-#include "../Math/Vector.h"
+#include "../Math/Vector.hpp"
 #include <iostream>
 
 namespace rendering {
@@ -42,7 +42,25 @@ namespace rendering {
          * @param v The Vector to convert (must be of size 4 for RGBA).
          * @throws std::invalid_argument if the vector is not of size 4.
          */
-        explicit RGBA_Color(const math::Vector& v);
+        explicit RGBA_Color(const math::Vector<double>& v);
+
+        /**
+         * @brief Destructor that cleans up allocated memory for the Vector components.
+         */
+        ~RGBA_Color();
+
+        /**
+         * @brief Copy constructor that creates a deep copy of another RGBA_Color.
+         * @param other The RGBA_Color to copy.
+         */
+        RGBA_Color(const RGBA_Color& other);
+
+        /**
+         * @brief Assignment operator that performs a deep copy of another RGBA_Color.
+         * @param other The RGBA_Color to copy.
+         * @return Reference to this RGBA_Color after assignment.
+         */
+        RGBA_Color& operator=(const RGBA_Color& other);
 
         // === Component Access ===
         
@@ -178,7 +196,7 @@ namespace rendering {
          * @brief Get the underlying vector representation.
          * @return Const reference to the internal vector.
          */
-        [[nodiscard]] const math::Vector& asVector() const;
+        [[nodiscard]] const math::Vector<double>& asVector() const;
 
         /**
          * @brief Output stream operator for debugging and display purposes.
@@ -197,7 +215,7 @@ namespace rendering {
         friend RGBA_Color operator*(double scalar, const RGBA_Color& color);
 
     private:
-        math::Vector components; ///< Internal storage for RGBA components
+        math::Vector<double> components; ///< Internal storage for RGBA components
     };
 
     // Convenience functions for common colors

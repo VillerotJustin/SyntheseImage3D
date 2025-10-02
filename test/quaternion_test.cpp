@@ -2,10 +2,11 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
-#include "../Lib/Math/Quaternion.h"
-#include "../Lib/Math/Vector3.h"
+#include "../Lib/Geometry/Quaternion.h"
+#include "../Lib/Geometry/Vector3D.h"
 #include "../Lib/Math/math_common.h"
 
+using namespace geometry;
 using namespace math;
 
 // Helper function for floating-point comparison
@@ -20,7 +21,7 @@ bool isQuaternionEqual(const Quaternion& q1, const Quaternion& q2, double epsilo
            isEqual(q1.z(), q2.z(), epsilon);
 }
 
-bool isVector3Equal(const Vector3& v1, const Vector3& v2, double epsilon = 1e-6) {
+bool isVector3Equal(const Vector3D& v1, const Vector3D& v2, double epsilon = 1e-6) {
     return isEqual(v1.x(), v2.x(), epsilon) && 
            isEqual(v1.y(), v2.y(), epsilon) && 
            isEqual(v1.z(), v2.z(), epsilon);
@@ -94,7 +95,7 @@ void testQuaternionConstructors() {
     assert(isEqual(q2.z(), 0.5));
     
     // Test axis-angle constructor
-    Vector3 axis(0, 0, 1);  // Z-axis
+    Vector3D axis(0, 0, 1);  // Z-axis
     double angle = math::pi / 2;  // 90 degrees
     Quaternion q3(axis, angle);
     
@@ -106,7 +107,8 @@ void testQuaternionConstructors() {
     assert(isEqual(q3.z(), expected, 1e-5));
     
     // Test Vector constructor
-    Vector v({1.0, 0.0, 0.0, 0.0});
+    math::Vector<double> v(4);
+    *v[0] = 1.0; *v[1] = 0.0; *v[2] = 0.0; *v[3] = 0.0;
     Quaternion q4(v);
     assert(isEqual(q4.w(), 1.0));
     assert(isEqual(q4.x(), 0.0));
@@ -188,7 +190,7 @@ void testQuaternionMethods() {
     assert(isEqual(length, 1.0, 1e-6));
     
     // Test vector part
-    Vector3 vectorPart = q.vectorPart();
+    Vector3D vectorPart = q.vectorPart();
     assert(isEqual(vectorPart.x(), 2.0));
     assert(isEqual(vectorPart.y(), 3.0));
     assert(isEqual(vectorPart.z(), 4.0));
@@ -207,34 +209,34 @@ void testQuaternionMethods() {
 
 void testQuaternionRotations() {
     // Test 90° rotation around Z-axis
-    Vector3 zAxis(0, 0, 1);
+    Vector3D zAxis(0, 0, 1);
     Quaternion rotZ90(zAxis, math::pi / 2);
     
     // Rotate X-axis vector (1,0,0) by 90° around Z should give (0,1,0)
-    Vector3 xAxis(1, 0, 0);
-    Vector3 rotated = rotZ90 * xAxis;
-    Vector3 expected(0, 1, 0);
+    Vector3D xAxis(1, 0, 0);
+    Vector3D rotated = rotZ90 * xAxis;
+    Vector3D expected(0, 1, 0);
     assert(isVector3Equal(rotated, expected, 1e-5));
     
     // Test 180° rotation around Y-axis
-    Vector3 yAxis(0, 1, 0);
+    Vector3D yAxis(0, 1, 0);
     Quaternion rotY180(yAxis, math::pi);
     
     // Rotate X-axis vector by 180° around Y should give (-1,0,0)
-    Vector3 rotated180 = rotY180 * xAxis;
-    Vector3 expected180(-1, 0, 0);
+    Vector3D rotated180 = rotY180 * xAxis;
+    Vector3D expected180(-1, 0, 0);
     assert(isVector3Equal(rotated180, expected180, 1e-5));
     
     // Test inverse rotation
     Quaternion inverse = rotZ90.inverse();
-    Vector3 restored = inverse * rotated;
+    Vector3D restored = inverse * rotated;
     assert(isVector3Equal(restored, xAxis, 1e-5));
 }
 
 void testQuaternionInterpolation() {
     // Test SLERP
     Quaternion start = Quaternion::identity();
-    Vector3 axis(0, 0, 1);
+    Vector3D axis(0, 0, 1);
     Quaternion end(axis, math::pi / 2);  // 90° rotation
     
     // Test at t = 0 (should return start)
@@ -262,13 +264,13 @@ void testQuaternionInterpolation() {
 
 void testQuaternionConversions() {
     // Test axis-angle conversion roundtrip
-    Vector3 originalAxis(1, 1, 0);
+    Vector3D originalAxis(1, 1, 0);
     originalAxis = originalAxis.normal();
     double originalAngle = math::pi / 3;  // 60 degrees
     
     Quaternion q(originalAxis, originalAngle);
     
-    Vector3 extractedAxis;
+    Vector3D extractedAxis;
     double extractedAngle;
     
     try {
@@ -300,17 +302,17 @@ void testQuaternionStaticMethods() {
     assert(isEqual(identity.z(), 0.0));
     
     // Test fromAxisAngle
-    Vector3 axis(0, 1, 0);
+    Vector3D axis(0, 1, 0);
     double angle = math::pi / 2;
     Quaternion q = Quaternion::fromAxisAngle(axis, angle);
     assert(q.isUnit(1e-5));
     
     // Test fromVectorToVector
-    Vector3 from(1, 0, 0);
-    Vector3 to(0, 1, 0);
+    Vector3D from(1, 0, 0);
+    Vector3D to(0, 1, 0);
     Quaternion rot = Quaternion::fromVectorToVector(from, to);
     
-    Vector3 rotated = rot * from;
+    Vector3D rotated = rot * from;
     assert(isVector3Equal(rotated, to, 1e-5));
     
     // Test IDENTITY constant
@@ -320,7 +322,8 @@ void testQuaternionStaticMethods() {
 void testQuaternionErrorHandling() {
     // Test invalid Vector constructor
     try {
-        Vector v({1.0, 2.0, 3.0});  // Only 3 components
+        math::Vector<double> v(3);  // Only 3 components instead of 4
+        *v[0] = 1.0; *v[1] = 2.0; *v[2] = 3.0;
         Quaternion q(v);
         assert(false);  // Should not reach here
     } catch (const std::invalid_argument&) {
@@ -347,7 +350,7 @@ void testQuaternionErrorHandling() {
     
     // Test identity quaternion toAxisAngle
     try {
-        Vector3 axis;
+        Vector3D axis;
         double angle;
         Quaternion identity = Quaternion::identity();
         identity.toAxisAngle(axis, angle);
@@ -358,7 +361,7 @@ void testQuaternionErrorHandling() {
     
     // Test interpolation with clamped values
     Quaternion q1 = Quaternion::identity();
-    Quaternion q2(Vector3(0, 0, 1), math::pi / 2);
+    Quaternion q2(Vector3D(0, 0, 1), math::pi / 2);
     
     // Test t < 0 (should clamp to 0)
     Quaternion result1 = Quaternion::slerp(q1, q2, -0.5);
