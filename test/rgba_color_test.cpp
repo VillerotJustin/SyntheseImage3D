@@ -39,7 +39,7 @@ int main() {
         std::cout << "✓ RGBA_Color utility methods test passed" << std::endl;
         
         testRGBAColorVectorOperations();
-        std::cout << "✓ RGBA_Color vector operations test passed" << std::endl;
+        std::cout << "✓ RGBA_Color operations test passed" << std::endl;
         
         testRGBAColorConvenienceFunctions();
         std::cout << "✓ RGBA_Color convenience functions test passed" << std::endl;
@@ -65,7 +65,6 @@ void testRGBAColorConstructors() {
     assert(isEqual(defaultColor.g(), 0.0));
     assert(isEqual(defaultColor.b(), 0.0));
     assert(isEqual(defaultColor.a(), 0.0));
-    assert(defaultColor.size() == 4);
     
     // Test parameterized constructor with alpha
     RGBA_Color redColor(1.0, 0.0, 0.0, 0.8);
@@ -100,11 +99,13 @@ void testRGBAColorComponentAccess() {
     assert(isEqual(color.b(), 0.7));
     assert(isEqual(color.a(), 0.9));
     
-    // Test inherited Vector access
-    assert(isEqual(color.at(0), 0.3));
-    assert(isEqual(color.at(1), 0.5));
-    assert(isEqual(color.at(2), 0.7));
-    assert(isEqual(color.at(3), 0.9));
+    // Test that we can get the underlying vector if needed (controlled access)
+    const math::Vector& vec = color.asVector();
+    assert(vec.size() == 4);
+    assert(isEqual(vec.at(0), 0.3));
+    assert(isEqual(vec.at(1), 0.5));
+    assert(isEqual(vec.at(2), 0.7));
+    assert(isEqual(vec.at(3), 0.9));
 }
 
 // Test component setter methods
@@ -176,34 +177,45 @@ void testRGBAColorUtilityMethods() {
     assert(isEqual(customGrayscale.a(), 1.0));
 }
 
-// Test vector operations (inherited from Vector class)
+// Test color-specific operations
 void testRGBAColorVectorOperations() {
     RGBA_Color color1(0.2, 0.4, 0.6, 0.8);
     RGBA_Color color2(0.1, 0.3, 0.2, 0.4);
     
-    // Test addition
-    math::Vector sumVec = color1 + color2;
-    RGBA_Color sum(sumVec);
+    // Test addition (color mixing)
+    RGBA_Color sum = color1 + color2;
     assert(isEqual(sum.r(), 0.3));
     assert(isEqual(sum.g(), 0.7));
     assert(isEqual(sum.b(), 0.8));
     assert(isEqual(sum.a(), 1.2));
     
     // Test subtraction
-    math::Vector diffVec = color1 - color2;
-    RGBA_Color diff(diffVec);
+    RGBA_Color diff = color1 - color2;
     assert(isEqual(diff.r(), 0.1));
     assert(isEqual(diff.g(), 0.1));
     assert(isEqual(diff.b(), 0.4));
     assert(isEqual(diff.a(), 0.4));
     
-    // Test scalar multiplication
-    math::Vector scaledVec = color1 * 2.0;
-    RGBA_Color scaled(scaledVec);
+    // Test scalar multiplication (brightness scaling)
+    RGBA_Color scaled = color1 * 2.0;
     assert(isEqual(scaled.r(), 0.4));
     assert(isEqual(scaled.g(), 0.8));
     assert(isEqual(scaled.b(), 1.2));
     assert(isEqual(scaled.a(), 1.6));
+    
+    // Test reverse scalar multiplication
+    RGBA_Color scaledReverse = 2.0 * color1;
+    assert(isEqual(scaledReverse.r(), 0.4));
+    assert(isEqual(scaledReverse.g(), 0.8));
+    assert(isEqual(scaledReverse.b(), 1.2));
+    assert(isEqual(scaledReverse.a(), 1.6));
+    
+    // Test color multiplication (component-wise filtering)
+    RGBA_Color multiplied = color1 * color2;
+    assert(isEqual(multiplied.r(), 0.2 * 0.1));
+    assert(isEqual(multiplied.g(), 0.4 * 0.3));
+    assert(isEqual(multiplied.b(), 0.6 * 0.2));
+    assert(isEqual(multiplied.a(), 0.8 * 0.4));
     
     // Test equality
     RGBA_Color color1Copy(0.2, 0.4, 0.6, 0.8);
@@ -214,15 +226,20 @@ void testRGBAColorVectorOperations() {
     assert(color1 != color2);
     assert(!(color1 != color1Copy));
     
-    // Test dot product
-    double dotProduct = color1.dot(color2);
-    double expectedDot = 0.2*0.1 + 0.4*0.3 + 0.6*0.2 + 0.8*0.4;
-    assert(isEqual(dotProduct, expectedDot));
+    // Test interpolation (lerp)
+    RGBA_Color lerped = color1.lerp(color2, 0.5);
+    assert(isEqual(lerped.r(), 0.15)); // (0.2 + 0.1) / 2
+    assert(isEqual(lerped.g(), 0.35)); // (0.4 + 0.3) / 2
+    assert(isEqual(lerped.b(), 0.4));  // (0.6 + 0.2) / 2
+    assert(isEqual(lerped.a(), 0.6));  // (0.8 + 0.4) / 2
     
-    // Test length
-    double length = color1.length();
-    double expectedLength = std::sqrt(0.2*0.2 + 0.4*0.4 + 0.6*0.6 + 0.8*0.8);
-    assert(isEqual(length, expectedLength));
+    // Test alpha blending
+    RGBA_Color foreground(1.0, 0.0, 0.0, 0.5); // 50% red
+    RGBA_Color background(0.0, 1.0, 0.0, 1.0); // green
+    RGBA_Color blended = foreground.alphaBlend(background);
+    assert(isEqual(blended.r(), 0.5)); // 0.5 * 1.0 + 0.5 * 0.0
+    assert(isEqual(blended.g(), 0.5)); // 0.5 * 0.0 + 0.5 * 1.0
+    assert(isEqual(blended.b(), 0.0)); // 0.5 * 0.0 + 0.5 * 0.0
 }
 
 // Test convenience color functions
@@ -292,10 +309,10 @@ void testRGBAColorErrorHandling() {
         assert(true);
     }
     
-    // Test inherited Vector bounds checking
+    // Test accessing components through asVector (bounds checking)
     RGBA_Color color(0.1, 0.2, 0.3, 0.4);
     try {
-        [[maybe_unused]] double value = color.at(4); // Out of bounds
+        [[maybe_unused]] double value = color.asVector().at(4); // Out of bounds
         assert(false); // Should not reach here
     } catch (const std::out_of_range& e) {
         // Expected behavior
@@ -303,7 +320,7 @@ void testRGBAColorErrorHandling() {
     }
     
     try {
-        [[maybe_unused]] double value = color.at(-1); // Out of bounds
+        [[maybe_unused]] double value = color.asVector().at(-1); // Out of bounds
         assert(false); // Should not reach here
     } catch (const std::out_of_range& e) {
         // Expected behavior

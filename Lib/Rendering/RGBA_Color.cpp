@@ -6,22 +6,19 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iomanip>
+#include <cmath>
 
 namespace rendering {
 
     // Constructors
-    RGBA_Color::RGBA_Color() : math::Vector(4, 0.0) {
+    RGBA_Color::RGBA_Color() : components(4, 0.0) {
         // Creates a transparent black color (0, 0, 0, 0)
     }
 
-    RGBA_Color::RGBA_Color(double r, double g, double b, double a) : math::Vector(4) {
-        values[0] = r;  // Red
-        values[1] = g;  // Green
-        values[2] = b;  // Blue
-        values[3] = a;  // Alpha
+    RGBA_Color::RGBA_Color(double r, double g, double b, double a) : components({r, g, b, a}) {
     }
 
-    RGBA_Color::RGBA_Color(const math::Vector& v) : math::Vector(v) {
+    RGBA_Color::RGBA_Color(const math::Vector& v) : components(v) {
         if (v.size() != 4) {
             throw std::invalid_argument("Vector must have exactly 4 components to create an RGBA Color");
         }
@@ -29,43 +26,73 @@ namespace rendering {
 
     // Component accessors
     double RGBA_Color::r() const {
-        return at(0);
+        return components.at(0);
     }
 
     double RGBA_Color::g() const {
-        return at(1);
+        return components.at(1);
     }
 
     double RGBA_Color::b() const {
-        return at(2);
+        return components.at(2);
     }
 
     double RGBA_Color::a() const {
-        return at(3);
+        return components.at(3);
     }
 
     // Component setters
     void RGBA_Color::setR(double red) {
-        values[0] = red;
+        components = math::Vector({red, g(), b(), a()});
     }
 
     void RGBA_Color::setG(double green) {
-        values[1] = green;
+        components = math::Vector({r(), green, b(), a()});
     }
 
     void RGBA_Color::setB(double blue) {
-        values[2] = blue;
+        components = math::Vector({r(), g(), blue, a()});
     }
 
     void RGBA_Color::setA(double alpha) {
-        values[3] = alpha;
+        components = math::Vector({r(), g(), b(), alpha});
     }
 
     void RGBA_Color::setRGBA(double red, double green, double blue, double alpha) {
-        values[0] = red;
-        values[1] = green;
-        values[2] = blue;
-        values[3] = alpha;
+        components = math::Vector({red, green, blue, alpha});
+    }
+
+    // Color-specific operations
+    RGBA_Color RGBA_Color::operator+(const RGBA_Color& other) const {
+        math::Vector result = components + other.components;
+        return RGBA_Color(result);
+    }
+
+    RGBA_Color RGBA_Color::operator-(const RGBA_Color& other) const {
+        math::Vector result = components - other.components;
+        return RGBA_Color(result);
+    }
+
+    RGBA_Color RGBA_Color::operator*(double scalar) const {
+        math::Vector result = components * scalar;
+        return RGBA_Color(result);
+    }
+
+    RGBA_Color RGBA_Color::operator*(const RGBA_Color& other) const {
+        return RGBA_Color(
+            r() * other.r(),
+            g() * other.g(),
+            b() * other.b(),
+            a() * other.a()
+        );
+    }
+
+    bool RGBA_Color::operator==(const RGBA_Color& other) const {
+        return components == other.components;
+    }
+
+    bool RGBA_Color::operator!=(const RGBA_Color& other) const {
+        return !(components == other.components);
     }
 
     // Utility methods
@@ -84,12 +111,43 @@ namespace rendering {
         return RGBA_Color(luminance, luminance, luminance, a());
     }
 
+    RGBA_Color RGBA_Color::lerp(const RGBA_Color& other, double t) const {
+        t = std::clamp(t, 0.0, 1.0);
+        return RGBA_Color(
+            r() + t * (other.r() - r()),
+            g() + t * (other.g() - g()),
+            b() + t * (other.b() - b()),
+            a() + t * (other.a() - a())
+        );
+    }
+
+    RGBA_Color RGBA_Color::alphaBlend(const RGBA_Color& background) const {
+        double alpha = a();
+        double invAlpha = 1.0 - alpha;
+        
+        return RGBA_Color(
+            alpha * r() + invAlpha * background.r(),
+            alpha * g() + invAlpha * background.g(),
+            alpha * b() + invAlpha * background.b(),
+            alpha + invAlpha * background.a()
+        );
+    }
+
+    const math::Vector& RGBA_Color::asVector() const {
+        return components;
+    }
+
     // Output stream operator
     std::ostream& operator<<(std::ostream& os, const RGBA_Color& color) {
         os << std::fixed << std::setprecision(3)
            << "RGBA(" << color.r() << ", " << color.g() << ", " 
            << color.b() << ", " << color.a() << ")";
         return os;
+    }
+
+    // Friend scalar multiplication
+    RGBA_Color operator*(double scalar, const RGBA_Color& color) {
+        return color * scalar;
     }
 
     // Convenience color functions

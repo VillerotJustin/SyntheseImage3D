@@ -12,13 +12,16 @@ namespace rendering {
 
     /**
      * @class RGBA_Color
-     * @brief An RGBA color class that extends the Vector class for color representation.
+     * @brief An RGBA color class that provides color-specific operations.
      *
      * This class provides convenient access to RGBA color components (red, green, blue, alpha)
-     * and includes basic color operations. Each component is represented as a double value
-     * typically in the range [0.0, 1.0] for normalized colors.
+     * and includes only color operations that make semantic sense. Each component is represented 
+     * as a double value typically in the range [0.0, 1.0] for normalized colors.
+     * 
+     * Unlike inheriting from Vector, this class uses composition to avoid exposing 
+     * vector operations that don't make sense for colors (like normalization, distance, etc.).
      */
-    class RGBA_Color : public math::Vector {
+    class RGBA_Color {
     public:
         /**
          * @brief Default constructor that creates an RGBA color with all components set to 0.0 (transparent black).
@@ -41,6 +44,8 @@ namespace rendering {
          */
         explicit RGBA_Color(const math::Vector& v);
 
+        // === Component Access ===
+        
         /**
          * @brief Get the red component of the color.
          * @return The red component value.
@@ -98,6 +103,50 @@ namespace rendering {
          */
         void setRGBA(double red, double green, double blue, double alpha = 1.0);
 
+        // === Color-Specific Operations ===
+
+        /**
+         * @brief Add two colors component-wise (color mixing).
+         * @param other The color to add.
+         * @return A new color with the sum of components.
+         */
+        RGBA_Color operator+(const RGBA_Color& other) const;
+
+        /**
+         * @brief Subtract two colors component-wise.
+         * @param other The color to subtract.
+         * @return A new color with the difference of components.
+         */
+        RGBA_Color operator-(const RGBA_Color& other) const;
+
+        /**
+         * @brief Multiply color by a scalar (brightness scaling).
+         * @param scalar The scalar to multiply by.
+         * @return A new color with scaled components.
+         */
+        RGBA_Color operator*(double scalar) const;
+
+        /**
+         * @brief Multiply two colors component-wise (color filtering).
+         * @param other The color to multiply with.
+         * @return A new color with multiplied components.
+         */
+        RGBA_Color operator*(const RGBA_Color& other) const;
+
+        /**
+         * @brief Check if two colors are equal.
+         * @param other The color to compare with.
+         * @return True if colors are equal, false otherwise.
+         */
+        bool operator==(const RGBA_Color& other) const;
+
+        /**
+         * @brief Check if two colors are not equal.
+         * @param other The color to compare with.
+         * @return True if colors are not equal, false otherwise.
+         */
+        bool operator!=(const RGBA_Color& other) const;
+
         /**
          * @brief Clamp all color components to the range [0.0, 1.0].
          * @return A new RGBA_Color with clamped components.
@@ -111,12 +160,44 @@ namespace rendering {
         RGBA_Color toGrayscale(const double& rw = 0.299, const double& gw = 0.587, const double& bw = 0.114) const;
 
         /**
+         * @brief Linearly interpolate between this color and another.
+         * @param other The target color.
+         * @param t The interpolation factor (0.0 = this color, 1.0 = other color).
+         * @return A new interpolated color.
+         */
+        RGBA_Color lerp(const RGBA_Color& other, double t) const;
+
+        /**
+         * @brief Blend this color with another using alpha blending.
+         * @param background The background color.
+         * @return A new blended color.
+         */
+        RGBA_Color alphaBlend(const RGBA_Color& background) const;
+
+        /**
+         * @brief Get the underlying vector representation.
+         * @return Const reference to the internal vector.
+         */
+        [[nodiscard]] const math::Vector& asVector() const;
+
+        /**
          * @brief Output stream operator for debugging and display purposes.
          * @param os The output stream.
          * @param color The color to output.
          * @return The output stream.
          */
         friend std::ostream& operator<<(std::ostream& os, const RGBA_Color& color);
+
+        /**
+         * @brief Scalar multiplication (scalar * color).
+         * @param scalar The scalar value.
+         * @param color The color.
+         * @return A new scaled color.
+         */
+        friend RGBA_Color operator*(double scalar, const RGBA_Color& color);
+
+    private:
+        math::Vector components; ///< Internal storage for RGBA components
     };
 
     // Convenience functions for common colors
