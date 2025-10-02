@@ -17,16 +17,13 @@
 namespace math {
 
     // Constructor: Initializes a vector of size 'x' with all elements set to 0.0
-    Vector::Vector(const int x) : values((x, 0.0), m_size = x) {}
+    Vector::Vector(const int x) : m_size(x), values(x, 0.0) {}
 
     // Constructor: Initializes a vector of size 'x' with all elements set to 'y'
-    Vector::Vector(const int x, const double y) : values((x, y), m_size = x) {}
+    Vector::Vector(const int x, const double y) : m_size(x), values(x, y) {}
 
     // Constructor: Initializes a vector from a std::vector of doubles
-    Vector::Vector(std::vector<double> data) {
-        values = std::move(data);
-        m_size = data.size();
-    }
+    Vector::Vector(std::vector<double> data) : m_size(data.size()), values(std::move(data)) {}
 
     // Equality operator: Returns true if two vectors have identical values
     bool Vector::operator==(const Vector& v2) const {
@@ -88,7 +85,11 @@ namespace math {
 
     // Function to normalize a vector (i.e., make its length equal to 1)
     Vector Vector::normal() const {
-        double d = 1.0 / this->length();  // Calculate the reciprocal of the vector's length
+        double len = this->length();
+        if (len == 0.0) {
+            throw std::invalid_argument("Cannot normalize a zero-length vector.");
+        }
+        double d = 1.0 / len;  // Calculate the reciprocal of the vector's length
         return *this * d;  // Multiply the vector by the reciprocal to normalize it
     }
 
@@ -127,6 +128,17 @@ namespace math {
     // Function to calculate the squared distance between two vectors
     double Vector::squared_distance(const Vector& other) const {
         return (*this - other).squared_length();  // The squared distance is the squared length of their difference
+    }
+
+    // Output stream operator for debugging
+    std::ostream& operator<<(std::ostream& os, const Vector& v) {
+        os << "[";
+        for (int i = 0; i < v.size(); ++i) {
+            if (i > 0) os << ", ";
+            os << v.at(i);
+        }
+        os << "]";
+        return os;
     }
 
     

@@ -10,6 +10,7 @@
 #define VECTOR_H
 
 #include <vector>
+#include <iostream>
 
 namespace math {
 
@@ -84,8 +85,14 @@ namespace math {
          * @brief Accessor method to get the value at a specific index.
          * @param n The index of the element to access.
          * @return The value at the specified index.
+         * @throws std::out_of_range if index is out of bounds.
          */
-        [[nodiscard]] inline double at (const int n) const { return values[n]; }
+        [[nodiscard]] inline double at (const int n) const { 
+            if (n < 0 || n >= m_size) {
+                throw std::out_of_range("Vector index out of bounds");
+            }
+            return values[n]; 
+        }
 
         /**
          * @brief Method to get the size of the vector.
@@ -144,6 +151,15 @@ namespace math {
          * @return The squared distance between the two vectors.
          */
         double squared_distance (const Vector&) const;
+
+        /**
+         * @brief Output stream operator for debugging and display purposes.
+         * @param os The output stream.
+         * @param v The vector to output.
+         * @return The output stream.
+         */
+        friend std::ostream& operator<<(std::ostream& os, const Vector& v);
+
     protected:
         int m_size;                 ///< The number of elements in the vector.
         std::vector<double> values; ///< A vector storing the elements of the vector.
