@@ -5,199 +5,477 @@
 // https://github.com/vraid/earthgen-old/blob/master/source/math/quaternion.cpp
 //
 
-#include "Quaternion.h"
-#include "Vector.h"
-#include "Matrix.h"
-#include "math_common.h"
+// External Lib
+#include <stdexcept>
 #include <cmath>
+#include <iostream>
+
+// Internal
+#include "Quaternion.h"
+#include "Vector3.h"
+#include "math_common.h"
 
 namespace math {
 
-	/**
-	 * @brief Default constructor for Quaternion.
-	 *
-	 * Initializes the quaternion with all components set to [1, 0, 0, 0].
-	 * This represents the identity quaternion.
-	 */
-	Quaternion::Quaternion () : values ({1, 0, 0, 0}) {}
+    // Static constant definition
+    const Quaternion Quaternion::IDENTITY(1.0, 0.0, 0.0, 0.0);
 
-	/**
-	 * @brief Parameterized constructor for Quaternion.
-	 *
-	 * Initializes the quaternion with the specified components.
-	 *
-	 * @param a The real component of the quaternion.
-	 * @param i The first imaginary component of the quaternion.
-	 * @param j The second imaginary component of the quaternion.
-	 * @param k The third imaginary component of the quaternion.
-	 */
-	Quaternion::Quaternion (double a, double i, double j, double k) : values ({a, i, j, k}) {}
+    // Constructors
 
-	/**
-	 * @brief Creates a quaternion representing a rotation around a given axis by a specified angle.
-	 *
-	 * This function creates a quaternion that represents a rotation by an angle (in radians) around the specified axis (a vector).
-	 *
-	 * @param axis The vector representing the axis of rotation.
-	 * @param angle The angle (in radians) to rotate around the axis.
-	 * @return A quaternion representing the rotation.
-	 */
-	Quaternion rotation_around (const Vector& axis, double angle) {
-		Vector v = normal(axis)*std::sin(angle*0.5);
-		return Quaternion(std::cos(angle*0.5), v.at(0), v.at(1), v.at(2));
-	}
-
-	/**
-     * @brief Creates a quaternion representing the rotation between two non-parallel vectors.
-     *
-     * This function computes the quaternion that represents the rotation from vector `a` to vector `b` assuming they are non-parallel.
-     *
-     * @param a The initial vector.
-     * @param b The target vector.
-     * @return A quaternion representing the rotation from `a` to `b`.
-     */
-    Quaternion rotation_between_nonparallel (const Vector& a, const Vector& b) {
-        return rotation_around(cross_product_3d(b, a), -std::acos(dot_product(a, b)));
+    Quaternion::Quaternion() : Vector(4) {
+        // Initialize as identity quaternion (1, 0, 0, 0)
+        values[0] = 1.0;  // w
+        values[1] = 0.0;  // x
+        values[2] = 0.0;  // y
+        values[3] = 0.0;  // z
     }
 
-    /**
-     * @brief Creates a quaternion representing the rotation between two parallel vectors.
-     *
-     * This function computes the quaternion that represents the rotation between two parallel vectors `a` and `b`.
-     * If the vectors are not equal, an intermediate vector is chosen to break down the rotation into two non-parallel rotations.
-     *
-     * @param a The initial vector.
-     * @param b The target vector.
-     * @return A quaternion representing the rotation from `a` to `b`.
-     */
-    Quaternion rotation_between_parallel (const Vector& a, const Vector& b) {
-        if (a != b) {
-            const Vector intermediate = parallel(a, Vector({1, 0, 0})) ? Vector({0, 1, 0}) : Vector({1, 0, 0});
-            return rotation_between_nonparallel(intermediate, b) * rotation_between_nonparallel(a, intermediate);
-        }
-        else {
-            return Quaternion();
+    Quaternion::Quaternion(double w, double x, double y, double z) : Vector(4) {
+        values[0] = w;
+        values[1] = x;
+        values[2] = y;
+        values[3] = z;
+    }
+
+    Quaternion::Quaternion(const Vector3& axis, double angle) : Vector(4) {
+        // Normalize the axis
+        Vector normalizedAxis = axis.normal();
+        
+        // Half angle
+        double halfAngle = angle * 0.5;
+        double sinHalfAngle = std::sin(halfAngle);
+        double cosHalfAngle = std::cos(halfAngle);
+        
+        values[0] = cosHalfAngle;                            // w
+        values[1] = normalizedAxis.at(0) * sinHalfAngle;     // x
+        values[2] = normalizedAxis.at(1) * sinHalfAngle;     // y
+        values[3] = normalizedAxis.at(2) * sinHalfAngle;     // z
+    }
+
+    Quaternion::Quaternion(const Vector& v) : Vector(v) {
+        if (v.size() != 4) {
+            throw std::invalid_argument("Vector must be 4D to convert to Quaternion");
         }
     }
 
-    /**
-     * @brief Creates a quaternion representing the rotation between two vectors (handles both parallel and non-parallel cases).
-     *
-     * This function first normalizes the vectors `a` and `b`, then uses `rotation_between_parallel` or `rotation_between_nonparallel`
-     * to compute the quaternion depending on whether the vectors are parallel or not.
-     *
-     * @param a The initial vector.
-     * @param b The target vector.
-     * @return A quaternion representing the rotation from `a` to `b`.
-     */
-    Quaternion rotation_between (const Vector& a, const Vector& b) {
-        Vector v = normal(a);
-        Vector u = normal(b);
-        return (parallel(v, u)) ? rotation_between_parallel(v, u) : rotation_between_nonparallel(v, u);
+    // Component mutators
+
+    void Quaternion::setW(double w_val) {
+        values[0] = w_val;
     }
 
-    /**
-     * @brief Overloaded multiplication operator for quaternions.
-     *
-     * This function multiplies the current quaternion by another quaternion `q` and returns the resulting quaternion.
-     *
-     * @param q The quaternion to multiply with.
-     * @return A new quaternion that is the result of multiplying this quaternion with `q`.
-     */
-    Quaternion Quaternion::operator * (const Quaternion& q) const {
-        auto p = [=](int n, int k) { return at(n)*q.at(k); };
-        return normal(
-            Quaternion(
-                p(0,0) - p(1,1) - p(2,2) - p(3,3),
-                p(0,1) + p(1,0) + p(2,3) - p(3,2),
-                p(0,2) - p(1,3) + p(2,0) + p(3,1),
-                p(0,3) + p(1,2) - p(2,1) + p(3,0)));
+    void Quaternion::setX(double x_val) {
+        values[1] = x_val;
     }
 
-    /**
-     * @brief Overloaded multiplication operator for rotating a vector using a quaternion.
-     *
-     * This function rotates the given vector `v` using the current quaternion.
-     *
-     * @param v The vector to rotate.
-     * @return A new vector that is the result of rotating `v` by this quaternion.
-     */
-    Vector Quaternion::operator * (const Vector &v) const {
-        return (zero(v)) ? v : vector((*this) * (Quaternion(0, v.x(), v.y(), v.z()) * conjugate(*this)));
+    void Quaternion::setY(double y_val) {
+        values[2] = y_val;
     }
 
-    /**
-     * @brief Computes the conjugate of a quaternion.
-     *
-     * The conjugate of a quaternion is obtained by flipping the signs of the imaginary components (x, y, z) while keeping the real part (w) unchanged.
-     *
-     * @param q The quaternion to conjugate.
-     * @return The conjugate of the quaternion `q`.
-     */
-    Quaternion conjugate (const Quaternion& q) {
-        return Quaternion(q.at(0), -q.at(1), -q.at(2), -q.at(3));
+    void Quaternion::setZ(double z_val) {
+        values[3] = z_val;
     }
 
-	/**
-	 * @brief Extracts the vector part (the imaginary part) of a quaternion.
-	 *
-	 * This function extracts the imaginary part (x, y, z) of the quaternion, leaving out the real part (w).
-	 *
-	 * @param q The quaternion to extract the vector part from.
-	 * @return A vector representing the imaginary part of the quaternion.
-	 */
-	Vector vector (const Quaternion& q) {
-		return Vector({q.at(1), q.at(2), q.at(3)});
-	}
+    void Quaternion::set(double w_val, double x_val, double y_val, double z_val) {
+        values[0] = w_val;
+        values[1] = x_val;
+        values[2] = y_val;
+        values[3] = z_val;
+    }
 
-	/**
-	 * @brief Normalizes a quaternion.
-	 *
-	 * This function normalizes a quaternion by scaling it such that its length becomes 1, resulting in a unit quaternion.
-	 *
-	 * @param q The quaternion to normalize.
-	 * @return The normalized quaternion.
-	 */
-	Quaternion normal (const Quaternion& q) {
-		double a = q.at(0);
-		double i = q.at(1);
-		double j = q.at(2);
-		double k = q.at(3);
-		double d = std::sqrt(square(a) + square(i) + square(j) + square(k));
-		return Quaternion(a/d, i/d, j/d, k/d);
-	}
+    // Static factory methods
 
-	/**
-	 * @brief Converts a quaternion to a 3x3 rotation matrix.
-	 *
-	 * This function converts a quaternion to a 3x3 matrix that represents the rotation defined by the quaternion.
-	 *
-	 * @param q The quaternion to convert.
-	 * @return A 3x3 matrix representing the rotation defined by the quaternion `q`.
-	 */
-	Matrix matrix3 (const Quaternion& q) {
-		auto p = [=](int n, int k) { return q.at(n)*q.at(k); };
-    	double ** matrix_data = new double *[3];
-    	// Allocate memory for each row (double*)
-    	for (int i = 0; i < 3; ++i) {
-    		matrix_data[i] = new double[3];
-    	}
-    	// Manually assign values to the matrix
-    	matrix_data[0][0] = -(p(2,2) + p(3,3));
-    	matrix_data[0][1] = p(1,2) - p(0,3);
-    	matrix_data[0][2] = p(1,3) + p(0,2);
+    Quaternion Quaternion::identity() {
+        return Quaternion(1.0, 0.0, 0.0, 0.0);
+    }
 
-    	matrix_data[1][0] = p(1,2) + p(0,3);
-    	matrix_data[1][1] = -(p(1,1) + p(3,3));
-    	matrix_data[1][2] = p(2,3) - p(0,1);
+    Quaternion Quaternion::fromAxisAngle(const Vector3& axis, double angle) {
+        return Quaternion(axis, angle);
+    }
 
-    	matrix_data[2][0] = p(1,3) - p(0,2);
-    	matrix_data[2][1] = p(2,3) + p(0,1);
-    	matrix_data[2][2] = -(p(1,1) + p(2,2));
+    Quaternion Quaternion::fromVectorToVector(const Vector3& from, const Vector3& to) {
+        Vector3 fromNorm = from.normal();
+        Vector3 toNorm = to.normal();
 
-		Matrix m(matrix_data,3,3);
+        double cosTheta = fromNorm.dot(toNorm);
+        
+        // Check if vectors are parallel (same direction)
+        if (cosTheta > 0.9999) {
+            return identity();
+        }
+        
+        // Check if vectors are opposite
+        if (cosTheta < -0.9999) {
+            // Find a perpendicular axis
+            Vector3 axis({1.0, 0.0, 0.0});
+            if (std::abs(fromNorm.at(0)) > 0.1) {
+                axis = Vector3({0.0, 1.0, 0.0});
+            }
+            
+            // Create perpendicular vector using cross product concept
+            Vector3 perpendicular({
+                fromNorm.at(1) * axis.at(2) - fromNorm.at(2) * axis.at(1),
+                fromNorm.at(2) * axis.at(0) - fromNorm.at(0) * axis.at(2),
+                fromNorm.at(0) * axis.at(1) - fromNorm.at(1) * axis.at(0)
+            });
+            
+            return Quaternion(perpendicular.normal(), math::pi);
+        }
+        
+        // Calculate rotation axis using cross product
+        Vector3 rotationAxis({
+            fromNorm.at(1) * toNorm.at(2) - fromNorm.at(2) * toNorm.at(1),
+            fromNorm.at(2) * toNorm.at(0) - fromNorm.at(0) * toNorm.at(2),
+            fromNorm.at(0) * toNorm.at(1) - fromNorm.at(1) * toNorm.at(0)
+        });
+        
+        // Calculate angle
+        double angle = std::acos(cosTheta);
+        
+        return Quaternion(rotationAxis.normal(), angle);
+    }
 
-		return Matrix(3, 3) + m + m;
-	}
+    Quaternion Quaternion::fromEulerAngles(double roll, double pitch, double yaw) {
+        // Half angles
+        double cr = std::cos(roll * 0.5);
+        double sr = std::sin(roll * 0.5);
+        double cp = std::cos(pitch * 0.5);
+        double sp = std::sin(pitch * 0.5);
+        double cy = std::cos(yaw * 0.5);
+        double sy = std::sin(yaw * 0.5);
 
+        // ZYX convention (yaw-pitch-roll)
+        double w = cr * cp * cy + sr * sp * sy;
+        double x = sr * cp * cy - cr * sp * sy;
+        double y = cr * sp * cy + sr * cp * sy;
+        double z = cr * cp * sy - sr * sp * cy;
+
+        return Quaternion(w, x, y, z);
+    }
+
+    // Operators
+
+    Quaternion Quaternion::operator*(const Quaternion& other) const {
+        // Hamilton product: q1 * q2
+        // Formula: (w1*w2 - v1·v2, w1*v2 + w2*v1 + v1×v2)
+        // Where w is scalar part and v is vector part
+        
+        double w1 = this->w(), x1 = this->x(), y1 = this->y(), z1 = this->z();
+        double w2 = other.w(), x2 = other.x(), y2 = other.y(), z2 = other.z();
+        
+        // Calculate new components using Hamilton product formula
+        double w = w1*w2 - x1*x2 - y1*y2 - z1*z2;  // Scalar part
+        double x = w1*x2 + x1*w2 + y1*z2 - z1*y2;  // i component
+        double y = w1*y2 - x1*z2 + y1*w2 + z1*x2;  // j component
+        double z = w1*z2 + x1*y2 - y1*x2 + z1*w2;  // k component
+        
+        return Quaternion(w, x, y, z);
+    }
+
+    Vector3 Quaternion::operator*(const Vector3& v) const {
+        // Rotate vector v by this quaternion using the formula:
+        // v' = q * v * q^(-1)
+        // Where q^(-1) is the conjugate for unit quaternions
+        
+        // For efficiency, we use the expanded formula:
+        // v' = v + 2*w*cross(qv, v) + 2*cross(qv, cross(qv, v))
+        // Where qv is the vector part of the quaternion and w is the scalar part
+        
+        Vector3 qv(this->x(), this->y(), this->z());  // Vector part of quaternion
+        double qw = this->w();  // Scalar part of quaternion
+        
+        // Calculate cross products
+        Vector3 cross1 = qv.cross(v);
+        Vector3 cross2 = qv.cross(cross1);
+        
+        // Apply rotation formula
+        Vector3 result = v + cross1 * (2.0 * qw) + cross2 * 2.0;
+        
+        return result;
+    }
+
+    Quaternion Quaternion::operator+(const Quaternion& other) const {
+        // Component-wise addition of quaternions
+        // Note: This is mathematically valid but doesn't represent rotation composition
+        // For rotation composition, use quaternion multiplication (*)
+        // Addition is useful for interpolation and averaging quaternions
+        
+        return Quaternion(
+            this->w() + other.w(),  // w component
+            this->x() + other.x(),  // x component
+            this->y() + other.y(),  // y component
+            this->z() + other.z()   // z component
+        );
+    }
+
+    Quaternion Quaternion::operator-(const Quaternion& other) const {
+        // Component-wise subtraction of quaternions
+        // Note: This is mathematically valid but doesn't represent rotation composition
+        // For rotation composition, use quaternion multiplication (*)
+        // Addition is useful for interpolation and averaging quaternions
+        
+        return Quaternion(
+            this->w() - other.w(),  // w component
+            this->x() - other.x(),  // x component
+            this->y() - other.y(),  // y component
+            this->z() - other.z()   // z component
+        );
+    }
+
+    Quaternion Quaternion::operator*(double scalar) const {
+        // Component-wise multiplication of quaternion by a scalar
+        return Quaternion(
+            this->w() * scalar,  // w component
+            this->x() * scalar,  // x component
+            this->y() * scalar,  // y component
+            this->z() * scalar   // z component
+        );
+    }
+
+    Quaternion Quaternion::conjugate() const {
+        return Quaternion(
+            this->w(),
+            -this->x(),
+            -this->y(),
+            -this->z()
+        );
+    }
+
+    Quaternion Quaternion::inverse() const {
+        double normSq = this->squared_length();
+        if (normSq == 0.0) {
+            throw std::runtime_error("Cannot invert a zero-length quaternion");
+        }
+        return this->conjugate() * (1.0 / normSq);
+    }
+
+    Quaternion Quaternion::normalize() const {
+        double len = this->length();
+        if (len == 0.0) {
+            throw std::invalid_argument("Cannot normalize a zero-length quaternion.");
+        }
+        return (*this) * (1.0 / len);
+    }
+
+    void Quaternion::normalizeInPlace() {
+        double len = this->length();
+        if (len == 0.0) {
+            throw std::invalid_argument("Cannot normalize a zero-length quaternion.");
+        }
+        (*this) = (*this) * (1.0 / len);
+    }
+
+    
+    Vector3 Quaternion::vectorPart() const {
+        return Vector3(this->x(), this->y(), this->z());
+    }
+
+    Matrix<double> Quaternion::toRotationMatrix3x3() const {
+        // Ensure the quaternion is normalized
+        Quaternion q = this->normalize();
+
+        double w = q.w();
+        double x = q.x();
+        double y = q.y();
+        double z = q.z();
+
+        // Create a 3x3 rotation matrix
+        Matrix<double> rotMatrix(3, 3);
+
+        *(rotMatrix(0, 0)) = 1.0 - 2.0 * y * y - 2.0 * z * z;
+        *(rotMatrix(0, 1)) = 2.0 * x * y - 2.0 * z * w;
+        *(rotMatrix(0, 2)) = 2.0 * x * z + 2.0 * y * w;
+        *(rotMatrix(1, 0)) = 2.0 * x * y + 2.0 * z * w;
+        *(rotMatrix(1, 1)) = 1.0 - 2.0 * x * x - 2.0 * z * z;
+        *(rotMatrix(1, 2)) = 2.0 * y * z - 2.0 * x * w;
+        *(rotMatrix(2, 0)) = 2.0 * x * z - 2.0 * y * w;
+        *(rotMatrix(2, 1)) = 2.0 * y * z + 2.0 * x * w;
+        *(rotMatrix(2, 2)) = 1.0 - 2.0 * x * x - 2.0 * y * y;
+
+        return rotMatrix;
+    }
+
+    Matrix<double> Quaternion::toRotationMatrix4x4() const {
+        // Ensure the quaternion is normalized
+        Quaternion q = this->normalize();
+
+        double w = q.w();
+        double x = q.x();
+        double y = q.y();
+        double z = q.z();
+
+        // Create a 4x4 rotation matrix
+        Matrix<double> rotMatrix(4, 4);
+
+        *(rotMatrix(0, 0)) = 1.0 - 2.0 * y * y - 2.0 * z * z;
+        *(rotMatrix(0, 1)) = 2.0 * x * y - 2.0 * z * w;
+        *(rotMatrix(0, 2)) = 2.0 * x * z + 2.0 * y * w;
+        *(rotMatrix(0, 3)) = 0.0;
+
+        *(rotMatrix(1, 0)) = 2.0 * x * y + 2.0 * z * w;
+        *(rotMatrix(1, 1)) = 1.0 - 2.0 * x * x - 2.0 * z * z;
+        *(rotMatrix(1, 2)) = 2.0 * y * z - 2.0 * x * w;
+        *(rotMatrix(1, 3)) = 0.0;
+
+        *(rotMatrix(2, 0)) = 2.0 * x * z - 2.0 * y * w;
+        *(rotMatrix(2, 1)) = 2.0 * y * z + 2.0 * x * w;
+        *(rotMatrix(2, 2)) = 1.0 - 2.0 * x * x - 2.0 * y * y;
+        *(rotMatrix(2, 3)) = 0.0;
+
+        *(rotMatrix(3, 0)) = 0.0;
+        *(rotMatrix(3, 1)) = 0.0;
+        *(rotMatrix(3, 2)) = 0.0;
+        *(rotMatrix(3, 3)) = 1.0;
+
+        return rotMatrix;
+    }
+
+    double Quaternion::getRotationAngle() const {
+        // Ensure the quaternion is normalized
+        Quaternion q = this->normalize();
+
+        // Calculate the rotation angle (full angle, not half-angle)
+        return 2.0 * std::acos(std::abs(q.w()));
+    }
+
+    Vector3 Quaternion::getRotationAxis() const {
+        // Ensure the quaternion is normalized
+        Quaternion q = this->normalize();
+
+        // Calculate the sine of half-angle
+        double s = std::sqrt(1.0 - q.w() * q.w());
+
+        // Check if this represents no rotation (identity quaternion)
+        if (s < 0.001) { 
+            // If s is close to zero, the quaternion is close to identity
+            // This means no rotation or 360° rotation
+            throw std::invalid_argument("Quaternion represents no rotation (identity quaternion)");
+        } else {
+            // Extract the normalized rotation axis
+            return Vector3(q.x() / s, q.y() / s, q.z() / s);
+        }
+    }
+
+    void Quaternion::toAxisAngle(Vector3& axis, double& angle) const {
+        angle = getRotationAngle();
+        axis = getRotationAxis();
+    }
+
+    bool Quaternion::isUnit(double epsilon) const {
+        return std::abs(this->squared_length() - 1.0) < epsilon;
+    }
+
+    Quaternion Quaternion::fromRotationMatrix(const Matrix<double>& rotationMatrix) {
+        if (rotationMatrix.getRows() != 3 || rotationMatrix.getCols() != 3) {
+            throw std::invalid_argument("Rotation matrix must be 3x3");
+        }
+
+        double m00 = *(rotationMatrix(0, 0));
+        double m11 = *(rotationMatrix(1, 1));
+        double m22 = *(rotationMatrix(2, 2));
+        double trace = m00 + m11 + m22;
+
+        double w, x, y, z;
+
+        if (trace > 0) {
+            double s = std::sqrt(trace + 1.0) * 2.0; // S=4*qw
+            w = 0.25 * s;
+            x = (*(rotationMatrix(2, 1)) - *(rotationMatrix(1, 2))) / s;
+            y = (*(rotationMatrix(0, 2)) - *(rotationMatrix(2, 0))) / s;
+            z = (*(rotationMatrix(1, 0)) - *(rotationMatrix(0, 1))) / s;
+        } else if ((m00 > m11) && (m00 > m22)) {
+            double s = std::sqrt(1.0 + m00 - m11 - m22) * 2.0; // S=4*qx
+            w = (*(rotationMatrix(2, 1)) - *(rotationMatrix(1, 2))) / s;
+            x = 0.25 * s;
+            y = (*(rotationMatrix(0, 1)) + *(rotationMatrix(1, 0))) / s;
+            z = (*(rotationMatrix(0, 2)) + *(rotationMatrix(2, 0))) / s;
+        } else if (m11 > m22) {
+            double s = std::sqrt(1.0 + m11 - m00 - m22) * 2.0; // S=4*qy
+            w = (*(rotationMatrix(0, 2)) - *(rotationMatrix(2, 0))) / s;
+            x = (*(rotationMatrix(0, 1)) + *(rotationMatrix(1, 0))) / s;
+            y = 0.25 * s;
+            z = (*(rotationMatrix(1, 2)) + *(rotationMatrix(2, 1))) / s;
+        } else {
+            double s = std::sqrt(1.0 + m22 - m00 - m11) * 2.0; // S=4*qz
+            w = (*(rotationMatrix(1, 0)) - *(rotationMatrix(0, 1))) / s;
+            x = (*(rotationMatrix(0, 2)) + *(rotationMatrix(2, 0))) / s;
+            y = (*(rotationMatrix(1, 2)) + *(rotationMatrix(2, 1))) / s;
+            z = 0.25 * s;
+        }
+
+        return Quaternion(w, x, y, z);
+    }
+
+    
+
+    double Quaternion::dot(const Quaternion& other) const {
+        return this->w() * other.w() + this->x() * other.x() + this->y() * other.y() + this->z() * other.z();
+    }
+
+    // Interpolation methods
+
+    Quaternion Quaternion::slerp(const Quaternion& q1, const Quaternion& q2, double t) {
+        // Clamp t to [0, 1]
+        t = std::max(0.0, std::min(1.0, t));
+        
+        // Ensure both quaternions are normalized
+        Quaternion qa = q1.normalize();
+        Quaternion qb = q2.normalize();
+        
+        // Compute the dot product
+        double dot = qa.dot(qb);
+        
+        // If the dot product is negative, slerp won't take the shorter path.
+        // Note that v1 and -v1 are equivalent when the quaternions are used to represent rotations.
+        if (dot < 0.0) {
+            qb = qb * (-1.0);  // Flip the quaternion
+            dot = -dot;
+        }
+        
+        // If the quaternions are very close, use linear interpolation to avoid division by zero
+        const double DOT_THRESHOLD = 0.9995;
+        if (dot > DOT_THRESHOLD) {
+            // Linear interpolation for very close quaternions
+            Quaternion result = qa + (qb - qa) * t;
+            return result.normalize();
+        }
+        
+        // Calculate the half angle between the quaternions
+        double theta_0 = std::acos(dot);
+        double theta = theta_0 * t;
+        
+        // Compute the quaternion orthogonal to qa in the plane spanned by qa and qb
+        Quaternion qb_perp = qb - qa * dot;
+        qb_perp = qb_perp.normalize();
+        
+        // Perform spherical linear interpolation
+        return qa * std::cos(theta) + qb_perp * std::sin(theta);
+    }
+
+    Quaternion Quaternion::nlerp(const Quaternion& q1, const Quaternion& q2, double t) {
+        // Clamp t to [0, 1]
+        t = std::max(0.0, std::min(1.0, t));
+        
+        // Ensure both quaternions are normalized
+        Quaternion qa = q1.normalize();
+        Quaternion qb = q2.normalize();
+        
+        // Check if we need to flip qb to take the shorter path
+        double dot = qa.dot(qb);
+        if (dot < 0.0) {
+            qb = qb * (-1.0);  // Flip the quaternion
+        }
+        
+        // Linear interpolation
+        Quaternion result = qa * (1.0 - t) + qb * t;
+        
+        // Normalize the result
+        return result.normalize();
+    }
+
+    // Print
+    std::ostream& operator<<(std::ostream& os, const Quaternion& q) {
+            os << "Quaternion(" << q.w() << ", " << q.x() << ", " << q.y() << ", " << q.z() << ")";
+            return os;
+    }
 }
