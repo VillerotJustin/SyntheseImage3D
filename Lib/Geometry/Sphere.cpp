@@ -1,5 +1,5 @@
 #include "./Sphere.h"
-#include "../Math/math_common.h"
+
 
 namespace geometry {
 

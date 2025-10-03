@@ -10,6 +10,7 @@
 #define BOX_H
 
 #include "./Vector3D.h"
+#include "./Ray.h"
 #include "./Edge.h"
 #include "./Rectangle.h"
 
@@ -195,6 +196,13 @@ namespace geometry {
          * @return bool True if the box is valid
          */
         bool isValid() const;
+
+        /**
+         * Check if a ray intersects with the box
+         * @param ray The ray to check intersection with
+         * @return bool True if the ray intersects the box
+         */
+        bool rayIntersect(const Ray& ray) const;
 
     private:
         Vector3D origin;  // Origin point (minimum corner)

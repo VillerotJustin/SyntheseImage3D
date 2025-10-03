@@ -6,6 +6,7 @@
 #define CIRCLE_H
 
 #include "./Vector3D.h"
+#include "./Ray.h"
 
 namespace geometry {
 
@@ -87,6 +88,13 @@ namespace geometry {
          * @return bool True if the circle is valid
          */
         bool isValid() const;
+
+        /**
+         * Check if a ray intersects with the box
+         * @param ray The ray to check intersection with
+         * @return bool True if the ray intersects the box
+         */
+        bool rayIntersect(const Ray& ray) const;
 
     private:
         Vector3D center;

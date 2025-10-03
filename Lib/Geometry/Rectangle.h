@@ -6,6 +6,7 @@
 #define RECTANGLE_H
 
 #include "./Vector3D.h"
+#include "./Ray.h"
 
 namespace geometry {
 
@@ -84,6 +85,18 @@ namespace geometry {
          * @param corners Array to store the 4 corner points
          */
         void getCorners(Vector3D corners[4]) const;
+
+        /**
+         * Get the length direction vector (unit vector)
+         * @return Vector3D Length direction vector
+         */
+        Vector3D getLengthVec() const;
+
+        /**
+         * Get the width direction vector (unit vector)
+         * @return Vector3D Width direction vector
+         */
+        Vector3D getWidthVec() const;
 
         /**
          * Check if a point lies within the rectangle
@@ -170,17 +183,24 @@ namespace geometry {
          */
         bool isValid() const;
 
-    private:
-        Vector3D origin;  // Origin point (corner)
-        double l;         // Length
-        double w;         // Width  
-        Vector3D normal;  // Normal vector (perpendicular to rectangle plane)
-        
+        /**
+         * Check if a ray intersects with the box
+         * @param ray The ray to check intersection with
+         * @return bool True if the ray intersects the box
+         */
+        bool rayIntersect(const Ray& ray) const;
+
         /**
          * Generate two orthogonal vectors in the plane of the rectangle
          * Used for parametric representation and corner calculations
          */
         void generateBasisVectors(Vector3D& lengthDir, Vector3D& widthDir) const;
+
+    private:
+        Vector3D origin;  // Origin point (corner)
+        double l;         // Length
+        double w;         // Width  
+        Vector3D normal;  // Normal vector (perpendicular to rectangle plane)
     };
 
 } // namespace geometry

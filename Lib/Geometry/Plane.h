@@ -6,6 +6,7 @@
 #define PLANE_H
 
 #include "./Vector3D.h"
+#include "./Ray.h"
 
 namespace geometry {
 
@@ -102,6 +103,13 @@ namespace geometry {
          * @param d Reference to store the constant term
          */
         void getPlaneEquation(double& a, double& b, double& c, double& d) const;
+
+        /**
+         * Check if a ray intersects with the box
+         * @param ray The ray to check intersection with
+         * @return bool True if the ray intersects the box
+         */
+        bool rayIntersect(const Ray& ray) const;
 
     private:
         Vector3D normal;

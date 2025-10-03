@@ -1,17 +1,19 @@
 # TODO List
 
 - [ ] Add other geometry element
-  - [ ] Sphere
-  - [ ] Cube
-  - [ ] Plane
-  - [ ] Segment
+  - [X] Sphere
+  - [X] Cube
+  - [X] Plane
+  - [X] Segment -> Edge
   - [ ] Triangle
   - [ ] Poligon
   - [ ] Vertex
 - [ ]  Add to Rendering Lib
-  - [ ] Video
+  - [X] Video
+  - [ ] Implement World
+  - [ ] Fix camera OthorRender Overlap
 - [ ] Make Physics Lib
-  - [ ] Ray
+  - [X] Ray
   - [ ] Colision
   - [ ] Think about other
 - [ ] Make gravity simulation (parachute)

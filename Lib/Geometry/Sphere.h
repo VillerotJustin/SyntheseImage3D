@@ -13,6 +13,9 @@
 #include "./Ray.h"
 #include "./Plane.h"
 #include "./Circle.h"
+
+#include "../Math/math_common.h"
+
 #include <optional>
 #include <variant>
 

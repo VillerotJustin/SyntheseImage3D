@@ -17,24 +17,36 @@ TEST_DIR="test"
 EXECUTABLE_DIR="$TEST_DIR/Executables"
 CXX_COMPILER="g++"
 CXX_FLAGS="-std=c++17 -Wall -Wextra -g -fdiagnostics-color=always"
+DEBUG_MODE=false
 
-# Test files and their corresponding executables
-declare -A TESTS=(
-    ["vector.test"]="$TEST_DIR/vector.test.cpp"
-    ["quaternion.test"]="$TEST_DIR/quaternion.test.cpp"
-    ["rgba_color.test"]="$TEST_DIR/rgba_color.test.cpp"
-    ["matrix.test"]="$TEST_DIR/matrix.test.cpp"
-    ["image.test"]="$TEST_DIR/image.test.cpp"
-    ["box.test"]="$TEST_DIR/box.test.cpp"
-    ["circle.test"]="$TEST_DIR/circle.test.cpp"
-    ["plane.test"]="$TEST_DIR/plane.test.cpp"
-    ["ray.test"]="$TEST_DIR/ray.test.cpp"
-    ["rectangle.test"]="$TEST_DIR/rectangle.test.cpp"
-    ["shape.test"]="$TEST_DIR/shape.test.cpp"
-    ["sphere.test"]="$TEST_DIR/sphere.test.cpp"
-    ["video.test"]="$TEST_DIR/video.test.cpp"
-    ["edge.test"]="$TEST_DIR/edge.test.cpp"
-)
+# Check for debug flag
+if [[ "$1" == "--debug" || "$2" == "--debug" ]]; then
+    DEBUG_MODE=true
+    # Remove debug flag from arguments
+    set -- "${@/--debug}"
+fi
+
+# Function to discover test files automatically
+discover_tests() {
+    declare -g -A TESTS
+    
+    # Find all .test.cpp files in the test directory
+    while IFS= read -r -d '' test_file; do
+        # Extract filename without path and extension
+        local filename=$(basename "$test_file" .cpp)
+        TESTS["$filename"]="$test_file"
+    done < <(find "$TEST_DIR" -name "*.test.cpp" -type f -print0)
+    
+    # Sort the test names for consistent output
+    local sorted_tests=($(printf '%s\n' "${!TESTS[@]}" | sort))
+    
+    # Print discovered tests
+    echo "Discovered tests:"
+    for test in "${sorted_tests[@]}"; do
+        echo "  - $test"
+    done
+    echo
+}
 
 # Function to print colored output
 print_status() {
@@ -51,6 +63,12 @@ print_header() {
     echo "=========================================="
 }
 
+# Function to get all library files
+get_all_lib_files() {
+    # Find all .cpp files in the Lib directory recursively
+    find Lib -name "*.cpp" -type f | sort | tr '\n' ' ' | sed 's/^ *//;s/ *$//'
+}
+
 # Function to compile a test
 compile_test() {
     local test_name=$1
@@ -59,8 +77,15 @@ compile_test() {
     
     print_status $YELLOW "Compiling $test_name..."
     
-    # Library source files that need to be linked
-    local lib_files="Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp Lib/Rendering/Image.cpp Lib/Rendering/Video.cpp Lib/Geometry/Sphere.cpp Lib/Geometry/Box.cpp Lib/Geometry/Circle.cpp Lib/Geometry/Plane.cpp Lib/Geometry/Ray.cpp Lib/Geometry/Rectangle.cpp Lib/Geometry/Edge.cpp"
+    # Get all library files
+    local lib_files=$(get_all_lib_files)
+    
+    # Show which libraries are being linked (for debugging)
+    if [[ "$DEBUG_MODE" == "true" ]]; then
+        echo "  Using all library files: $lib_files"
+    else
+        echo "  Linking with all Lib/*.cpp files"
+    fi
     
     if $CXX_COMPILER $CXX_FLAGS -o "$executable" "$source_file" $lib_files; then
         print_status $GREEN "✓ $test_name compiled successfully"
@@ -108,6 +133,9 @@ clean_tests() {
 compile_all_tests() {
     print_header "Compiling All Tests"
     
+    # Discover tests automatically
+    discover_tests
+    
     # Create executable directory if it doesn't exist
     mkdir -p "$EXECUTABLE_DIR"
     
@@ -136,6 +164,11 @@ compile_all_tests() {
 # Function to run all tests
 run_all_tests() {
     print_header "Running All Tests"
+    
+    # Discover tests if not already done
+    if [ ${#TESTS[@]} -eq 0 ]; then
+        discover_tests
+    fi
     
     local passed=0
     local failed=0
@@ -168,17 +201,22 @@ run_all_tests() {
 
 # Function to show usage
 show_usage() {
-    echo "Usage: $0 [OPTION]"
+    echo "Usage: $0 [--debug] [OPTION]"
     echo
     echo "Options:"
     echo "  compile, -c     Compile all tests only"
     echo "  run, -r         Run all tests (assumes already compiled)"
     echo "  clean           Clean all test executables"
     echo "  help, -h        Show this help message"
+    echo "  --debug         Enable verbose dependency detection output"
     echo "  (no option)     Compile and run all tests (default)"
     echo
     echo "Individual test commands:"
-    for test_name in "${!TESTS[@]}"; do
+    
+    # Discover tests to show available options
+    discover_tests > /dev/null 2>&1  # Suppress discovery output in usage
+    local sorted_tests=($(printf '%s\n' "${!TESTS[@]}" | sort))
+    for test_name in "${sorted_tests[@]}"; do
         echo "  $test_name      Compile and run only $test_name"
     done
 }
@@ -186,6 +224,9 @@ show_usage() {
 # Function to run individual test
 run_individual_test() {
     local test_name=$1
+    
+    # Discover tests first
+    discover_tests > /dev/null 2>&1  # Suppress discovery output
     
     if [[ ! "${!TESTS[@]}" =~ "$test_name" ]]; then
         print_status $RED "✗ Unknown test: $test_name"
@@ -240,6 +281,9 @@ main() {
             ;;
         *)
             # Check if it's an individual test name
+            # First discover tests to check if the argument is valid
+            discover_tests > /dev/null 2>&1  # Suppress discovery output
+            
             if [[ "${!TESTS[@]}" =~ "$1" ]]; then
                 run_individual_test "$1"
             else

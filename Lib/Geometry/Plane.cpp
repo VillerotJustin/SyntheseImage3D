@@ -76,4 +76,25 @@ void Plane::getPlaneEquation(double& a, double& b, double& c, double& d) const {
     d = -normal.dot(origin);
 }
 
+bool Plane::rayIntersect(const Ray& ray) const {
+    // Get ray properties
+    Vector3D rayDir = ray.getDirection();
+    Vector3D rayOrigin = ray.getOrigin();
+    
+    // Check if ray is parallel to the plane
+    double denominator = rayDir.dot(normal);
+    if (std::abs(denominator) < 1e-9) {
+        // Ray is parallel to the plane
+        // Check if ray origin is on the plane
+        return containsPoint(rayOrigin);
+    }
+    
+    // Calculate intersection parameter t
+    Vector3D toOrigin = origin - rayOrigin;
+    double t = toOrigin.dot(normal) / denominator;
+    
+    // Ray intersects plane if t >= 0 (intersection is in front of ray origin)
+    return t >= 0;
+}
+
 } // namespace geometry
