@@ -121,6 +121,11 @@ namespace rendering {
          */
         void setRGBA(double red, double green, double blue, double alpha = 1.0);
 
+        /**
+         * @brief Invert the color (1.0 - component) for RGB, alpha remains unchanged.
+         */
+        void invert();
+
         // === Color-Specific Operations ===
 
         /**

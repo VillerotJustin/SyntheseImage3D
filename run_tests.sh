@@ -24,6 +24,7 @@ declare -A TESTS=(
     ["quaternion_test"]="$TEST_DIR/quaternion_test.cpp"
     ["rgba_color_test"]="$TEST_DIR/rgba_color_test.cpp"
     ["matrix_test"]="$TEST_DIR/matrix_test.cpp"
+    ["image_test"]="$TEST_DIR/image_test.cpp"
 )
 
 # Function to print colored output
@@ -50,7 +51,7 @@ compile_test() {
     print_status $YELLOW "Compiling $test_name..."
     
     # Library source files that need to be linked
-    local lib_files="Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp"
+    local lib_files="Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp Lib/Rendering/Image.cpp"
     
     if $CXX_COMPILER $CXX_FLAGS -o "$executable" "$source_file" $lib_files; then
         print_status $GREEN "✓ $test_name compiled successfully"

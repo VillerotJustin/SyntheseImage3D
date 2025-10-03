@@ -346,6 +346,47 @@ Quaternion fromVectors = Quaternion::fromVectorToVector(
 );
 ```
 
+### Image Processing Operations
+
+```cpp
+#include "Lib/Rendering/Image.h"
+#include "Lib/Rendering/RGBA_Color.h"
+using namespace rendering;
+
+// Create and manipulate images
+Image img(200, 150);  // 200x150 pixel image
+
+// Fill with a color
+RGBA_Color purple(0.8, 0.2, 0.6, 1.0);
+img.fill(purple);
+
+// Set individual pixels
+img.setPixel(100, 75, RGBA_Color::white());
+img.setPixel(50, 50, RGBA_Color::red());
+
+// Get pixel information
+const RGBA_Color* pixel = img.getPixel(100, 75);
+std::cout << "Red: " << pixel->r() << std::endl;
+
+// Create gradient pattern
+for (int y = 0; y < img.getHeight(); ++y) {
+    for (int x = 0; x < img.getWidth(); ++x) {
+        double r = static_cast<double>(x) / img.getWidth();
+        double g = static_cast<double>(y) / img.getHeight();
+        img.setPixel(x, y, RGBA_Color(r, g, 0.5, 1.0));
+    }
+}
+
+// Image transformations
+Image originalImg = img.copy();  // Create backup
+img.toGrayscale();              // Convert to grayscale
+img.toBlackAndWhite(0.5);       // Black & white with 50% threshold
+img.invertColors();             // Invert all colors
+
+// Save to bitmap file
+img.toBitmapFile("output.bmp", "images/");  // Saves to images/output.bmp
+```
+
 ## 🧪 Testing
 
 The project includes comprehensive test suites for all components with multiple execution methods.
@@ -358,6 +399,7 @@ The project includes comprehensive test suites for all components with multiple 
 | `quaternion_test.cpp` | Quaternion rotations | Mathematical operations, interpolation, conversions |
 | `rgba_color_test.cpp` | Color manipulation | Blending, interpolation, utility functions |
 | `matrix_test.cpp` | Template Matrix<T> | Pointer management, matrix operations |
+| `image_test.cpp` | Image processing & bitmap output | Pixel operations, transformations, file export |
 
 > **📋 For detailed testing documentation, see [`./test/README.md`](./test/README.md)**
 
@@ -506,8 +548,9 @@ The project includes comprehensive test suites for all components with multiple 
 
 #### Component Access
 
-- `double red(), green(), blue(), alpha() const` - Get color components
-- `void setRed(double), setGreen(double), setBlue(double), setAlpha(double)` - Set components
+- `double r(), g(), b(), a() const` - Get color components (red, green, blue, alpha)
+- `void setR(double), setG(double), setB(double), setA(double)` - Set individual components
+- `void setRGBA(double r, double g, double b, double a = 1.0)` - Set all components at once
 
 #### Operators
 
@@ -521,23 +564,16 @@ The project includes comprehensive test suites for all components with multiple 
 #### Color Operations
 
 - `RGBA_Color lerp(const RGBA_Color& other, double t) const` - Linear interpolation between colors
-- `RGBA_Color blend(const RGBA_Color& other) const` - Alpha blending
+- `RGBA_Color alphaBlend(const RGBA_Color& background) const` - Alpha blending with background
 - `RGBA_Color clamp() const` - Clamp components to [0.0, 1.0] range
-- `double luminance() const` - Calculate color luminance
-- `RGBA_Color grayscale() const` - Convert to grayscale
+- `RGBA_Color toGrayscale(double rw = 0.299, double gw = 0.587, double bw = 0.114) const` - Convert to grayscale
+- `void invert()` - Invert color components (in-place)
 
-#### Utility Methods
+#### Static Color Factory Methods
 
-- `math::Vector<double> toVector() const` - Convert to 4-element vector
-- `bool isValid() const` - Check if all components are in valid range
-- `std::string toString() const` - String representation
-
-#### Static Color Constants
-
-- `static RGBA_Color red(), green(), blue()` - Primary colors
 - `static RGBA_Color black(), white()` - Monochrome colors
+- `static RGBA_Color red(), green(), blue()` - Primary colors  
 - `static RGBA_Color transparent()` - Fully transparent color
-- `static RGBA_Color cyan(), magenta(), yellow()` - Secondary colors
 
 ### Image Class (rendering namespace)
 
@@ -545,31 +581,37 @@ The project includes comprehensive test suites for all components with multiple 
 
 - `Image(int width, int height)` - Create image with dimensions (initialized to black)
 - `Image(const math::Matrix<RGBA_Color>& colorMatrix)` - Create from color matrix
+- `Image(const Image& other)` - Copy constructor (deep copy)
 
 #### Dimension Access
 
 - `int getWidth() const` - Get image width
 - `int getHeight() const` - Get image height
-- `int size() const` - Get total pixel count
+- `int getNumPixels() const` - Get total pixel count
+- `bool isValid() const` - Check if image has valid dimensions and non-null pixels
 
 #### Pixel Operations
 
-- `RGBA_Color& getPixel(int x, int y)` - Get pixel at coordinates
-- `const RGBA_Color& getPixel(int x, int y) const` - Get pixel (const version)
+- `const RGBA_Color* getPixel(int x, int y) const` - Get pixel pointer at coordinates
 - `void setPixel(int x, int y, const RGBA_Color& color)` - Set pixel color
-- `bool isValidCoordinate(int x, int y) const` - Check if coordinates are valid
+- `const math::Matrix<RGBA_Color>& getPixelMatrix() const` - Get internal pixel matrix
 
 #### Image Processing
 
 - `void fill(const RGBA_Color& color)` - Fill entire image with color
-- `Image resize(int newWidth, int newHeight) const` - Create resized copy
-- `Image crop(int x, int y, int width, int height) const` - Create cropped copy
-- `void applyColorMatrix(const math::Matrix<double>& transform)` - Apply color transformation
+- `void clear()` - Clear image (set all pixels to black)
+- `void toGrayscale()` - Convert entire image to grayscale (in-place)
+- `void toBlackAndWhite(double threshold = 0.5)` - Convert to black & white with threshold
+- `void invertColors()` - Invert all colors in the image (in-place)
+
+#### File Operations
+
+- `void toBitmapFile(const std::string& filename, const std::string& filePath = "./") const` - Export to BMP file format
 
 #### Utility Methods
 
-- `math::Matrix<RGBA_Color> toMatrix() const` - Convert to color matrix
-- `void clear()` - Clear image (set all pixels to transparent)
+- `Image copy() const` - Create a deep copy of the image
+- `Image& operator=(const Image& other)` - Assignment operator (deep copy)
 
 ### Mathematical Utilities (math namespace)
 

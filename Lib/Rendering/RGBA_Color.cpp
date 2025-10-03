@@ -114,6 +114,10 @@ namespace rendering {
         components[3] = new double(alpha);
     }
 
+    void RGBA_Color::invert() {
+        setRGBA(1.0 - r(), 1.0 - g(), 1.0 - b(), a());
+    }
+
     // Color-specific operations
     RGBA_Color RGBA_Color::operator+(const RGBA_Color& other) const {
         return RGBA_Color(
