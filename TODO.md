@@ -11,7 +11,9 @@
 - [ ]  Add to Rendering Lib
   - [X] Video
   - [ ] Implement World
-  - [ ] Fix camera OthorRender Overlap
+  - [ ] Fix camera OthorRender Overlap Better
+  - [ ] Add focal point camera
+    - [ ] 3d Rendering  
 - [ ] Make Physics Lib
   - [X] Ray
   - [ ] Colision
