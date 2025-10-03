@@ -1,146 +1,304 @@
 
 # SyntheseImage3D
 
-A C++ mathematical library for 3D computer graphics and image synthesis, providing essential mathematical structures and operations for 3D rendering, computer vision, and geometric computations.
+A comprehensive C++ library for 3D computer graphics and image synthesis, providing essential mathematical structures and operations for 3D rendering, computer vision, and geometric computations.
 
 ## 📋 Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
-- [Library Components](#library-components)
-- [Installation](#installation)
+- [Library Architecture](#library-architecture)
+- [Quick Start](#quick-start)
+- [Building and Testing](#building-and-testing)
 - [Usage Examples](#usage-examples)
-- [Testing](#testing)
 - [API Reference](#api-reference)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## 🎯 Overview
 
-This project provides a comprehensive set of mathematical utilities specifically designed for 3D graphics programming. The library includes optimized implementations of vectors, matrices, quaternions, and image processing utilities that are commonly needed in computer graphics, game development, and computer vision applications.
+SyntheseImage3D is a modern C++ library that provides a comprehensive set of mathematical utilities specifically designed for 3D graphics programming, computer vision, and geometric computations. The library features a well-organized architecture with separate namespaces for different domains and template-based implementations for maximum flexibility and performance.
 
 ### Key Design Principles
 
-- **Template-based**: Generic implementations that work with different numeric types
+- **Modular Architecture**: Organized into logical namespaces (`math`, `geometry`, `rendering`)
+- **Template-based Design**: Generic implementations with pointer management for complex data structures
 - **Performance-oriented**: Optimized for real-time graphics applications
-- **Header-only templates**: Easy integration into existing projects
-- **Comprehensive testing**: Extensive test suite ensuring reliability
-- **Modern C++**: Uses C++11 features for better performance and safety
+- **Memory Safety**: Proper RAII and smart pointer usage patterns
+- **Comprehensive Testing**: Extensive test suite with multiple execution methods
+- **Modern C++17**: Leverages modern C++ features for better performance and safety
 
 ## ✨ Features
 
 ### Mathematical Structures
-- **Vector**: N-dimensional vector operations with SIMD optimization potential
-- **Vector3**: Specialized 3D vector class with cross product, angle calculations
-- **Matrix**: Template-based matrix class for linear algebra operations
-- **Quaternion**: Quaternion operations for 3D rotations
-- **Image**: Image processing and manipulation utilities
 
-### Operations Supported
-- Vector arithmetic (addition, subtraction, scalar multiplication)
-- Matrix operations (multiplication, transpose, determinant)
-- Quaternion rotations and interpolation
-- Dot and cross products
-- Distance and angle calculations
-- Normalization and orthogonalization
+- **Vector Template**: Generic N-dimensional pointer-based container for mathematical objects
+- **Vector3D**: Specialized 3D vector class with geometric operations (dot product, cross product, normalization)
+- **Matrix Template**: Template-based matrix class for linear algebra operations with pointer management
+- **Quaternion**: Complete quaternion implementation for 3D rotations with interpolation (SLERP, NLERP)
+- **RGBA_Color**: Color manipulation class with blending, interpolation, and utility functions
+- **Image**: Advanced image processing and manipulation utilities
 
-## 📚 Library Components
+### Supported Operations
 
-### Core Math (`Lib/Math`)
+- **Vector Operations**: Addition, subtraction, scalar multiplication, normalization, distance calculations
+- **Matrix Operations**: Transpose, element access, memory management
+- **Quaternion Operations**: Rotation composition, axis-angle conversion, interpolation
+- **Geometric Calculations**: Dot/cross products, angles, distances, rotations
+- **Color Operations**: Blending, interpolation, grayscale conversion, clamping
+- **Image Processing**: Pixel manipulation, color matrix operations
+
+## 🏗️ Library Architecture
+
+### Namespace Organization
+
+```cpp
+math::           // Core mathematical utilities
+├── Vector<T>    // Template pointer-based vector container
+├── Matrix<T>    // Template pointer-based matrix container
+└── math_common  // Mathematical constants and utility functions
+
+geometry::       // 3D geometry and spatial operations
+├── Vector3D     // 3D vector with geometric operations
+└── Quaternion   // 3D rotation quaternions
+
+rendering::      // Graphics and image processing
+├── RGBA_Color   // Color representation and operations
+├── Image        // Image processing and manipulation
+└── Colors::     // Predefined color constants
+```
+
+### Directory Structure
 
 ```
-Lib/Math
-├── math_common.h     # Common mathematical constants and utilities
-├── Vector.h/.cpp     # N-dimensional vector implementation
-├── Vector3.h/.cpp    # Specialized 3D vector class
-├── Matrix.h          # Template matrix class (header-only)
-├── Quaternion.h/.cpp # Quaternion implementation
+SyntheseImage3D/
+├── Lib/
+│   ├── Math/           # Core mathematical templates
+│   │   ├── Vector.hpp  # Template vector container (pointer-based)
+│   │   ├── Matrix.hpp  # Template matrix container (pointer-based)
+│   │   └── math_common.h # Mathematical constants and utilities
+│   ├── Geometry/       # 3D geometry classes (value-based)
+│   │   ├── Vector3D.h/.cpp    # 3D vector implementation
+│   │   └── Quaternion.h/.cpp  # Quaternion implementation
+│   └── Rendering/      # Graphics and imaging
+│       ├── RGBA_Color.h/.cpp  # Color class
+│       └── Image.h/.cpp       # Image processing
+├── test/               # Comprehensive test suite
+│   ├── vector_test.cpp     # Tests Vector<T> and Vector3D
+│   ├── quaternion_test.cpp # Tests quaternion operations
+│   ├── rgba_color_test.cpp # Tests color manipulation
+│   ├── matrix_test.cpp     # Tests Matrix<T> template
+│   ├── run_tests.sh        # Comprehensive test runner
+│   ├── simple_test_runner.sh # Alternative test runner
+│   ├── Makefile.tests      # Test compilation makefile
+│   ├── Executables/        # Compiled test binaries
+│   └── README.md           # Testing documentation
+├── src/                # Example applications
+├── Debug/              # Debug utilities
+│   ├── debug_quaternion    # Quaternion debugging tool
+│   └── debug_quaternion.cpp
+└── SConstruct          # SCons build configuration
 ```
 
-### Core Math (`Lib/Rendering`)
+## 🚀 Quick Start
 
-```
-Lib/Rendering
-├── 
+### Prerequisites
+
+- C++17 compatible compiler (GCC, Clang, MSVC)
+- Make (optional, for using Makefile)
+
+### Basic Usage
+
+```cpp
+#include "Lib/Geometry/Vector3D.h"
+#include "Lib/Geometry/Quaternion.h"
+#include "Lib/Rendering/RGBA_Color.h"
+
+using namespace geometry;
+using namespace rendering;
+
+int main() {
+    // 3D vector operations
+    Vector3D v1(1.0, 0.0, 0.0);
+    Vector3D v2(0.0, 1.0, 0.0);
+    Vector3D cross = v1.cross(v2);  // Result: (0, 0, 1)
+    
+    // Quaternion rotations
+    Quaternion q(Vector3D(0, 0, 1), math::pi / 2);  // 90° around Z-axis
+    Vector3D rotated = q * v1;  // Rotate v1 by quaternion
+    
+    // Color operations
+    RGBA_Color red = Colors::red();
+    RGBA_Color blue = Colors::blue();
+    RGBA_Color purple = red.lerp(blue, 0.5);  // Interpolate colors
+    
+    return 0;
+}
 ```
 
-### Tests (`test/`)
+## 🔧 Building and Testing
 
+### Automated Testing (Recommended)
+
+The project includes comprehensive automated testing with multiple execution methods:
+
+```bash
+# Run all tests (compile + execute)
+./run_tests.sh
+
+# Or use the simple test runner
+./simple_test_runner.sh
+
+# Run individual tests
+./run_tests.sh vector_test
+./run_tests.sh quaternion_test
+./run_tests.sh rgba_color_test
+./run_tests.sh matrix_test
+
+# Compilation only
+./run_tests.sh compile
 ```
-test/
-├── matrix_test.cpp     # Matrix class comprehensive tests
-├── vector_test.cpp     # Vector and Vector3 tests
-├── quaternion_test.cpp # Quaternion tests
-└── Executables/        # Compiled test binaries
+
+### Using Makefile
+
+```bash
+# Run all tests
+make -f Makefile.tests
+
+# Compile only
+make -f Makefile.tests compile
+
+# Run individual tests
+make -f Makefile.tests run-vector
+make -f Makefile.tests run-quaternion
+```
+
+### Manual Compilation
+
+```bash
+# Define library sources
+LIB_SOURCES="Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp"
+
+# Compile with library linking
+g++ -std=c++17 -Wall -Wextra -g your_program.cpp $LIB_SOURCES -o your_program
+```
+
+### Building with SCons (Project Build System)
+
+```bash
+# Build the entire project
+scons -j 6 platform=linuxbsd dev_build=yes
 ```
 
 ## 🚀 Installation
 
 ### Prerequisites
 
-- C++ compiler with C++11 support (GCC 4.8+, Clang 3.4+, MSVC 2015+)
-- CMake 3.10+ (optional, for build system integration)
+- C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
+- Make (optional, for using test Makefiles)
+- SCons (optional, for main project builds)
 
 ### Quick Start
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/VillerotJustin/SyntheseImage3D.git
    cd SyntheseImage3D
    ```
 
 2. **Include in your project**
+
    ```cpp
-   #include "Lib/Vector3.h"
-   #include "Lib/Matrix.h"
-   #include "Lib/Quaternion.h"
+   #include "Lib/Geometry/Vector3D.h"
+   #include "Lib/Geometry/Quaternion.h"
+   #include "Lib/Math/Vector.hpp"
+   #include "Lib/Math/Matrix.hpp"
+   #include "Lib/Rendering/RGBA_Color.h"
    
-   using namespace math;
+   using namespace geometry;  // For Vector3D, Quaternion
+   using namespace math;      // For Vector<T>, Matrix<T>
+   using namespace rendering; // For RGBA_Color
    ```
 
 3. **Compile with your project**
+
    ```bash
-   g++ -std=c++11 -I./Lib your_project.cpp Lib/Vector.cpp Lib/Vector3.cpp
+   # For geometry classes (requires linking)
+   g++ -std=c++17 -I. your_project.cpp \
+       Lib/Geometry/Vector3D.cpp \
+       Lib/Geometry/Quaternion.cpp \
+       Lib/Rendering/RGBA_Color.cpp
+   
+   # For template classes only (header-only)
+   g++ -std=c++17 -I. your_project.cpp
    ```
 
 ## 📖 Usage Examples
 
-### Vector Operations
+### Vector3D Operations
 
 ```cpp
-#include "Lib/Vector3.h"
-using namespace math;
+#include "Lib/Geometry/Vector3D.h"
+using namespace geometry;
 
 // Create vectors
-Vector3 v1(1.0, 2.0, 3.0);
-Vector3 v2(4.0, 5.0, 6.0);
+Vector3D v1(1.0, 2.0, 3.0);
+Vector3D v2(4.0, 5.0, 6.0);
 
 // Basic operations
-Vector3 sum = v1 + v2;           // Addition
-Vector3 diff = v2 - v1;          // Subtraction
-Vector3 scaled = v1 * 2.0;       // Scalar multiplication
+Vector3D sum = v1 + v2;           // Addition
+Vector3D diff = v2 - v1;          // Subtraction
+Vector3D scaled = v1 * 2.0;       // Scalar multiplication
 
 // Vector-specific operations
 double dot_product = v1.dot(v2);         // Dot product
-Vector3 cross_product = v1.cross(v2);    // Cross product
+Vector3D cross_product = v1.cross(v2);   // Cross product
 double angle = v1.angle(v2);             // Angle between vectors
-Vector3 normalized = v1.normal();        // Normalized vector
+Vector3D normalized = v1.normal();       // Normalized vector
 
 // Length and distance
 double length = v1.length();
 double distance = v1.distance(v2);
 ```
 
+### Template Vector<T> Operations
+
+```cpp
+#include "Lib/Math/Vector.hpp"
+using namespace math;
+
+// Create a vector container (pointer-based)
+Vector<double> vec(5);  // 5-element vector
+
+// Set values through pointer allocation
+*vec[0] = 1.0;
+*vec[1] = 2.0;
+*vec[2] = 3.0;
+
+// Vector operations
+Vector<double> vec2(5);
+*vec2[0] = 4.0; *vec2[1] = 5.0; *vec2[2] = 6.0;
+
+bool equal = (vec == vec2);              // Equality check
+Vector<double> sum = vec + vec2;         // Element-wise addition
+Vector<double> scaled = vec * 2.0;       // Scalar multiplication
+
+// Clean up memory
+vec.clear();
+vec2.clear();
+```
+
 ### Matrix Operations
 
 ```cpp
-#include "Lib/Matrix.h"
+#include "Lib/Math/Matrix.hpp"
 using namespace math;
 
 // Create a 3x3 matrix of double pointers
 Matrix<double> matrix(3, 3);
 
-// Set values
+// Set values through pointer allocation
 matrix(0, 0) = new double(1.0);
 matrix(0, 1) = new double(2.0);
 matrix(1, 0) = new double(3.0);
@@ -190,111 +348,135 @@ Quaternion fromVectors = Quaternion::fromVectorToVector(
 
 ## 🧪 Testing
 
-The project includes comprehensive test suites for all components.
+The project includes comprehensive test suites for all components with multiple execution methods.
 
-### Running All Tests
+### Test Files Overview
 
-```bash
-# Compile and run Matrix tests
-g++ -std=c++11 -I. -o test/Executables/matrix_test test/matrix_test.cpp
-./test/Executables/matrix_test
+| Test File | Coverage | Components Tested |
+|-----------|----------|-------------------|
+| `vector_test.cpp` | Template Vector<T> & Vector3D | Pointer containers, 3D geometry operations |
+| `quaternion_test.cpp` | Quaternion rotations | Mathematical operations, interpolation, conversions |
+| `rgba_color_test.cpp` | Color manipulation | Blending, interpolation, utility functions |
+| `matrix_test.cpp` | Template Matrix<T> | Pointer management, matrix operations |
 
-# Compile and run Vector tests
-g++ -std=c++11 -I. -o test/Executables/vector_test test/vector_test.cpp Lib/Vector.cpp Lib/Vector3.cpp
-./test/Executables/vector_test
+> **📋 For detailed testing documentation, see [`./test/README.md`](./test/README.md)**
 
-# Compile and run Quaternion tests
-g++ -std=c++11 -I. -o test/Executables/quaternion_test test/quaternion_test.cpp Lib/Quaternion.cpp Lib/Vector.cpp Lib/Vector3.cpp
-./test/Executables/quaternion_test
-```
+## 📖 API Reference
 
-### Expected Test Output
+### Template Vector\<T> Class (math namespace)
 
-#### Matrix Tests
-```
-Testing Matrix<TestObject> template class:
+#### Constructors
 
-1. Initial matrix (should be all nullptr):
-nullptr nullptr nullptr
-nullptr nullptr nullptr
+- `Vector(int size)` - Create vector container of specified size (all pointers nullptr)
+- `Vector(const Vector& other)` - Copy constructor (deep copy of pointers)
 
-2. Matrix after setting some values:
-[memory addresses displayed]
+#### Operators
 
-3. Copied matrix:
-[memory addresses displayed]
+- `bool operator==(const Vector& other)` - Equality comparison (pointer-wise)
+- `bool operator!=(const Vector& other)` - Inequality comparison
+- `Vector operator+(const Vector& other)` - Element-wise addition
+- `Vector operator-(const Vector& other)` - Element-wise subtraction
+- `Vector operator*(double scalar)` - Scalar multiplication
+- `T*& operator[](int index)` - Access pointer at index
 
-4. Transposed matrix (3x2):
-[memory addresses displayed]
+#### Methods
 
-Matrix dimensions: 2x3
-Test completed successfully!
-```
+- `int size() const` - Get number of elements
+- `void clear()` - Set all pointers to nullptr
+- `bool empty() const` - Check if vector is empty
 
-#### Vector Tests
-```
-=== Vector and Vector3 Test Suite ===
-✓ Vector constructors test passed
-✓ Vector operators test passed
-✓ Vector methods test passed
-✓ Vector3 constructors test passed
-✓ Vector3 methods test passed
-✓ Vector3 operations test passed
-✓ Error handling test passed
+### Vector3D Class (geometry namespace)
 
-🎉 All tests passed successfully!
-```
+#### Constructors
 
-#### Quaternion Tests
-```
-=== Quaternion Test Suite ===
-✓ Quaternion constructors test passed
-✓ Quaternion accessors test passed
-✓ Quaternion operators test passed
-✓ Quaternion methods test passed
-✓ Quaternion rotations test passed
-✓ Quaternion interpolation test passed
-✓ Quaternion conversions test passed
-✓ Quaternion static methods test passed
-✓ Quaternion error handling test passed
+- `Vector3D()` - Default constructor (0, 0, 0)
+- `Vector3D(double x, double y, double z)` - Component constructor
+- `Vector3D(const Vector3D& other)` - Copy constructor
 
-🎉 All quaternion tests passed successfully!
-```
+#### Component Access
 
-### Quaternion Class
+- `double x(), y(), z() const` - Get components
+- `void setX(double), setY(double), setZ(double)` - Set components
 
-The `Quaternion` class extends `Vector` to provide complete quaternion operations for 3D rotations.
+#### Operators
+
+- `Vector3D operator+(const Vector3D& other)` - Vector addition
+- `Vector3D operator-(const Vector3D& other)` - Vector subtraction
+- `Vector3D operator*(double scalar)` - Scalar multiplication
+- `bool operator==(const Vector3D& other)` - Equality comparison
+
+#### Methods
+
+- `Vector3D cross(const Vector3D& other) const` - Cross product
+- `double dot(const Vector3D& other) const` - Dot product
+- `double angle(const Vector3D& other) const` - Angle between vectors
+- `Vector3D normal() const` - Return normalized vector
+- `void normalize()` - Normalize in place
+- `double length() const` - Vector magnitude
+- `double distance(const Vector3D& other) const` - Distance to other vector
+- `bool parallel(const Vector3D& other) const` - Check if parallel
+
+#### Static Constants
+
+- `Vector3D::ZERO` - (0, 0, 0)
+- `Vector3D::UNIT_X` - (1, 0, 0)
+- `Vector3D::UNIT_Y` - (0, 1, 0)
+- `Vector3D::UNIT_Z` - (0, 0, 1)
+
+### Template Matrix\<T> Class (math namespace)
+
+#### Constructors
+
+- `Matrix(int rows, int cols)` - Create matrix with dimensions
+- `Matrix(T*** array, int rows, int cols)` - Create from 2D array
+- `Matrix()` - Default 1x1 matrix
+
+#### Methods
+
+- `T*& operator()(int x, int y)` - Element access
+- `Matrix transpose()` - Return transposed matrix
+- `void clear()` - Set all elements to nullptr
+- `int getRows(), getCols()` - Dimension accessors
+- `void swapRows(int r1, int r2)` - Swap matrix rows
+
+### Quaternion Class (geometry namespace)
 
 #### Constructors
 
 - `Quaternion()` - Default constructor (identity quaternion: w=1, x=0, y=0, z=0)
 - `Quaternion(double w, double x, double y, double z)` - Component constructor
-- `Quaternion(double angle, const Vector3& axis)` - Axis-angle constructor
-- `Quaternion(const Vector3& from, const Vector3& to)` - Rotation between vectors
+- `Quaternion(double angle, const Vector3D& axis)` - Axis-angle constructor
+- `Quaternion(const Vector3D& from, const Vector3D& to)` - Rotation between vectors
 
 #### Component Access
 
-- `double w(), x(), y(), z()` - Get quaternion components
-- `Vector3 vector()` - Get vector part (x, y, z)
-- `double scalar()` - Get scalar part (w)
+- `double w(), x(), y(), z() const` - Get quaternion components
+- `Vector3D vector() const` - Get vector part (x, y, z)
+- `double scalar() const` - Get scalar part (w)
 
-#### Quaternion Operations
+#### Operators
 
-- `Quaternion operator*(const Quaternion& other)` - Hamilton product
+- `Quaternion operator*(const Quaternion& other) const` - Hamilton product (quaternion composition)
 - `Quaternion& operator*=(const Quaternion& other)` - In-place multiplication
-- `bool operator==(const Quaternion& other)` - Equality comparison (with epsilon)
-- `Quaternion conjugate()` - Get conjugate quaternion
-- `double norm()` - Get quaternion magnitude
-- `Quaternion normalize()` - Get normalized quaternion
+- `Vector3D operator*(const Vector3D& v) const` - Rotate vector by quaternion
+- `bool operator==(const Quaternion& other) const` - Equality comparison (with epsilon tolerance)
+- `bool operator!=(const Quaternion& other) const` - Inequality comparison
+
+#### Mathematical Operations
+
+- `Quaternion conjugate() const` - Get conjugate quaternion
+- `double norm() const` - Get quaternion magnitude
+- `Quaternion normalize() const` - Get normalized quaternion
 - `Quaternion& normalize_()` - Normalize in-place
-- `bool isUnit()` - Check if quaternion is unit length
+- `Quaternion inverse() const` - Get inverse quaternion
+- `bool isUnit() const` - Check if quaternion is unit length
 
 #### Rotation Operations
 
-- `Vector3 rotate(const Vector3& v)` - Rotate vector by quaternion
-- `Vector3 getAxis()` - Get rotation axis
-- `double getAngle()` - Get rotation angle
-- `double angleTo(const Quaternion& other)` - Angle between quaternions
+- `Vector3D getAxis() const` - Get rotation axis
+- `double getAngle() const` - Get rotation angle in radians
+- `double angleTo(const Quaternion& other) const` - Angle between quaternions
+- `void toAxisAngle(Vector3D& axis, double& angle) const` - Extract axis-angle representation
 
 #### Interpolation
 
@@ -302,87 +484,103 @@ The `Quaternion` class extends `Vector` to provide complete quaternion operation
 - `static Quaternion nlerp(const Quaternion& q1, const Quaternion& q2, double t)` - Normalized linear interpolation
 - `static Quaternion slerpShortest(const Quaternion& q1, const Quaternion& q2, double t)` - SLERP via shortest path
 
-#### Matrix Conversion
+#### Conversion Methods
 
-- `Matrix<double> toRotationMatrix()` - Convert to 3x3 rotation matrix
-- `static Quaternion fromRotationMatrix(const Matrix<double>& m)` - Create from rotation matrix
+- `math::Matrix<double> toRotationMatrix3x3() const` - Convert to 3x3 rotation matrix
+- `static Quaternion fromRotationMatrix(const math::Matrix<double>& m)` - Create from rotation matrix
+- `static Quaternion fromEulerAngles(double roll, double pitch, double yaw)` - Create from Euler angles
+- `static Quaternion fromVectorToVector(const Vector3D& from, const Vector3D& to)` - Create rotation between vectors
 
-#### Static Constants
+#### Static Methods
 
-- `Quaternion::IDENTITY` - Identity quaternion (1, 0, 0, 0)
+- `static Quaternion identity()` - Get identity quaternion
+- `static Quaternion lookRotation(const Vector3D& forward, const Vector3D& up)` - Create look-at rotation
 
-### Matrix&lt;T&gt; Class
-```
-
-## 📖 API Reference
-
-### Vector Class
+### RGBA_Color Class (rendering namespace)
 
 #### Constructors
-- `Vector(int size)` - Create vector of specified size with all elements initialized to 0.0
-- `Vector(int size, double value)` - Create vector of specified size with all elements initialized to given value
-- `Vector(std::vector<double> data)` - Create vector from std::vector of doubles
+
+- `RGBA_Color()` - Default constructor (transparent black: 0, 0, 0, 0)
+- `RGBA_Color(double r, double g, double b, double a = 1.0)` - Component constructor
+- `RGBA_Color(const math::Vector<double>& v)` - Create from 4-element vector
+
+#### Component Access
+
+- `double red(), green(), blue(), alpha() const` - Get color components
+- `void setRed(double), setGreen(double), setBlue(double), setAlpha(double)` - Set components
 
 #### Operators
-- `bool operator==(const Vector& other)` - Equality comparison (element-wise)
-- `bool operator!=(const Vector& other)` - Inequality comparison (element-wise)
-- `Vector operator+(const Vector& other)` - Element-wise addition
-- `Vector operator-(const Vector& other)` - Element-wise subtraction
-- `Vector operator*(double scalar)` - Scalar multiplication
-- `friend std::ostream& operator<<(std::ostream& os, const Vector& v)` - Output stream operator
 
-#### Methods
-- `double at(int index)` - Access element at index with bounds checking
-- `int size()` - Get the number of elements in the vector
-- `bool zero()` - Check if all elements are zero
-- `Vector normal()` - Return normalized vector (unit length)
-- `double dot(const Vector& other)` - Calculate dot product with another vector
-- `double length()` - Calculate vector magnitude/length
-- `double squared_length()` - Calculate squared length (more efficient, no sqrt)
-- `double distance(const Vector& other)` - Calculate Euclidean distance to another vector
-- `double squared_distance(const Vector& other)` - Calculate squared distance (more efficient)
+- `RGBA_Color operator+(const RGBA_Color& other) const` - Color addition
+- `RGBA_Color operator-(const RGBA_Color& other) const` - Color subtraction
+- `RGBA_Color operator*(double scalar) const` - Scalar multiplication
+- `RGBA_Color operator*(const RGBA_Color& other) const` - Component-wise multiplication
+- `bool operator==(const RGBA_Color& other) const` - Equality comparison
+- `bool operator!=(const RGBA_Color& other) const` - Inequality comparison
 
-#### Exceptions
-- `std::out_of_range` - Thrown by `at()` when index is out of bounds
-- `std::invalid_argument` - Thrown when vector sizes don't match for operations or when normalizing zero vector
+#### Color Operations
 
-### Vector3 Class
+- `RGBA_Color lerp(const RGBA_Color& other, double t) const` - Linear interpolation between colors
+- `RGBA_Color blend(const RGBA_Color& other) const` - Alpha blending
+- `RGBA_Color clamp() const` - Clamp components to [0.0, 1.0] range
+- `double luminance() const` - Calculate color luminance
+- `RGBA_Color grayscale() const` - Convert to grayscale
 
-#### Constructors
-- `Vector3()` - Default constructor (0, 0, 0)
-- `Vector3(double x, double y, double z)` - Component constructor
-- `Vector3(const Vector& v)` - Convert from general Vector
+#### Utility Methods
 
-#### Methods
-- `double x(), y(), z()` - Component accessors
-- `void setX(double), setY(double), setZ(double)` - Component mutators
-- `Vector3 cross(const Vector3& other)` - Cross product
-- `double dot(const Vector3& other)` - Dot product
-- `double angle(const Vector3& other)` - Angle between vectors
-- `Vector3 normal()` - Return normalized vector
-- `void normalize()` - Normalize in place
-- `double length()` - Vector magnitude
-- `bool parallel(const Vector3& other)` - Check if parallel
+- `math::Vector<double> toVector() const` - Convert to 4-element vector
+- `bool isValid() const` - Check if all components are in valid range
+- `std::string toString() const` - String representation
 
-#### Static Constants
-- `Vector3::ZERO` - (0, 0, 0)
-- `Vector3::UNIT_X` - (1, 0, 0)
-- `Vector3::UNIT_Y` - (0, 1, 0)
-- `Vector3::UNIT_Z` - (0, 0, 1)
+#### Static Color Constants
 
-### Matrix<T> Class
+- `static RGBA_Color red(), green(), blue()` - Primary colors
+- `static RGBA_Color black(), white()` - Monochrome colors
+- `static RGBA_Color transparent()` - Fully transparent color
+- `static RGBA_Color cyan(), magenta(), yellow()` - Secondary colors
+
+### Image Class (rendering namespace)
 
 #### Constructors
-- `Matrix(int rows, int cols)` - Create matrix with dimensions
-- `Matrix(T*** array, int rows, int cols)` - Create from 2D array
-- `Matrix()` - Default 1x1 matrix
 
-#### Methods
-- `T*& operator()(int x, int y)` - Element access
-- `Matrix transpose()` - Return transposed matrix
-- `void clear()` - Set all elements to nullptr
-- `int getRows(), getCols()` - Dimension accessors
-- `void swapRows(int r1, int r2)` - Swap matrix rows
+- `Image(int width, int height)` - Create image with dimensions (initialized to black)
+- `Image(const math::Matrix<RGBA_Color>& colorMatrix)` - Create from color matrix
+
+#### Dimension Access
+
+- `int getWidth() const` - Get image width
+- `int getHeight() const` - Get image height
+- `int size() const` - Get total pixel count
+
+#### Pixel Operations
+
+- `RGBA_Color& getPixel(int x, int y)` - Get pixel at coordinates
+- `const RGBA_Color& getPixel(int x, int y) const` - Get pixel (const version)
+- `void setPixel(int x, int y, const RGBA_Color& color)` - Set pixel color
+- `bool isValidCoordinate(int x, int y) const` - Check if coordinates are valid
+
+#### Image Processing
+
+- `void fill(const RGBA_Color& color)` - Fill entire image with color
+- `Image resize(int newWidth, int newHeight) const` - Create resized copy
+- `Image crop(int x, int y, int width, int height) const` - Create cropped copy
+- `void applyColorMatrix(const math::Matrix<double>& transform)` - Apply color transformation
+
+#### Utility Methods
+
+- `math::Matrix<RGBA_Color> toMatrix() const` - Convert to color matrix
+- `void clear()` - Clear image (set all pixels to transparent)
+
+### Mathematical Utilities (math namespace)
+
+#### Constants
+
+- `constexpr double pi` - Mathematical constant π (3.14159...)
+
+#### Utility Functions
+
+- `double square(double x)` - Calculate x²
+- `double triangle_area(double a, double b, double c)` - Calculate triangle area using Heron's formula
 
 ## 🤝 Contributing
 
@@ -395,12 +593,14 @@ We welcome contributions! Please see our contributing guidelines:
 5. **Submit a pull request**
 
 ### Code Style
+
 - Use consistent indentation (4 spaces)
 - Follow C++ naming conventions
 - Document public APIs with Doxygen comments
 - Include comprehensive error handling
 
 ### Reporting Issues
+
 - Use GitHub Issues for bug reports
 - Include minimal reproduction examples
 - Specify compiler and platform information
