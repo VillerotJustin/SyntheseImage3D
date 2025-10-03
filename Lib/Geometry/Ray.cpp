@@ -3,14 +3,14 @@
 //
 
 #include "./Ray.h"
-#include "../math_common.h"
+#include "../Math/math_common.h"
 
 namespace geometry {
 
 // Constructor
 Ray::Ray(const Vector3D& origin, const Vector3D& direction)
-    : origin(origin), direction(direction.normalized()) {
-    // Ensure direction is normalized
+    : origin(origin), direction(direction.normal()) {
+    // Ensure direction is normal
 }
 
 Vector3D Ray::getPointAt(double t) const {
@@ -47,7 +47,7 @@ void Ray::setOrigin(const Vector3D& newOrigin) {
 }
 
 void Ray::setDirection(const Vector3D& newDirection) {
-    direction = newDirection.normalized();
+    direction = newDirection.normal();
 }
 
 bool Ray::isValid() const {

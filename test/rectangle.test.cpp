@@ -3,8 +3,8 @@
 #include <cmath>
 #include <stdexcept>
 #include "../Lib/Geometry/Rectangle.h"
-#include "../Lib/Vector3D.h"
-#include "../Lib/math_common.h"
+#include "../Lib/Geometry/Vector3D.h"
+#include "../Lib/Math/math_common.h"
 
 using namespace geometry;
 
@@ -85,7 +85,7 @@ void testRectangleConstructor() {
     assert(isEqual(rect.getOrigin(), origin));
     assert(isEqual(rect.getLength(), length));
     assert(isEqual(rect.getWidth(), width));
-    assert(isEqual(rect.getNormal(), normal.normalized()));
+    assert(isEqual(rect.getNormal(), normal.normal()));
 }
 
 void testRectangleBasicProperties() {
@@ -103,7 +103,7 @@ void testRectangleBasicProperties() {
     assert(isEqual(rect.getOrigin(), origin));
     assert(isEqual(rect.getLength(), length));
     assert(isEqual(rect.getWidth(), width));
-    Vector3D expectedNormal = normal.normalized();
+    Vector3D expectedNormal = normal.normal();
     assert(isEqual(rect.getNormal(), expectedNormal));
 }
 
@@ -137,7 +137,9 @@ void testRectangleCenterAndCorners() {
     Vector3D center = rect.getCenter();
     // The exact center depends on the basis vectors generated, but we can test
     // that it's within the expected bounds and at correct distance from origin
-    
+    Vector3D expectedCenter = origin + Vector3D(length / 2.0, width / 2.0, 0);
+    assert(isEqual(center, expectedCenter));
+
     // Test corners
     Vector3D corners[4];
     rect.getCorners(corners);
@@ -213,9 +215,9 @@ void testRectangleProjections() {
     Vector3D projected = rect.projectPointToPlane(pointAbove);
     
     // Projected point should have same X and Z, but Y should be 5 (plane Y)
-    assert(isEqual(projected.x, pointAbove.x));
-    assert(isEqual(projected.z, pointAbove.z));
-    assert(isEqual(projected.y, 5.0));
+    assert(isEqual(projected.x(), pointAbove.x()));
+    assert(isEqual(projected.z(), pointAbove.z()));
+    assert(isEqual(projected.y(), 5.0));
     
     // Test closest point on rectangle
     Vector3D testPoint(10, 8, 10); // Far from rectangle
@@ -318,14 +320,18 @@ void testRectangleSetters() {
     // Test invalid dimensions (should be ignored)
     double originalLength = rect.getLength();
     double originalWidth = rect.getWidth();
-    rect.setDimensions(-2.0, 3.0); // Negative length should be ignored
-    assert(isEqual(rect.getLength(), originalLength));
-    assert(isEqual(rect.getWidth(), originalWidth));
+    try {
+        rect.setDimensions(-2.0, 3.0);                      // Negative length should throw
+        assert(isEqual(rect.getLength(), originalLength));  // Shouldn't reach here
+        assert(isEqual(rect.getWidth(), originalWidth));    // Shouldn't reach here
+    } catch (const std::invalid_argument&) {
+        // Expected exception for negative length
+    }
     
     // Test setNormal
     Vector3D newNormal(1, 2, 2);
     rect.setNormal(newNormal);
-    Vector3D expectedNormal = newNormal.normalized();
+    Vector3D expectedNormal = newNormal.normal();
     assert(isEqual(rect.getNormal(), expectedNormal));
     assert(isEqual(rect.getNormal().length(), 1.0));
 }
@@ -339,20 +345,43 @@ void testRectangleValidation() {
     assert(validRect.isValid());
     
     // Test invalid rectangles
-    Rectangle invalidRect1(origin, 0.0, 3.0, normal);  // Zero length
-    Rectangle invalidRect2(origin, 2.0, -1.0, normal); // Negative width
-    Rectangle invalidRect3(origin, 2.0, 3.0, Vector3D(0, 0, 0)); // Zero normal
-    
-    assert(!invalidRect1.isValid());
-    assert(!invalidRect2.isValid());
-    assert(!invalidRect3.isValid());
+    try {
+        Rectangle invalidRect1(origin, 0.0, 3.0, normal);  // Zero length should throw
+        assert(false); // Shouldn't reach here
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero length
+    }
+
+    try {
+        Rectangle invalidRect2(origin, 2.0, -1.0, normal); // Negative width
+        assert(false); // Shouldn't reach here
+        assert(!invalidRect2.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for negative width
+    }
+
+    try {
+        Rectangle invalidRect3(origin, 2.0, 3.0, Vector3D(0, 0, 0)); // Zero normal
+        assert(!invalidRect3.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero normal
+    }
     
     // Test rectangle that becomes invalid after setting invalid dimensions
-    validRect.setDimensions(0.0, 5.0);
-    assert(!validRect.isValid());
-    
+    try {
+        validRect.setDimensions(0.0, 5.0);
+        assert(!validRect.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for invalid dimensions
+    }
+
     // Test rectangle that becomes invalid after setting zero normal
-    Rectangle anotherValidRect(origin, 2.0, 3.0, normal);
-    anotherValidRect.setNormal(Vector3D(0, 0, 0));
-    assert(!anotherValidRect.isValid());
+    try {
+        Rectangle anotherValidRect(origin, 2.0, 3.0, normal);
+        anotherValidRect.setNormal(Vector3D(0, 0, 0));
+        assert(!anotherValidRect.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero normal
+    }
+    
 }

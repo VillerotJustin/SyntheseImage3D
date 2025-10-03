@@ -1,11 +1,22 @@
 #ifndef VIDEO_H
 #define VIDEO_H
 
-#include "../Image.h"
+#include "Image.h"
 #include "../Math/Vector.hpp"
 #include <string>
 
 namespace rendering {
+    /**
+     * @enum VideoFormat
+     * @brief Enumeration of supported video export formats
+     */
+    enum class VideoFormat {
+        FRAMES,     ///< Export as individual frame images
+        MKV,        ///< Export as MKV video file
+        MP4,        ///< Export as MP4 video file
+        GIF         ///< Export as animated GIF
+    };
+
     /**
      * @struct VideoStats
      * @brief Structure containing video statistics and metadata
@@ -63,9 +74,9 @@ namespace rendering {
         
         /**
          * @brief Get all frames in the video
-         * @return const Vector<Image>& Reference to the frames vector
+         * @return const math::Vector<Image>& Reference to the frames vector
          */
-        const Vector<Image>& getFrames() const { return frames; }
+        const math::Vector<Image>& getFrames() const { return frames; }
         
         /**
          * @brief Get a specific frame by index
@@ -73,7 +84,7 @@ namespace rendering {
          * @return Image& Reference to the frame at the specified index
          * @throws std::out_of_range if index is invalid
          */
-        Image& getFrame(int index) { return frames[index]; }
+        Image& getFrame(int index) { return *frames[index]; }
         
         /**
          * @brief Get the total number of frames in the video
@@ -117,27 +128,37 @@ namespace rendering {
         
         /**
          * @brief Replace all frames with a new set of frames
-         * @param f Vector of images to set as the new frames
+         * @param f math::Vector of images to set as the new frames
          */
-        void setFrames(const Vector<Image>& f) { frames = f; }
+        void setFrames(const math::Vector<Image>& f) { frames = f; }
         
         /**
          * @brief Add a frame to the end of the video
          * @param img Image to add as a new frame
          */
-        void addFrame(const Image& img) { frames.push_back(img); }
+        void addFrame(const Image& img) { 
+            Image* framePtr = new Image(img);
+            frames.append(framePtr); 
+        }
         
         /**
          * @brief Remove all frames from the video
          */
-        void clearFrames() { frames.clear(); }
+        void clearFrames() { 
+            // Delete all frame objects
+            for (int i = 0; i < frames.size(); ++i) {
+                delete frames[i];
+            }
+            // Reset the vector completely
+            frames = math::Vector<Image>();
+        }
 
         /**
          * @brief Remove a specific frame by index
          * @param index Index of the frame to remove
          * @throws std::out_of_range if index is invalid
          */
-        void removeFrame(int index) { frames.erase(frames.begin() + index); }
+        void removeFrame(int index) { frames.erase(index); }
 
         /**
          * @brief Insert a frame at a specific position
@@ -160,7 +181,7 @@ namespace rendering {
                 return false;
             }
             for (const auto& frame : frames) {
-                if (frame.getWidth() != width || frame.getHeight() != height || !frame.isValid()) {
+                if (frame->getWidth() != width || frame->getHeight() != height || !frame->isValid()) {
                     return false;
                 }
             }
@@ -241,7 +262,7 @@ namespace rendering {
         int width;                  ///< Width of video frames in pixels
         int height;                 ///< Height of video frames in pixels
         double framesPerSecond;     ///< Frame rate in frames per second
-        Vector<Image> frames;       ///< Sequence of image frames
+        math::Vector<Image> frames; ///< Sequence of image frame pointers
 
         /**
          * @brief Validate that all frames have consistent dimensions
@@ -250,16 +271,6 @@ namespace rendering {
         bool validateFrameDimensions() const;
     };
 
-    /**
-     * @enum VideoFormat
-     * @brief Enumeration of supported video export formats
-     */
-    enum class VideoFormat {
-        FRAMES,     ///< Export as individual frame images
-        MKV,        ///< Export as MKV video file
-        MP4,        ///< Export as MP4 video file
-        GIF         ///< Export as animated GIF
-    };
 }
 
 #endif // VIDEO_H

@@ -4,22 +4,26 @@
 
 #include "Image.h"
 #include <stdexcept>
-#include <cstdlib>  // For system() command
+#include <cstdlib> // For system() command
 
-namespace rendering {
+namespace rendering
+{
 
     // Constructor with width and height - initializes all colors to black
-    Image::Image(int w, int h) : width(w), height(h), pixels(1, 1) {  // Initialize with safe dimensions first
-        if (w <= 0 || h <= 0) {
+    Image::Image(int w, int h) : width(w), height(h), pixels(1, 1) { // Initialize with safe dimensions first
+        if (w <= 0 || h <= 0)
+        {
             throw std::invalid_argument("Image dimensions must be positive");
         }
-        
+
         // Now safely construct the matrix with validated dimensions
         pixels = math::Matrix<RGBA_Color>(h, w);
-        
+
         // Initialize all colors to black (0, 0, 0, 1)
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
                 pixels(y, x) = new RGBA_Color(0.0, 0.0, 0.0, 1.0);
             }
         }
@@ -29,28 +33,36 @@ namespace rendering {
     Image::Image(math::Matrix<RGBA_Color> colorMatrix) : pixels(colorMatrix) {
         height = colorMatrix.getRows();
         width = colorMatrix.getCols();
-        
-        if (width <= 0 || height <= 0) {
+
+        if (width <= 0 || height <= 0)
+        {
             throw std::invalid_argument("Color matrix must have positive dimensions");
         }
     }
 
     // Destructor - clean up allocated colors
     Image::~Image() {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
                 delete pixels(y, x);
             }
         }
     }
 
     // Copy constructor
-    Image::Image(const Image& other) : width(other.width), height(other.height), pixels(other.height, other.width) {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (other.pixels(y, x) != nullptr) {
+    Image::Image(const Image &other) : width(other.width), height(other.height), pixels(other.height, other.width) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                if (other.pixels(y, x) != nullptr)
+                {
                     pixels(y, x) = new RGBA_Color(*other.pixels(y, x));
-                } else {
+                }
+                else
+                {
                     pixels(y, x) = nullptr;
                 }
             }
@@ -58,21 +70,24 @@ namespace rendering {
     }
 
     // Constructor from file
-    Image::Image(const std::string& filename, const std::string& filePath) : width(0), height(0), pixels(1, 1) {
+    Image::Image(const std::string &filename, const std::string &filePath) : width(0), height(0), pixels(1, 1) {
         std::string fullPath = filePath + filename;
         std::string command = "identify -format \"%w %h\" " + fullPath + " 2> /dev/null";
         // TODO Implement file reading using an image processing library
     }
 
     // Assignment operator
-    Image& Image::operator=(const Image& other) {
-        if (this == &other) {
+    Image &Image::operator=(const Image &other) {
+        if (this == &other)
+        {
             return *this;
         }
 
         // Clean up existing colors
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
                 delete pixels(y, x);
             }
         }
@@ -82,11 +97,16 @@ namespace rendering {
         pixels = math::Matrix<RGBA_Color>(height, width);
 
         // Copy colors
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (other.pixels(y, x) != nullptr) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                if (other.pixels(y, x) != nullptr)
+                {
                     pixels(y, x) = new RGBA_Color(*other.pixels(y, x));
-                } else {
+                }
+                else
+                {
                     pixels(y, x) = nullptr;
                 }
             }
@@ -108,13 +128,17 @@ namespace rendering {
     }
 
     bool Image::isValid() const {
-        if (width <= 0 || height <= 0) {
+        if (width <= 0 || height <= 0)
+        {
             return false;
         }
-        
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (pixels(y, x) == nullptr) {
+
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                if (pixels(y, x) == nullptr)
+                {
                     return false;
                 }
             }
@@ -122,26 +146,30 @@ namespace rendering {
         return true;
     }
 
-    const RGBA_Color* Image::getPixel(int x, int y) const {
-        if (x < 0 || x >= width || y < 0 || y >= height) {
+    const RGBA_Color *Image::getPixel(int x, int y) const {
+        if (x < 0 || x >= width || y < 0 || y >= height)
+        {
             throw std::out_of_range("Color coordinates out of bounds");
         }
-    
+
         return pixels(y, x);
     }
 
-    void Image::setPixel(int x, int y, const RGBA_Color& color) {
-        if (x < 0 || x >= width || y < 0 || y >= height) {
+    void Image::setPixel(int x, int y, const RGBA_Color &color) {
+        if (x < 0 || x >= width || y < 0 || y >= height)
+        {
             throw std::out_of_range("Color coordinates out of bounds");
         }
-        
+
         delete pixels(y, x);
         pixels(y, x) = new RGBA_Color(color);
     }
 
-    void Image::fill(const RGBA_Color& fillColor) {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
+    void Image::fill(const RGBA_Color &fillColor) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
                 delete pixels(y, x);
                 pixels(y, x) = new RGBA_Color(fillColor);
             }
@@ -152,29 +180,72 @@ namespace rendering {
         fill(RGBA_Color(0.0, 0.0, 0.0, 1.0)); // Fill with black
     }
 
-    void Image::toGrayscale() {
+    void Image::resize(int newWidth, int newHeight) {
+        if (newWidth <= 0 || newHeight <= 0)
+        {
+            throw std::invalid_argument("New dimensions must be positive");
+        }
+
+        // Clean up only pixels that will not be reused in the resized image
+        int minWidth = std::min(width, newWidth);
+        int minHeight = std::min(height, newHeight);
+        // Delete pixels outside the new bounds
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                if (pixels(y, x) != nullptr) {
+                if (y >= minHeight || x >= minWidth)
+                {
+                    delete pixels(y, x);
+                }
+            }
+        }
+
+        width = newWidth;
+        height = newHeight;
+        pixels = math::Matrix<RGBA_Color>(height, width);
+
+        // Initialize all colors: transfer existing if within old bounds, else set to black
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (y < minHeight && x < minWidth && pixels(y, x) != nullptr) {
+                    pixels(y, x) = new RGBA_Color(*pixels(y, x));
+                } else {
+                    pixels(y, x) = new RGBA_Color(0.0, 0.0, 0.0, 1.0);
+                }
+            }
+        }
+    }
+
+    void Image::toGrayscale() {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                if (pixels(y, x) != nullptr)
+                {
                     RGBA_Color grayscale = pixels(y, x)->toGrayscale();
                     delete pixels(y, x);
                     pixels(y, x) = new RGBA_Color(grayscale);
-                } else
+                }
+                else
                     throw std::runtime_error("Cannot convert to grayscale: null color found");
-
             }
         }
     }
 
     void Image::toBlackAndWhite(double threshold) {
-        for (int y = 0; y < this->getHeight(); ++y) {
-            for (int x = 0; x < this->getWidth(); ++x) {
-                const RGBA_Color* color = this->getPixel(x, y);
-                if (color != nullptr) {
+        for (int y = 0; y < this->getHeight(); ++y)
+        {
+            for (int x = 0; x < this->getWidth(); ++x)
+            {
+                const RGBA_Color *color = this->getPixel(x, y);
+                if (color != nullptr)
+                {
                     double gray = 0.299 * color->r() + 0.587 * color->g() + 0.114 * color->b();
                     RGBA_Color bwColor = (gray >= threshold) ? RGBA_Color(1.0, 1.0, 1.0, color->a()) : RGBA_Color(0.0, 0.0, 0.0, color->a());
                     this->setPixel(x, y, bwColor);
-                } else {
+                }
+                else
+                {
                     throw std::runtime_error("Cannot convert to black and white: null color found");
                 }
             }
@@ -182,41 +253,45 @@ namespace rendering {
     }
 
     void Image::invertColors() {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
-                if (pixels(y, x) != nullptr) {
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                if (pixels(y, x) != nullptr)
+                {
                     pixels(y, x)->invert();
-                } else
+                }
+                else
                     throw std::runtime_error("Cannot invert colors: null color found");
             }
         }
     }
 
-    void Image::toBitmapFile(const std::string& filename, const std::string& filePath) const {
+    void Image::toBitmapFile(const std::string &filename, const std::string &filePath) const {
         // BMP file format specifications
-        const int headerSize = 54; // BMP header size
-        const int bytesPerPixel = 4; // RGBA
+        const int headerSize = 54;                              // BMP header size
+        const int bytesPerPixel = 4;                            // RGBA
         const int rowSize = (width * bytesPerPixel + 3) & (~3); // Row size must be a multiple of 4
         const int dataSize = rowSize * height;
         const int fileSize = headerSize + dataSize;
 
         unsigned char header[headerSize] = {
-            'B', 'M',           // Signature
-            0, 0, 0, 0,         // File size
-            0, 0,               // Reserved1
-            0, 0,               // Reserved2
-            headerSize, 0, 0, 0,// Offset to pixel data
-            40, 0, 0, 0,       // DIB header size
-            0, 0, 0, 0,         // Width
-            0, 0, 0, 0,         // Height
-            1, 0,               // Color planes
-            bytesPerPixel * 8, 0,// Bits per pixel
-            0, 0, 0, 0,         // Compression (none)
-            0, 0, 0, 0,         // Image size (can be zero for uncompressed)
-            0x13, 0x0B, 0, 0,   // Horizontal resolution (2835 pixels/meter)
-            0x13, 0x0B, 0, 0,   // Vertical resolution (2835 pixels/meter)
-            0, 0, 0, 0,         // Number of colors in palette (default)
-            0, 0, 0, 0          // Important colors (all)
+            'B', 'M',             // Signature
+            0, 0, 0, 0,           // File size
+            0, 0,                 // Reserved1
+            0, 0,                 // Reserved2
+            headerSize, 0, 0, 0,  // Offset to pixel data
+            40, 0, 0, 0,          // DIB header size
+            0, 0, 0, 0,           // Width
+            0, 0, 0, 0,           // Height
+            1, 0,                 // Color planes
+            bytesPerPixel * 8, 0, // Bits per pixel
+            0, 0, 0, 0,           // Compression (none)
+            0, 0, 0, 0,           // Image size (can be zero for uncompressed)
+            0x13, 0x0B, 0, 0,     // Horizontal resolution (2835 pixels/meter)
+            0x13, 0x0B, 0, 0,     // Vertical resolution (2835 pixels/meter)
+            0, 0, 0, 0,           // Number of colors in palette (default)
+            0, 0, 0, 0            // Important colors (all)
         };
 
         // Fill in file size
@@ -236,13 +311,14 @@ namespace rendering {
         header[25] = (unsigned char)(height >> 24);
 
         // Create directory if it doesn't exist
-        std::string fullPath = filePath + filename;
-        
+        std::string fullPath = filePath + filename + ".bmp";
+
         // Extract directory path
         size_t lastSlash = fullPath.find_last_of("/\\");
-        if (lastSlash != std::string::npos) {
+        if (lastSlash != std::string::npos)
+        {
             std::string dirPath = fullPath.substr(0, lastSlash);
-            
+
             // Create directory recursively using system command
             // This is a simple cross-platform approach
             #ifdef _WIN32
@@ -254,8 +330,9 @@ namespace rendering {
         }
 
         // Open file for binary writing
-        FILE* file = fopen(fullPath.c_str(), "wb");
-        if (!file) {
+        FILE *file = fopen(fullPath.c_str(), "wb");
+        if (!file)
+        {
             throw std::runtime_error("Failed to open file for writing: " + fullPath);
         }
 
@@ -263,25 +340,31 @@ namespace rendering {
         fwrite(header, sizeof(unsigned char), headerSize, file);
 
         // Write pixel data (bottom-up)
-        unsigned char* rowData = new unsigned char[rowSize];
-        for (int y = height - 1; y >= 0; --y) {
+        unsigned char *rowData = new unsigned char[rowSize];
+        for (int y = height - 1; y >= 0; --y)
+        {
             // Fill row data
-            for (int x = 0; x < width; ++x) {
-                const RGBA_Color* color = pixels(y, x);
-                if (color != nullptr) {
+            for (int x = 0; x < width; ++x)
+            {
+                const RGBA_Color *color = pixels(y, x);
+                if (color != nullptr)
+                {
                     rowData[x * 4 + 0] = (unsigned char)(color->b() * 255); // Blue
                     rowData[x * 4 + 1] = (unsigned char)(color->g() * 255); // Green
                     rowData[x * 4 + 2] = (unsigned char)(color->r() * 255); // Red
                     rowData[x * 4 + 3] = (unsigned char)(color->a() * 255); // Alpha
-                } else {
-                    rowData[x * 4 + 0] = 0; // Blue
-                    rowData[x * 4 + 1] = 0; // Green
-                    rowData[x * 4 + 2] = 0; // Red
+                }
+                else
+                {
+                    rowData[x * 4 + 0] = 0;   // Blue
+                    rowData[x * 4 + 1] = 0;   // Green
+                    rowData[x * 4 + 2] = 0;   // Red
                     rowData[x * 4 + 3] = 255; // Alpha
                 }
             }
             // Pad row with zeros if necessary
-            for (int p = width * 4; p < rowSize; ++p) {
+            for (int p = width * 4; p < rowSize; ++p)
+            {
                 rowData[p] = 0;
             }
             fwrite(rowData, sizeof(unsigned char), rowSize, file);
@@ -291,11 +374,35 @@ namespace rendering {
         fclose(file);
     }
 
+    void Image::toPngFile(const std::string &filename, const std::string &filePath) const {
+        (void)filename;
+        (void)filePath;
+        // Placeholder for PNG file writing implementation
+        // This would typically use a library like libpng
+        throw std::runtime_error("PNG file writing not implemented");
+    }
+
+    void Image::toJpegFile(const std::string &filename, const std::string &filePath) const {
+        (void)filename;
+        (void)filePath;
+        // Placeholder for JPEG file writing implementation
+        // This would typically use a library like libjpeg
+        throw std::runtime_error("JPEG file writing not implemented");
+    }
+
+    void Image::toTiffFile(const std::string &filename, const std::string &filePath) const {
+        (void)filename;
+        (void)filePath;
+        // Placeholder for TIFF file writing implementation
+        // This would typically use a library like libtiff
+        throw std::runtime_error("TIFF file writing not implemented");
+    }
+
     Image Image::copy() const {
         return Image(*this); // Use copy constructor
     }
 
-    const math::Matrix<RGBA_Color>& Image::getPixelMatrix() const {
+    const math::Matrix<RGBA_Color> &Image::getPixelMatrix() const {
         return pixels;
     }
 

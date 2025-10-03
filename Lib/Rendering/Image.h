@@ -111,6 +111,15 @@ namespace rendering {
         void clear();
 
         /**
+         * @brief Resize the image to new dimensions.
+         * Existing pixel data is discarded and new pixels are initialized to black.
+         * @param newWidth The new width in pixels.
+         * @param newHeight The new height in pixels.
+         * @throws std::invalid_argument if new dimensions are non-positive.
+         */
+        void resize(int newWidth, int newHeight);
+
+        /**
          * @brief Convert the entire image to grayscale.
          */
         void toGrayscale();
@@ -120,6 +129,12 @@ namespace rendering {
         void invertColors();
 
         void toBitmapFile(const std::string& filename, const std::string& filePath = "./") const;
+
+        void toPngFile(const std::string& filename, const std::string& filePath = "./") const;
+
+        void toJpegFile(const std::string& filename, const std::string& filePath = "./") const;
+
+        void toTiffFile(const std::string& filename, const std::string& filePath = "./") const;
 
         /**
          * @brief Create a copy of this image.

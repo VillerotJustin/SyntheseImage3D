@@ -3,14 +3,14 @@
 //
 
 #include "./Plane.h"
-#include "../math_common.h"
+#include "../Math/math_common.h"
 
 namespace geometry {
 
 // Constructor from point and normal
 Plane::Plane(const Vector3D& origin, const Vector3D& normal)
-    : origin(origin), normal(normal.normalized()) {
-    // Ensure the normal is normalized
+    : normal(normal.normal()), origin(origin) {
+    // Ensure the normal is normal
 }
 
 // Constructor from three points
@@ -21,7 +21,7 @@ Plane::Plane(const Vector3D& point1, const Vector3D& point2, const Vector3D& poi
     Vector3D v2 = point3 - point1;
     
     // Calculate normal using cross product
-    normal = v1.cross(v2).normalized();
+    normal = v1.cross(v2).normal();
 }
 
 double Plane::distanceToPoint(const Vector3D& point) const {
@@ -60,7 +60,7 @@ void Plane::setOrigin(const Vector3D& newOrigin) {
 }
 
 void Plane::setNormal(const Vector3D& newNormal) {
-    normal = newNormal.normalized();
+    normal = newNormal.normal();
 }
 
 bool Plane::isValid() const {
@@ -70,9 +70,9 @@ bool Plane::isValid() const {
 void Plane::getPlaneEquation(double& a, double& b, double& c, double& d) const {
     // Plane equation: ax + by + cz + d = 0
     // Where (a, b, c) is the normal vector and d = -normal.dot(origin)
-    a = normal.x;
-    b = normal.y;
-    c = normal.z;
+    a = normal.x();
+    b = normal.y();
+    c = normal.z();
     d = -normal.dot(origin);
 }
 

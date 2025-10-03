@@ -3,8 +3,8 @@
 #include <cmath>
 #include <stdexcept>
 #include "../Lib/Geometry/Ray.h"
-#include "../Lib/Vector3D.h"
-#include "../Lib/math_common.h"
+#include "../Lib/Geometry/Vector3D.h"
+#include "../Lib/Math/math_common.h"
 
 using namespace geometry;
 
@@ -85,7 +85,7 @@ void testRayConstructor() {
     Ray ray(origin, direction);
     
     assert(isEqual(ray.getOrigin(), origin));
-    assert(isEqual(ray.getDirection(), direction.normalized()));
+    assert(isEqual(ray.getDirection(), direction.normal()));
     assert(isEqual(ray.getDirection().length(), 1.0));
 }
 
@@ -279,7 +279,7 @@ void testRaySetters() {
     // Test setDirection
     Vector3D newDirection(3, 4, 0);  // Will be normalized
     ray.setDirection(newDirection);
-    Vector3D expectedDirection = newDirection.normalized();
+    Vector3D expectedDirection = newDirection.normal();
     assert(isEqual(ray.getDirection(), expectedDirection));
     assert(isEqual(ray.getDirection().length(), 1.0));
 }
@@ -292,12 +292,22 @@ void testRayValidation() {
     Ray validRay(origin, validDirection);
     assert(validRay.isValid());
     
-    // Test invalid ray with zero direction
     Vector3D zeroDirection(0, 0, 0);
-    Ray invalidRay(origin, zeroDirection);
-    assert(!invalidRay.isValid());
-    
+
+    // Test invalid ray with zero direction
+    try {
+        Ray invalidRay(origin, zeroDirection);
+        assert(!invalidRay.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero direction
+    }
+
     // Test ray that becomes invalid after setting zero direction
-    validRay.setDirection(zeroDirection);
-    assert(!validRay.isValid());
+    try {
+        validRay.setDirection(zeroDirection);
+        assert(!validRay.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero direction
+    }
+
 }

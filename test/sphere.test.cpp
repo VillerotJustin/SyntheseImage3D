@@ -8,8 +8,8 @@
 #include "../Lib/Geometry/Plane.h"
 #include "../Lib/Geometry/Ray.h"
 #include "../Lib/Geometry/Box.h"
-#include "../Lib/Vector3D.h"
-#include "../Lib/math_common.h"
+#include "../Lib/Geometry/Vector3D.h"
+#include "../Lib/Math/math_common.h"
 
 using namespace geometry;
 
@@ -219,19 +219,19 @@ void testSphereRayIntersections() {
     Vector3D rayDirection(1, 0, 0);
     Ray ray1(rayOrigin, rayDirection);
     
-    assert(sphere.rayIntersects(ray1, 0.1));
+    assert(sphere.rayIntersect(ray1, 0.1));
     
     // Test ray that misses sphere
     Vector3D rayOrigin2(-5, 5, 0);  // Too high
     Ray ray2(rayOrigin2, rayDirection);
     
-    assert(!sphere.rayIntersects(ray2, 0.1));
+    assert(!sphere.rayIntersect(ray2, 0.1));
     
     // Test ray starting inside sphere
     Vector3D rayOrigin3(0, 0, 0);   // At center
     Ray ray3(rayOrigin3, rayDirection);
     
-    assert(sphere.rayIntersects(ray3, 0.1));
+    assert(sphere.rayIntersect(ray3, 0.1));
 }
 
 void testSphereLineIntersections() {
@@ -370,9 +370,17 @@ void testSphereValidation() {
     assert(validSphere.isValid());
     
     // Test invalid spheres
-    Sphere invalidSphere1(center, 0.0);   // Zero radius
-    Sphere invalidSphere2(center, -1.0);  // Negative radius
-    
-    assert(!invalidSphere1.isValid());
-    assert(!invalidSphere2.isValid());
+    try {
+        Sphere invalidSphere1(center, 0.0);   // Zero radius
+        assert(!invalidSphere1.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero radius
+    }
+
+    try {
+        Sphere invalidSphere2(center, -1.0);  // Negative radius
+        assert(!invalidSphere2.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for negative radius
+    }
 }

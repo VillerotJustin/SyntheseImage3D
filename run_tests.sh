@@ -16,15 +16,24 @@ NC='\033[0m' # No Color
 TEST_DIR="test"
 EXECUTABLE_DIR="$TEST_DIR/Executables"
 CXX_COMPILER="g++"
-CXX_FLAGS="-std=c++17 -Wall -Wextra -g"
+CXX_FLAGS="-std=c++17 -Wall -Wextra -g -fdiagnostics-color=always"
 
 # Test files and their corresponding executables
 declare -A TESTS=(
-    ["vector_test"]="$TEST_DIR/vector_test.cpp"
-    ["quaternion_test"]="$TEST_DIR/quaternion_test.cpp"
-    ["rgba_color_test"]="$TEST_DIR/rgba_color_test.cpp"
-    ["matrix_test"]="$TEST_DIR/matrix_test.cpp"
-    ["image_test"]="$TEST_DIR/image_test.cpp"
+    ["vector.test"]="$TEST_DIR/vector.test.cpp"
+    ["quaternion.test"]="$TEST_DIR/quaternion.test.cpp"
+    ["rgba_color.test"]="$TEST_DIR/rgba_color.test.cpp"
+    ["matrix.test"]="$TEST_DIR/matrix.test.cpp"
+    ["image.test"]="$TEST_DIR/image.test.cpp"
+    ["box.test"]="$TEST_DIR/box.test.cpp"
+    ["circle.test"]="$TEST_DIR/circle.test.cpp"
+    ["plane.test"]="$TEST_DIR/plane.test.cpp"
+    ["ray.test"]="$TEST_DIR/ray.test.cpp"
+    ["rectangle.test"]="$TEST_DIR/rectangle.test.cpp"
+    ["shape.test"]="$TEST_DIR/shape.test.cpp"
+    ["sphere.test"]="$TEST_DIR/sphere.test.cpp"
+    ["video.test"]="$TEST_DIR/video.test.cpp"
+    ["edge.test"]="$TEST_DIR/edge.test.cpp"
 )
 
 # Function to print colored output
@@ -51,7 +60,7 @@ compile_test() {
     print_status $YELLOW "Compiling $test_name..."
     
     # Library source files that need to be linked
-    local lib_files="Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp Lib/Rendering/Image.cpp"
+    local lib_files="Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp Lib/Rendering/Image.cpp Lib/Rendering/Video.cpp Lib/Geometry/Sphere.cpp Lib/Geometry/Box.cpp Lib/Geometry/Circle.cpp Lib/Geometry/Plane.cpp Lib/Geometry/Ray.cpp Lib/Geometry/Rectangle.cpp Lib/Geometry/Edge.cpp"
     
     if $CXX_COMPILER $CXX_FLAGS -o "$executable" "$source_file" $lib_files; then
         print_status $GREEN "✓ $test_name compiled successfully"

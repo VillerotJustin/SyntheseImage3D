@@ -1,0 +1,8 @@
+Video Metadata
+==============
+Width: 800 pixels
+Height: 600 pixels
+Frame Rate: 30 fps
+Frame Count: 4
+Duration: 0.133333 seconds
+Format: PNG

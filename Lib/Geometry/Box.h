@@ -10,6 +10,12 @@
 #define BOX_H
 
 #include "./Vector3D.h"
+#include "./Edge.h"
+#include "./Rectangle.h"
+
+#include <optional>
+#include <variant>
+#include <stdexcept>
 
 namespace geometry {
 
@@ -144,9 +150,11 @@ namespace geometry {
         /**
          * Get the intersection box with another box
          * @param other The other box
-         * @return Box The intersection box (may be invalid if no intersection)
+         * @return Vector3D, Edge, Rectangle or Box representing the intersection area
+         *         std::nullopt if there is no intersection
+         * @throws std::runtime_error if intersection logic is not implemented yet
          */
-        Box intersection(const Box& other) const;
+        std::optional<std::variant<Vector3D, Edge, Rectangle, Box>> intersectionPoints(const Box& other) const;
 
         /**
          * Expand the box by a given amount in all directions

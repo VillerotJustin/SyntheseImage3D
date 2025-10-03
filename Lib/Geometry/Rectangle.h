@@ -14,11 +14,11 @@ namespace geometry {
      * @brief A class representing a rectangle in 3D space.
      * 
      * Rectangle layout:
-     *            l
+     *      l
      * O----------.
-     * |           ^        |
-     * |          n         | w
-     * |                     |
+     * |     ^    |
+     * |     n    | w
+     * |           |
      * .-----------.
      * 
      * O -> Origin (corner point)

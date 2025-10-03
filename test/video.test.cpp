@@ -5,6 +5,7 @@
 #include <string>
 
 using namespace rendering;
+using namespace math;
 
 // Helper function for floating-point comparison
 bool isEqual(double a, double b, double epsilon = 1e-6) {
@@ -195,8 +196,8 @@ void testFrameReversal() {
     
     // Get references to frames before reversal
     const Vector<Image>& framesBefore = video.getFrames();
-    Image firstFrameBefore = framesBefore[0];
-    Image lastFrameBefore = framesBefore[2];
+    Image firstFrameBefore = *framesBefore[0];
+    Image lastFrameBefore = *framesBefore[2];
     
     // Reverse frames
     video.reverseFrames();
@@ -261,11 +262,22 @@ void testVideoExport() {
     Image frame(800, 600);
     
     video.addFrame(frame);
+
+    frame.fill(Colors::red());
+
+    video.addFrame(frame);
+
+    frame.fill(Colors::green());
+
+    video.addFrame(frame);
+
+    frame.fill(Colors::blue());
+
     video.addFrame(frame);
     
     // Test exporting as frames
     try {
-        video.exportToFile("test_video", "./test_byproduct/", VideoFormat::FRAMES);
+        video.exportToFile("test_video", "./test/test_by_product/video/", VideoFormat::FRAMES);
         std::cout << "Frame export test completed (check implementation for actual file creation)" << std::endl;
     } catch (const std::exception& e) {
         std::cout << "Export test: " << e.what() << " (expected for placeholder implementation)" << std::endl;
@@ -273,7 +285,7 @@ void testVideoExport() {
     
     // Test other formats
     try {
-        video.exportToFile("test_video", "./test_byproduct/", VideoFormat::GIF);
+        video.exportToFile("test_video", "./test/test_by_product/video/", VideoFormat::GIF);
     } catch (const std::exception& e) {
         std::cout << "GIF export test: " << e.what() << " (expected for placeholder implementation)" << std::endl;
     }

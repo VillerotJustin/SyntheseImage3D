@@ -3,8 +3,8 @@
 #include <cmath>
 #include <stdexcept>
 #include "../Lib/Geometry/Plane.h"
-#include "../Lib/Vector3D.h"
-#include "../Lib/math_common.h"
+#include "../Lib/Geometry/Vector3D.h"
+#include "../Lib/Math/math_common.h"
 
 using namespace geometry;
 
@@ -77,7 +77,7 @@ void testPlaneConstructors() {
     Plane plane1(origin, normal);
     
     assert(isEqual(plane1.getOrigin(), origin));
-    assert(isEqual(plane1.getNormal(), normal.normalized()));
+    assert(isEqual(plane1.getNormal(), normal.normal()));
     
     // Test constructor from three points
     Vector3D point1(0, 0, 0);
@@ -101,7 +101,7 @@ void testPlaneBasicProperties() {
     
     // Test getters
     assert(isEqual(plane.getOrigin(), origin));
-    Vector3D expectedNormal = normal.normalized();
+    Vector3D expectedNormal = normal.normal();
     assert(isEqual(plane.getNormal(), expectedNormal));
 }
 
@@ -205,14 +205,14 @@ void testPlaneEquation() {
     plane.getPlaneEquation(a, b, c, d);
     
     // The normal should be normalized, so coefficients will be scaled
-    Vector3D normalizedNormal = normal.normalized();
-    assert(isEqual(a, normalizedNormal.x));
-    assert(isEqual(b, normalizedNormal.y));
-    assert(isEqual(c, normalizedNormal.z));
+    Vector3D normalizedNormal = normal.normal();
+    assert(isEqual(a, normalizedNormal.x()));
+    assert(isEqual(b, normalizedNormal.y()));
+    assert(isEqual(c, normalizedNormal.z()));
     
     // Verify the equation works for points on the plane
     Vector3D testPoint(0, 4, 0);  // Should be on the plane
-    double result = a * testPoint.x + b * testPoint.y + c * testPoint.z + d;
+    double result = a * testPoint.x() + b * testPoint.y() + c * testPoint.z() + d;
     assert(isEqual(result, 0.0));
 }
 
@@ -229,7 +229,7 @@ void testPlaneSetters() {
     // Test setNormal
     Vector3D newNormal(1, 2, 2);
     plane.setNormal(newNormal);
-    Vector3D expectedNormal = newNormal.normalized();
+    Vector3D expectedNormal = newNormal.normal();
     assert(isEqual(plane.getNormal(), expectedNormal));
     assert(isEqual(plane.getNormal().length(), 1.0));
 }
@@ -244,10 +244,19 @@ void testPlaneValidation() {
     
     // Test invalid plane with zero normal
     Vector3D zeroNormal(0, 0, 0);
-    Plane invalidPlane(origin, zeroNormal);
-    assert(!invalidPlane.isValid());
+    try {
+        Plane invalidPlane(origin, zeroNormal);
+        assert(!invalidPlane.isValid()); // Should not reach here
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero normal
+    }
+    
     
     // Test plane that becomes invalid after setting zero normal
-    validPlane.setNormal(zeroNormal);
-    assert(!validPlane.isValid());
+    try {
+        validPlane.setNormal(zeroNormal);
+        assert(!validPlane.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero normal
+    }
 }

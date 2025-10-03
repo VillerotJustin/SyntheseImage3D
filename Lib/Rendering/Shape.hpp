@@ -33,11 +33,11 @@ namespace rendering {
     struct is_allowed_geometry : std::false_type {};
 
     // Specializations for allowed types
-    template<> struct is_allowed_geometry<geometry::Box> : std::true_type {};
-    template<> struct is_allowed_geometry<geometry::Circle> : std::true_type {};
-    template<> struct is_allowed_geometry<geometry::Plane> : std::true_type {};
-    template<> struct is_allowed_geometry<geometry::Rectangle> : std::true_type {};
-    template<> struct is_allowed_geometry<geometry::Sphere> : std::true_type {};
+    template<> struct is_allowed_geometry<::geometry::Box> : std::true_type {};
+    template<> struct is_allowed_geometry<::geometry::Circle> : std::true_type {};
+    template<> struct is_allowed_geometry<::geometry::Plane> : std::true_type {};
+    template<> struct is_allowed_geometry<::geometry::Rectangle> : std::true_type {};
+    template<> struct is_allowed_geometry<::geometry::Sphere> : std::true_type {};
 
     // Helper variable template for easier usage
     template<typename T>
@@ -263,11 +263,22 @@ namespace rendering {
                 return false;
             }
             // If the geometry type has an isValid() method, call it
-            if constexpr (requires { geometry->isValid(); }) {
-                return geometry->isValid();
-            }
+            return isValidHelper();
+        }
+
+    private:
+        // SFINAE helper for checking if GeometryType has isValid() method
+        template<typename T = GeometryType>
+        auto isValidHelper() const -> decltype(std::declval<T*>()->isValid(), bool()) {
+            return geometry->isValid();
+        }
+        
+        // Fallback when isValid() doesn't exist
+        bool isValidHelper(...) const {
             return true;
         }
+
+    public:
 
         /**
          * @brief Access the geometry directly (throws if no geometry)
@@ -325,11 +336,11 @@ namespace rendering {
     };
 
     // Common type aliases for convenience
-    using ColoredBox = Shape<geometry::Box>;
-    using ColoredCircle = Shape<geometry::Circle>;
-    using ColoredSphere = Shape<geometry::Sphere>;
-    using ColoredPlane = Shape<geometry::Plane>;
-    using ColoredRectangle = Shape<geometry::Rectangle>;
+    using ColoredBox = Shape<::geometry::Box>;
+    using ColoredCircle = Shape<::geometry::Circle>;
+    using ColoredSphere = Shape<::geometry::Sphere>;
+    using ColoredPlane = Shape<::geometry::Plane>;
+    using ColoredRectangle = Shape<::geometry::Rectangle>;
 
 } // namespace rendering
 

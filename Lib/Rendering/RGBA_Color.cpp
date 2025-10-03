@@ -156,11 +156,14 @@ namespace rendering {
     }
 
     bool RGBA_Color::operator==(const RGBA_Color& other) const {
-        return components == other.components;
+        return r() == other.r() && 
+               g() == other.g() && 
+               b() == other.b() && 
+               a() == other.a();
     }
 
     bool RGBA_Color::operator!=(const RGBA_Color& other) const {
-        return !(components == other.components);
+        return !(*this == other);
     }
 
     // Utility methods

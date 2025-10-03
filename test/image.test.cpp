@@ -161,26 +161,26 @@ void testBitmapOutput() {
         // Test 1: Basic gradient pattern
         std::cout << "Creating gradient test pattern..." << std::endl;
         Image gradientImg = createTestPattern(200, 150);
-        gradientImg.toBitmapFile("test_gradient.bmp", outputPath);
+        gradientImg.toBitmapFile("test_gradient", outputPath);
         assertEqual(true, "Gradient bitmap creation");
         
         // Test 2: Checkerboard pattern
         std::cout << "Creating checkerboard pattern..." << std::endl;
         Image checkerImg = createCheckerboard(160, 160, 20);
-        checkerImg.toBitmapFile("test_checkerboard.bmp", outputPath);
+        checkerImg.toBitmapFile("test_checkerboard", outputPath);
         assertEqual(true, "Checkerboard bitmap creation");
         
         // Test 3: Color gradient
         std::cout << "Creating color gradient..." << std::endl;
         Image colorGradient = createColorGradient(300, 100);
-        colorGradient.toBitmapFile("test_color_gradient.bmp", outputPath);
+        colorGradient.toBitmapFile("test_color_gradient", outputPath);
         assertEqual(true, "Color gradient bitmap creation");
         
         // Test 4: Small image
         std::cout << "Creating small test image..." << std::endl;
         Image smallImg(50, 50);
         smallImg.fill(RGBA_Color(0.8, 0.2, 0.6, 1.0)); // Purple
-        smallImg.toBitmapFile("test_small.bmp", outputPath);
+        smallImg.toBitmapFile("test_small", outputPath);
         assertEqual(true, "Small image bitmap creation");
         
         // Test 5: Image transformations
@@ -188,24 +188,24 @@ void testBitmapOutput() {
         Image transformImg = createColorGradient(120, 80);
         
         // Save original
-        transformImg.toBitmapFile("test_original.bmp", outputPath);
+        transformImg.toBitmapFile("test_original", outputPath);
         
         // Test grayscale conversion
         Image grayscaleImg = transformImg.copy();
         grayscaleImg.toGrayscale();
-        grayscaleImg.toBitmapFile("test_grayscale.bmp", outputPath);
+        grayscaleImg.toBitmapFile("test_grayscale", outputPath);
         assertEqual(true, "Grayscale conversion bitmap");
         
         // Test black and white conversion
         Image bwImg = transformImg.copy();
         bwImg.toBlackAndWhite(0.5);
-        bwImg.toBitmapFile("test_blackwhite.bmp", outputPath);
+        bwImg.toBitmapFile("test_blackwhite", outputPath);
         assertEqual(true, "Black and white conversion bitmap");
         
         // Test color inversion
         Image invertedImg = transformImg.copy();
         invertedImg.invertColors();
-        invertedImg.toBitmapFile("test_inverted.bmp", outputPath);
+        invertedImg.toBitmapFile("test_inverted", outputPath);
         assertEqual(true, "Color inversion bitmap");
         
         // Test 6: Different sizes
@@ -217,7 +217,7 @@ void testBitmapOutput() {
             int h = sizes[i].second;
             
             Image sizeTestImg = createTestPattern(w, h);
-            std::string filename = "test_size_" + std::to_string(w) + "x" + std::to_string(h) + ".bmp";
+            std::string filename = "test_size_" + std::to_string(w) + "x" + std::to_string(h) + "";
             sizeTestImg.toBitmapFile(filename, outputPath);
         }
         assertEqual(true, "Various size bitmap creation");
@@ -262,15 +262,15 @@ int main() {
         
         std::cout << "\n🎉 All Image tests passed successfully!" << std::endl;
         std::cout << "\n📁 Test output files saved to: test/test_by_product/" << std::endl;
-        std::cout << "   - test_gradient.bmp (gradient pattern)" << std::endl;
-        std::cout << "   - test_checkerboard.bmp (checkerboard pattern)" << std::endl;
-        std::cout << "   - test_color_gradient.bmp (RGB color gradient)" << std::endl;
-        std::cout << "   - test_small.bmp (small purple image)" << std::endl;
-        std::cout << "   - test_original.bmp (original color image)" << std::endl;
-        std::cout << "   - test_grayscale.bmp (grayscale conversion)" << std::endl;
-        std::cout << "   - test_blackwhite.bmp (black & white threshold)" << std::endl;
-        std::cout << "   - test_inverted.bmp (color inversion)" << std::endl;
-        std::cout << "   - test_size_*.bmp (various size tests)" << std::endl;
+        std::cout << "   - test_gradient (gradient pattern)" << std::endl;
+        std::cout << "   - test_checkerboard (checkerboard pattern)" << std::endl;
+        std::cout << "   - test_color_gradient (RGB color gradient)" << std::endl;
+        std::cout << "   - test_small (small purple image)" << std::endl;
+        std::cout << "   - test_original (original color image)" << std::endl;
+        std::cout << "   - test_grayscale (grayscale conversion)" << std::endl;
+        std::cout << "   - test_blackwhite (black & white threshold)" << std::endl;
+        std::cout << "   - test_inverted (color inversion)" << std::endl;
+        std::cout << "   - test_size_* (various size tests)" << std::endl;
         
         return 0;
     } catch (const std::exception& e) {

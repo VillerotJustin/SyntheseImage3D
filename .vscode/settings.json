@@ -86,5 +86,7 @@
     "source_location": "cpp",
     "valarray": "cpp"
   },
-  "C_Cpp.errorSquiggles": "enabled"
+  "C_Cpp.errorSquiggles": "enabled",
+  "C_Cpp.vcFormat.newLine.closeBraceSameLine.emptyFunction": true,
+  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }"
 }

@@ -14,6 +14,7 @@
 #include "./Plane.h"
 #include "./Circle.h"
 #include <optional>
+#include <variant>
 
 namespace geometry {
 
@@ -95,13 +96,13 @@ namespace geometry {
          * @return bool True if the spheres intersect, false otherwise
          */
         bool intersects(const Sphere& other) const;
-
+        
         /**
          * Get the intersection points of two spheres (if they intersect)
          * @param Sphere other Other sphere to check
-         * @return std::optional<Circle, Vector3D, Sphere> point if tangent, Circle if intersecting in a circle, sphere if equal, nullopt if no intersection
+         * @return std::optional<std::variant<Circle, Vector3D, Sphere>> point if tangent, Circle if intersecting in a circle, sphere if equal, nullopt if no intersection
          */
-        std::optional<Circle, Vector3D, Sphere> intersectionPoints(const Sphere& other) const;
+        std::optional<std::variant<Circle, Vector3D, Sphere>> intersectionPoints(const Sphere& other) const;
 
         /**
          * Check if a ray intersects the sphere

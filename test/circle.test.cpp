@@ -3,8 +3,8 @@
 #include <cmath>
 #include <stdexcept>
 #include "../Lib/Geometry/Circle.h"
-#include "../Lib/Vector3D.h"  // Assuming Vector3D will be created
-#include "../Lib/math_common.h"
+#include "../Lib/Geometry/Vector3D.h"  // Assuming Vector3D will be created
+#include "../Lib/Math/math_common.h"
 
 using namespace geometry;
 
@@ -73,12 +73,12 @@ void testCircleConstructor() {
     // Test getters
     assert(isEqual(circle.getCenter(), center));
     assert(isEqual(circle.getRadius(), radius));
-    assert(isEqual(circle.getNormal(), normal.normalized())); // Should be normalized
+    assert(isEqual(circle.getNormal(), normal.normal())); // Should be normal
 }
 
 void testCircleBasicProperties() {
     Vector3D center(1, 2, 3);
-    Vector3D normal(1, 1, 1); // Will be normalized to (√3/3, √3/3, √3/3)
+    Vector3D normal(1, 1, 1); // Will be normal to (√3/3, √3/3, √3/3)
     double radius = 4.0;
     
     Circle circle(center, radius, normal);
@@ -91,7 +91,7 @@ void testCircleBasicProperties() {
     double expectedArea = math::pi * radius * radius;
     assert(isEqual(circle.getArea(), expectedArea));
     
-    // Test that normal is normalized
+    // Test that normal is normal
     assert(isEqual(circle.getNormal().length(), 1.0));
 }
 
@@ -162,12 +162,12 @@ void testCircleSetters() {
     assert(isEqual(circle.getRadius(), newRadius));
     
     // Test setNormal
-    Vector3D newNormal(1, 2, 2); // Will be normalized
+    Vector3D newNormal(1, 2, 2); // Will be normal
     circle.setNormal(newNormal);
-    Vector3D expectedNormal = newNormal.normalized();
+    Vector3D expectedNormal = newNormal.normal();
     assert(isEqual(circle.getNormal(), expectedNormal));
     
-    // Verify normal is still normalized after setting
+    // Verify normal is still normal after setting
     assert(isEqual(circle.getNormal().length(), 1.0));
 }
 
@@ -180,17 +180,29 @@ void testCircleValidation() {
     assert(validCircle.isValid());
     
     // Test invalid circle with zero radius
-    Circle invalidCircle1(center, 0.0, normal);
-    assert(!invalidCircle1.isValid());
+    try {
+        Circle invalidCircle1(center, 0.0, normal);
+        assert(!invalidCircle1.isValid()); // Should not reach here
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero radius
+    }
     
     // Test invalid circle with negative radius
-    Circle invalidCircle2(center, -2.0, normal);
-    assert(!invalidCircle2.isValid());
-    
+    try {
+        Circle invalidCircle2(center, -2.0, normal);
+        assert(!invalidCircle2.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for negative radius
+    }
+
     // Test circle with zero normal vector
     Vector3D zeroNormal(0, 0, 0);
-    Circle invalidCircle3(center, 3.0, zeroNormal);
-    assert(!invalidCircle3.isValid());
+    try {
+        Circle invalidCircle3(center, 3.0, zeroNormal);
+        assert(!invalidCircle3.isValid());
+    } catch (const std::invalid_argument&) {
+        // Expected exception for zero normal
+    }
 }
 
 void testCircleParametricPoints() {

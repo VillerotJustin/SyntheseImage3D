@@ -111,6 +111,47 @@ namespace math {
          */
         bool empty() const;
 
+        void append(T* element);
+
+        /**
+         * @brief Insert an element at a specific position.
+         * @param index The position where to insert the element.
+         * @param element The element to insert.
+         * @throws std::out_of_range if index is out of bounds.
+         */
+        void insert(int index, T* element);
+
+        /**
+         * @brief Remove an element at a specific position.
+         * @param index The position of the element to remove.
+         * @throws std::out_of_range if index is out of bounds.
+         */
+        void erase(int index);
+
+        /**
+         * @brief Returns a pointer to the first element (iterator begin).
+         * @return Pointer to the first element.
+         */
+        T** begin() { return elements; }
+
+        /**
+         * @brief Returns a const pointer to the first element (iterator begin).
+         * @return Const pointer to the first element.
+         */
+        const T* const* begin() const { return elements; }
+
+        /**
+         * @brief Returns a pointer to past-the-end element (iterator end).
+         * @return Pointer to past-the-end element.
+         */
+        T** end() { return elements + m_size; }
+
+        /**
+         * @brief Returns a const pointer to past-the-end element (iterator end).
+         * @return Const pointer to past-the-end element.
+         */
+        const T* const* end() const { return elements + m_size; }
+
         /**
          * @brief Output stream operator for debugging purposes.
          * @param os The output stream.
@@ -134,17 +175,25 @@ namespace math {
 
     template<typename T>
     Vector<T>::Vector(int size) : m_size(size) {
-        allocateSpace();
-        for (int i = 0; i < m_size; ++i) {
-            elements[i] = nullptr;
+        if (m_size > 0) {
+            allocateSpace();
+            for (int i = 0; i < m_size; ++i) {
+                elements[i] = nullptr;
+            }
+        } else {
+            elements = nullptr;
         }
     }
 
     template<typename T>
     Vector<T>::Vector(T** data, int size) : m_size(size) {
-        allocateSpace();
-        for (int i = 0; i < m_size; ++i) {
-            elements[i] = data[i];
+        if (m_size > 0) {
+            allocateSpace();
+            for (int i = 0; i < m_size; ++i) {
+                elements[i] = data[i];
+            }
+        } else {
+            elements = nullptr;
         }
     }
 
@@ -159,9 +208,13 @@ namespace math {
 
     template<typename T>
     Vector<T>::Vector(const Vector& other) : m_size(other.m_size) {
-        allocateSpace();
-        for (int i = 0; i < m_size; ++i) {
-            elements[i] = other.elements[i];
+        if (m_size > 0) {
+            allocateSpace();
+            for (int i = 0; i < m_size; ++i) {
+                elements[i] = other.elements[i];
+            }
+        } else {
+            elements = nullptr;
         }
     }
 
@@ -174,7 +227,11 @@ namespace math {
         if (m_size != other.m_size) {
             delete[] elements;
             m_size = other.m_size;
-            allocateSpace();
+            if (m_size > 0) {
+                allocateSpace();
+            } else {
+                elements = nullptr;
+            }
         }
 
         for (int i = 0; i < m_size; ++i) {
@@ -237,6 +294,74 @@ namespace math {
     template<typename T>
     void Vector<T>::allocateSpace() {
         elements = new T*[m_size];
+    }
+
+    template<typename T>
+    void Vector<T>::append(T* element) {
+        T** newElements = new T*[m_size + 1];
+        for (int i = 0; i < m_size; ++i) {
+            newElements[i] = elements[i];
+        }
+        newElements[m_size] = element;
+        delete[] elements;
+        elements = newElements;
+        ++m_size;
+    }
+
+    template<typename T>
+    void Vector<T>::insert(int index, T* element) {
+        if (index < 0 || index > m_size) {
+            throw std::out_of_range("Vector index out of bounds");
+        }
+        
+        T** newElements = new T*[m_size + 1];
+        
+        // Copy elements before the insertion point
+        for (int i = 0; i < index; ++i) {
+            newElements[i] = elements[i];
+        }
+        
+        // Insert the new element
+        newElements[index] = element;
+        
+        // Copy elements after the insertion point
+        for (int i = index; i < m_size; ++i) {
+            newElements[i + 1] = elements[i];
+        }
+        
+        delete[] elements;
+        elements = newElements;
+        ++m_size;
+    }
+
+    template<typename T>
+    void Vector<T>::erase(int index) {
+        if (index < 0 || index >= m_size) {
+            throw std::out_of_range("Vector index out of bounds");
+        }
+        
+        if (m_size == 1) {
+            delete[] elements;
+            elements = nullptr;
+            m_size = 0;
+            return;
+        }
+        
+        T** newElements = new T*[m_size - 1];
+        
+        // Copy elements before the removal point
+        for (int i = 0; i < index; ++i) {
+            newElements[i] = elements[i];
+        }
+        
+        // Copy elements after the removal point
+        for (int i = index + 1; i < m_size; ++i) {
+            newElements[i - 1] = elements[i];
+        }
+        
+        delete[] elements;
+        elements = newElements;
+        --m_size;
     }
 
     template<typename T>

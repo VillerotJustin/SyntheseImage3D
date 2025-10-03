@@ -147,9 +147,60 @@ void testVectorMethods() {
     // Test size
     assert(v1.size() == 3);
     
+    // Test append method
+    Vector<double> v2(0);  // Start with empty vector
+    double* val3 = new double(3.0);
+    double* val4 = new double(4.0);
+    double* val5 = new double(5.0);
+    
+    v2.append(val3);
+    assert(v2.size() == 1);
+    assert(v2[0] == val3);
+    
+    v2.append(val4);
+    assert(v2.size() == 2);
+    assert(v2[1] == val4);
+    
+    // Test insert method
+    v2.insert(1, val5);  // Insert at index 1
+    assert(v2.size() == 3);
+    assert(v2[0] == val3);  // Original first element
+    assert(v2[1] == val5);  // Newly inserted element
+    assert(v2[2] == val4);  // Original second element moved to index 2
+    
+    // Test insert at beginning
+    double* val6 = new double(6.0);
+    v2.insert(0, val6);
+    assert(v2.size() == 4);
+    assert(v2[0] == val6);  // New first element
+    assert(v2[1] == val3);  // Previous elements shifted
+    
+    // Test insert at end
+    double* val7 = new double(7.0);
+    v2.insert(v2.size(), val7);  // Insert at end
+    assert(v2.size() == 5);
+    assert(v2[4] == val7);
+    
+    // Test begin and end iterators
+    assert(v2.begin() == &v2[0]);
+    assert(v2.end() == v2.begin() + v2.size());
+    
+    // Test iterator-based loop (basic functionality)
+    int count = 0;
+    for (auto it = v2.begin(); it != v2.end(); ++it) {
+        assert(*it != nullptr);  // All elements should be non-null
+        count++;
+    }
+    assert(count == 5);
+    
     // Clean up
     delete val1;
     delete val2;
+    delete val3;
+    delete val4;
+    delete val5;
+    delete val6;
+    delete val7;
 }
 
 void testVector3Constructors() {
@@ -273,6 +324,23 @@ void testErrorHandling() {
     } catch (const std::out_of_range&) {
         // Expected
     }
+    
+    // Test insert out of bounds
+    double* testVal = new double(99.0);
+    try {
+        v.insert(-1, testVal);  // Negative index
+        assert(false);  // Should not reach here
+    } catch (const std::out_of_range&) {
+        // Expected
+    }
+    
+    try {
+        v.insert(v.size() + 1, testVal);  // Index beyond size
+        assert(false);  // Should not reach here
+    } catch (const std::out_of_range&) {
+        // Expected
+    }
+    delete testVal;
     
     // Test zero vector3D normalization
     Vector3D zero_v3;

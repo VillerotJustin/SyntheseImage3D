@@ -1,5 +1,5 @@
 #include "./Sphere.h"
-#include "../math_common.h"
+#include "../Math/math_common.h"
 
 namespace geometry {
 
@@ -7,6 +7,9 @@ namespace geometry {
     Sphere::Sphere(const Vector3D& center, double radius)
         : center(center), radius(radius) {
         // Ensure radius is positive for a valid sphere
+        if (radius <= 0) {
+            throw std::invalid_argument("Radius must be positive");
+        }
     }
 
     // Accessors
@@ -36,19 +39,22 @@ namespace geometry {
     }
 
     Vector3D Sphere::closestPointOnSurface(const Vector3D& point) const {
-        Vector3D dir = (point - center).normalized();
+        Vector3D dir = (point - center).normal();
         return center + dir * radius;
     }
 
     // Intersections
 
     bool Sphere::intersects(const Sphere& other) const {
-        double distSquared = (other.center - center).lengthSquared();
+        double distBetweenSpheres = (other.center - center).length();
         double radiusSum = this->radius + other.radius;
-        return distSquared <= radiusSum * radiusSum;
+        double radiusDiff = std::abs(this->radius - other.radius);
+        
+        // Spheres intersect if they are not too far apart AND one is not inside the other
+        return distBetweenSpheres <= radiusSum && distBetweenSpheres >= radiusDiff;
     }
 
-    std::optional<Circle, Vector3D, Sphere> Sphere::intersectionPoints(const Sphere& other) const {
+    std::optional<std::variant<Circle, Vector3D, Sphere>> Sphere::intersectionPoints(const Sphere& other) const {
         double distBetweenSpheres = (other.center - center).length();
         if (distBetweenSpheres > radius + other.radius || distBetweenSpheres < std::abs(radius - other.radius)) {
             return std::nullopt; // No intersection too far apart or one inside the other
@@ -62,7 +68,7 @@ namespace geometry {
         // Case of tangent spheres with some precision tolerance
         if (std::abs(distBetweenSpheres - (radius + other.radius)) <= 1e-9 || // Externally tangent
             std::abs(distBetweenSpheres - std::abs(radius - other.radius)) <= 1e-9) { // Internally tangent
-            Vector3D point = center + (other.center - center).normalized() * radius;
+            Vector3D point = center + (other.center - center).normal() * radius;
             return point; // Single intersection point
         }
 
@@ -97,8 +103,8 @@ namespace geometry {
         double a = (radius * radius - other.radius * other.radius + distBetweenSpheres * distBetweenSpheres) / (2 * distBetweenSpheres);
         double circleRadius = std::sqrt(radius * radius - a * a); // or h
 
-        Vector3D circleCenter = center + (other.center - center).normalized() * a; // Or P
-        Vector3D circleNormal = (other.center - center).normalized();
+        Vector3D circleCenter = center + (other.center - center).normal() * a; // Or P
+        Vector3D circleNormal = (other.center - center).normal();
 
         return Circle(circleCenter, circleRadius, circleNormal); // Radius will be set later
     }
@@ -114,7 +120,7 @@ namespace geometry {
         }
 
         // if ray point at sphere center
-        if (oc.isparallel(ray.getDirection())) {
+        if (oc.parallel(ray.getDirection())) {
             return true;
         }
 
@@ -138,7 +144,7 @@ namespace geometry {
         }
 
         // if ray point at sphere center
-        if (oc.isparallel(ray.getDirection())) {
+        if (oc.parallel(ray.getDirection())) {
             return distancefromCenterToRayOrigin - radius;
         }
 
@@ -165,7 +171,7 @@ namespace geometry {
     // Utility Methods
 
     void Sphere::translate(const Vector3D& translation) {
-        center += translation;
+        center = center + translation;
     }
 
     bool Sphere::isValid() const {
@@ -180,8 +186,8 @@ namespace geometry {
 
     Box Sphere::getBoundingBox() const {
         Vector3D minCorner = center - Vector3D(radius, radius, radius);
-        Vector3D maxCorner = center + Vector3D(radius, radius, radius);
-        return Box(minCorner, 2 * radius, 2 * radius, 2 * radius);
+        Vector3D boxNormal(1, 0, 0); // Arbitrary normals
+        return Box(minCorner, 2 * radius, 2 * radius, 2 * radius, boxNormal);
     }
 
     Vector3D Sphere::randomPointOnSurface() const {
@@ -196,13 +202,21 @@ namespace geometry {
     }
 
     Vector3D Sphere::randomPointInside() const {
-        double u = static_cast<double>(rand()) / RAND_MAX;
-        double v = static_cast<double>(rand()) / RAND_MAX;
-        double w = static_cast<double>(rand()) / RAND_MAX;
-        double x = radius * std::cbrt(u);
-        double y = radius * std::cbrt(v);
-        double z = radius * std::cbrt(w);
-        return center + Vector3D(x, y, z);
+        // Generate a random point uniformly distributed inside the sphere
+        // Using rejection sampling method for uniformity
+        double u, v, w, norm;
+        do {
+            u = 2.0 * static_cast<double>(rand()) / RAND_MAX - 1.0;  // [-1, 1]
+            v = 2.0 * static_cast<double>(rand()) / RAND_MAX - 1.0;  // [-1, 1]
+            w = 2.0 * static_cast<double>(rand()) / RAND_MAX - 1.0;  // [-1, 1]
+            norm = u*u + v*v + w*w;
+        } while (norm > 1.0);  // Reject points outside unit sphere
+        
+        // Scale to desired radius with uniform distribution
+        double scale = radius * std::cbrt(static_cast<double>(rand()) / RAND_MAX);
+        double factor = scale / std::sqrt(norm);
+        
+        return center + Vector3D(u * factor, v * factor, w * factor);
     }
 
     // Advanced Methods
@@ -211,7 +225,7 @@ namespace geometry {
         if (!surfacePoint(point)) {
             throw std::invalid_argument("Point is not on the surface of the sphere");
         }
-        return (point - center).normalized();
+        return (point - center).normal();
     }
 
     Plane Sphere::tangentPlaneAtPoint(const Vector3D& point) const {
@@ -220,7 +234,7 @@ namespace geometry {
     }
 
     Vector3D Sphere::projectPointOntoSurface(const Vector3D& point) const {
-        Vector3D dir = (point - center).normalized();
+        Vector3D dir = (point - center).normal();
         return center + dir * radius;
     }
 
