@@ -1,0 +1,121 @@
+# SyntheseImage3D Test Makefile
+# Simple Makefile for compiling and running tests
+
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -g
+TEST_DIR = test
+EXECUTABLE_DIR = $(TEST_DIR)/Executables
+
+# Library source files that need to be linked
+LIB_SOURCES = Lib/Geometry/Quaternion.cpp Lib/Geometry/Vector3D.cpp Lib/Rendering/RGBA_Color.cpp
+
+# Test source files
+VECTOR_TEST_SRC = $(TEST_DIR)/vector_test.cpp
+QUATERNION_TEST_SRC = $(TEST_DIR)/quaternion_test.cpp
+RGBA_COLOR_TEST_SRC = $(TEST_DIR)/rgba_color_test.cpp
+MATRIX_TEST_SRC = $(TEST_DIR)/matrix_test.cpp
+
+# Test executables
+VECTOR_TEST = $(EXECUTABLE_DIR)/vector_test
+QUATERNION_TEST = $(EXECUTABLE_DIR)/quaternion_test
+RGBA_COLOR_TEST = $(EXECUTABLE_DIR)/rgba_color_test
+MATRIX_TEST = $(EXECUTABLE_DIR)/matrix_test
+
+# All tests
+TESTS = $(VECTOR_TEST) $(QUATERNION_TEST) $(RGBA_COLOR_TEST) $(MATRIX_TEST)
+
+# Default target: compile and run all tests
+.PHONY: all
+all: compile run
+
+# Create executable directory
+$(EXECUTABLE_DIR):
+	mkdir -p $(EXECUTABLE_DIR)
+
+# Compile individual tests
+$(VECTOR_TEST): $(VECTOR_TEST_SRC) | $(EXECUTABLE_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LIB_SOURCES)
+
+$(QUATERNION_TEST): $(QUATERNION_TEST_SRC) | $(EXECUTABLE_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LIB_SOURCES)
+
+$(RGBA_COLOR_TEST): $(RGBA_COLOR_TEST_SRC) | $(EXECUTABLE_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LIB_SOURCES)
+
+$(MATRIX_TEST): $(MATRIX_TEST_SRC) | $(EXECUTABLE_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LIB_SOURCES)
+
+# Compile all tests
+.PHONY: compile
+compile: $(TESTS)
+	@echo "✓ All tests compiled successfully"
+
+# Run individual tests
+.PHONY: run-vector
+run-vector: $(VECTOR_TEST)
+	@echo "Running vector test..."
+	@./$(VECTOR_TEST)
+
+.PHONY: run-quaternion
+run-quaternion: $(QUATERNION_TEST)
+	@echo "Running quaternion test..."
+	@./$(QUATERNION_TEST)
+
+.PHONY: run-rgba-color
+run-rgba-color: $(RGBA_COLOR_TEST)
+	@echo "Running RGBA color test..."
+	@./$(RGBA_COLOR_TEST)
+
+.PHONY: run-matrix
+run-matrix: $(MATRIX_TEST)
+	@echo "Running matrix test..."
+	@./$(MATRIX_TEST)
+
+# Run all tests
+.PHONY: run
+run: $(TESTS)
+	@echo "Running all tests..."
+	@./$(VECTOR_TEST)
+	@echo ""
+	@./$(QUATERNION_TEST)
+	@echo ""
+	@./$(RGBA_COLOR_TEST)
+	@echo ""
+	@./$(MATRIX_TEST)
+	@echo ""
+	@echo "🎉 All tests completed!"
+
+# Clean compiled tests
+.PHONY: clean
+clean:
+	rm -f $(TESTS)
+	@echo "✓ Test executables cleaned"
+
+# Clean and rebuild
+.PHONY: rebuild
+rebuild: clean compile
+
+# Show help
+.PHONY: help
+help:
+	@echo "SyntheseImage3D Test Makefile"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all             Compile and run all tests (default)"
+	@echo "  compile         Compile all tests only"
+	@echo "  run             Run all compiled tests"
+	@echo "  clean           Remove compiled test executables"
+	@echo "  rebuild         Clean and recompile all tests"
+	@echo ""
+	@echo "Individual test targets:"
+	@echo "  run-vector      Compile and run vector test"
+	@echo "  run-quaternion  Compile and run quaternion test"
+	@echo "  run-rgba-color  Compile and run RGBA color test"
+	@echo "  run-matrix      Compile and run matrix test"
+	@echo ""
+	@echo "Usage examples:"
+	@echo "  make            # Compile and run all tests"
+	@echo "  make compile    # Compile tests only"
+	@echo "  make run        # Run pre-compiled tests"
+	@echo "  make run-vector # Run only vector test"
+	@echo "  make clean      # Clean executables"

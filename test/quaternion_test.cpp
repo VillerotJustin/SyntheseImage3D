@@ -108,12 +108,18 @@ void testQuaternionConstructors() {
     
     // Test Vector constructor
     math::Vector<double> v(4);
-    *v[0] = 1.0; *v[1] = 0.0; *v[2] = 0.0; *v[3] = 0.0;
+    v[0] = new double(1.0); 
+    v[1] = new double(0.0); 
+    v[2] = new double(0.0); 
+    v[3] = new double(0.0);
     Quaternion q4(v);
     assert(isEqual(q4.w(), 1.0));
     assert(isEqual(q4.x(), 0.0));
     assert(isEqual(q4.y(), 0.0));
     assert(isEqual(q4.z(), 0.0));
+    
+    // Clean up
+    delete v[0]; delete v[1]; delete v[2]; delete v[3];
 }
 
 void testQuaternionAccessors() {
@@ -323,11 +329,16 @@ void testQuaternionErrorHandling() {
     // Test invalid Vector constructor
     try {
         math::Vector<double> v(3);  // Only 3 components instead of 4
-        *v[0] = 1.0; *v[1] = 2.0; *v[2] = 3.0;
+        v[0] = new double(1.0); 
+        v[1] = new double(2.0); 
+        v[2] = new double(3.0);
         Quaternion q(v);
+        
+        // Clean up before assertion
+        delete v[0]; delete v[1]; delete v[2];
         assert(false);  // Should not reach here
     } catch (const std::invalid_argument&) {
-        // Expected
+        // Expected - clean up is handled by exception
     }
     
     // Test zero quaternion normalization

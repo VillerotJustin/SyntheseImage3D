@@ -168,7 +168,9 @@ void testVector3Constructors() {
     
     // Test Vector to Vector3D conversion
     Vector<double> v(3);
-    *v[0] = 4.0; *v[1] = 5.0; *v[2] = 6.0;
+    v[0] = new double(4.0); 
+    v[1] = new double(5.0); 
+    v[2] = new double(6.0);
     Vector3D v3(v);
     assert(isEqual(v3.x(), 4.0));
     assert(isEqual(v3.y(), 5.0));

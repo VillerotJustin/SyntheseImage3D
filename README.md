@@ -46,16 +46,22 @@ This project provides a comprehensive set of mathematical utilities specifically
 
 ## 📚 Library Components
 
-### Core Math (`Lib/`)
+### Core Math (`Lib/Math`)
 
 ```
-Lib/
+Lib/Math
 ├── math_common.h     # Common mathematical constants and utilities
 ├── Vector.h/.cpp     # N-dimensional vector implementation
 ├── Vector3.h/.cpp    # Specialized 3D vector class
 ├── Matrix.h          # Template matrix class (header-only)
 ├── Quaternion.h/.cpp # Quaternion implementation
-└── Image.h/.cpp      # Image processing utilities
+```
+
+### Core Math (`Lib/Rendering`)
+
+```
+Lib/Rendering
+├── 
 ```
 
 ### Tests (`test/`)
