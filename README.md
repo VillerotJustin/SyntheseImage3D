@@ -664,6 +664,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **GitHub**: [@VillerotJustin](https://github.com/VillerotJustin)
 - **Project Link**: [https://github.com/VillerotJustin/SyntheseImage3D](https://github.com/VillerotJustin/SyntheseImage3D)
 
+### Todo List
+
+> **📋 For the todo list, see [`./TODO.md`](./TODO.md)**
+
 ---
 
 **Note**: This library is actively developed and APIs may change between versions. Please check the changelog for breaking changes when updating.
