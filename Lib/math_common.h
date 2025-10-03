@@ -19,6 +19,8 @@ namespace math {
         return std::sqrt(semi_perimeter * f(a) * f(b) * f(c));
     }
 
+
+    // TODO All basic math function to remove cmath need
 }
 
 
