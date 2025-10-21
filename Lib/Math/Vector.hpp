@@ -29,14 +29,14 @@ namespace math {
          * @brief Constructor that creates a vector of size 'size' with all pointers initialized to nullptr.
          * @param size The size of the vector.
          */
-        explicit Vector(int size);
+        explicit Vector(size_t size);
 
         /**
          * @brief Constructor that creates a vector from an array of pointers.
          * @param data Array of pointers to initialize the vector.
          * @param size The size of the vector.
          */
-        Vector(T** data, int size);
+        Vector(T** data, size_t size);
 
         /**
          * @brief Default constructor that creates an empty vector.
@@ -84,7 +84,7 @@ namespace math {
          * @return Reference to the pointer at the specified index.
          * @throws std::out_of_range if index is out of bounds.
          */
-        T*& operator[](int index);
+        T*& operator[](size_t index);
 
         /**
          * @brief Accessor method to get the pointer at a specific index (const version).
@@ -92,13 +92,13 @@ namespace math {
          * @return Const reference to the pointer at the specified index.
          * @throws std::out_of_range if index is out of bounds.
          */
-        const T* operator[](int index) const;
+        const T* operator[](size_t index) const;
 
         /**
          * @brief Method to get the size of the vector.
          * @return The number of elements in the vector.
          */
-        [[nodiscard]] int size() const { return m_size; }
+        [[nodiscard]] size_t size() const { return m_size; }
 
         /**
          * @brief Sets all pointers in the vector to nullptr.
@@ -119,14 +119,14 @@ namespace math {
          * @param element The element to insert.
          * @throws std::out_of_range if index is out of bounds.
          */
-        void insert(int index, T* element);
+        void insert(size_t index, T* element);
 
         /**
          * @brief Remove an element at a specific position.
          * @param index The position of the element to remove.
          * @throws std::out_of_range if index is out of bounds.
          */
-        void erase(int index);
+        void erase(size_t index);
 
         /**
          * @brief Returns a pointer to the first element (iterator begin).
@@ -162,7 +162,7 @@ namespace math {
         friend std::ostream& operator<<(std::ostream& os, const Vector<U>& v);
 
     private:
-        int m_size;     ///< The number of elements in the vector.
+        size_t m_size;     ///< The number of elements in the vector.
         T** elements;   ///< Array of pointers to objects of type T.
 
         /**
@@ -174,10 +174,10 @@ namespace math {
     /* TEMPLATE IMPLEMENTATION */
 
     template<typename T>
-    Vector<T>::Vector(int size) : m_size(size) {
+    Vector<T>::Vector(size_t size) : m_size(size) {
         if (m_size > 0) {
             allocateSpace();
-            for (int i = 0; i < m_size; ++i) {
+            for (size_t i = 0; i < m_size; ++i) {
                 elements[i] = nullptr;
             }
         } else {
@@ -186,10 +186,10 @@ namespace math {
     }
 
     template<typename T>
-    Vector<T>::Vector(T** data, int size) : m_size(size) {
+    Vector<T>::Vector(T** data, size_t size) : m_size(size) {
         if (m_size > 0) {
             allocateSpace();
-            for (int i = 0; i < m_size; ++i) {
+            for (size_t i = 0; i < m_size; ++i) {
                 elements[i] = data[i];
             }
         } else {
@@ -210,7 +210,7 @@ namespace math {
     Vector<T>::Vector(const Vector& other) : m_size(other.m_size) {
         if (m_size > 0) {
             allocateSpace();
-            for (int i = 0; i < m_size; ++i) {
+            for (size_t i = 0; i < m_size; ++i) {
                 elements[i] = other.elements[i];
             }
         } else {
@@ -234,7 +234,7 @@ namespace math {
             }
         }
 
-        for (int i = 0; i < m_size; ++i) {
+        for (size_t i = 0; i < m_size; ++i) {
             elements[i] = other.elements[i];
         }
         return *this;
@@ -245,7 +245,7 @@ namespace math {
         if (m_size != other.m_size) {
             return false;
         }
-        for (int i = 0; i < m_size; ++i) {
+        for (size_t i = 0; i < m_size; ++i) {
             if (elements[i] != other.elements[i]) {
                 return false;
             }
@@ -259,16 +259,16 @@ namespace math {
     }
 
     template<typename T>
-    T*& Vector<T>::operator[](int index) {
-        if (index < 0 || index >= m_size) {
+    T*& Vector<T>::operator[](size_t index) {
+        if (index >= m_size) {
             throw std::out_of_range("Vector index out of bounds");
         }
         return elements[index];
     }
 
     template<typename T>
-    const T* Vector<T>::operator[](int index) const {
-        if (index < 0 || index >= m_size) {
+    const T* Vector<T>::operator[](size_t index) const {
+        if (index >= m_size) {
             throw std::out_of_range("Vector index out of bounds");
         }
         return elements[index];
@@ -276,14 +276,14 @@ namespace math {
 
     template<typename T>
     void Vector<T>::clear() {
-        for (int i = 0; i < m_size; ++i) {
+        for (size_t i = 0; i < m_size; ++i) {
             elements[i] = nullptr;
         }
     }
 
     template<typename T>
     bool Vector<T>::empty() const {
-        for (int i = 0; i < m_size; ++i) {
+        for (size_t i = 0; i < m_size; ++i) {
             if (elements[i] != nullptr) {
                 return false;
             }
@@ -299,7 +299,7 @@ namespace math {
     template<typename T>
     void Vector<T>::append(T* element) {
         T** newElements = new T*[m_size + 1];
-        for (int i = 0; i < m_size; ++i) {
+        for (size_t i = 0; i < m_size; ++i) {
             newElements[i] = elements[i];
         }
         newElements[m_size] = element;
@@ -309,15 +309,15 @@ namespace math {
     }
 
     template<typename T>
-    void Vector<T>::insert(int index, T* element) {
-        if (index < 0 || index > m_size) {
+    void Vector<T>::insert(size_t index, T* element) {
+        if (index > m_size) {
             throw std::out_of_range("Vector index out of bounds");
         }
         
         T** newElements = new T*[m_size + 1];
         
         // Copy elements before the insertion point
-        for (int i = 0; i < index; ++i) {
+        for (size_t i = 0; i < index; ++i) {
             newElements[i] = elements[i];
         }
         
@@ -325,7 +325,7 @@ namespace math {
         newElements[index] = element;
         
         // Copy elements after the insertion point
-        for (int i = index; i < m_size; ++i) {
+        for (size_t i = index; i < m_size; ++i) {
             newElements[i + 1] = elements[i];
         }
         
@@ -335,8 +335,8 @@ namespace math {
     }
 
     template<typename T>
-    void Vector<T>::erase(int index) {
-        if (index < 0 || index >= m_size) {
+    void Vector<T>::erase(size_t index) {
+        if (index >= m_size) {
             throw std::out_of_range("Vector index out of bounds");
         }
         
@@ -350,12 +350,12 @@ namespace math {
         T** newElements = new T*[m_size - 1];
         
         // Copy elements before the removal point
-        for (int i = 0; i < index; ++i) {
+        for (size_t i = 0; i < index; ++i) {
             newElements[i] = elements[i];
         }
         
         // Copy elements after the removal point
-        for (int i = index + 1; i < m_size; ++i) {
+        for (size_t i = index + 1; i < m_size; ++i) {
             newElements[i - 1] = elements[i];
         }
         
@@ -367,7 +367,7 @@ namespace math {
     template<typename T>
     std::ostream& operator<<(std::ostream& os, const Vector<T>& v) {
         os << "[";
-        for (int i = 0; i < v.m_size; ++i) {
+        for (size_t i = 0; i < v.m_size; ++i) {
             if (i > 0) os << ", ";
             if (v.elements[i] == nullptr) {
                 os << "nullptr";

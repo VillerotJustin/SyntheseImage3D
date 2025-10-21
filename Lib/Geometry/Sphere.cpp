@@ -133,7 +133,7 @@ namespace geometry {
         return false;
     }
 
-    std::optional<double> Sphere::rayIntersectDepth(const Ray& ray, double t) const {
+    std::optional<double> Sphere::rayMarchDistance(const Ray& ray, double t) const {
         // Vector from ray origin to sphere center
         Vector3D oc = ray.getOrigin() - center;
         double distancefromCenterToRayOrigin = oc.length();
@@ -185,6 +185,36 @@ namespace geometry {
         }
 
         return true;
+    }
+
+    std::optional<double> Sphere::rayIntersectDepth(const Ray& ray) const {
+        float t0, t1; // solutions for t if the ray intersects
+
+        // Geometric solution
+        Vector3D L = this->center - ray.getOrigin();
+        float tca = L.dot(ray.getDirection());
+        if (tca < 0) return std::nullopt;
+        float d2 = L.dot(L) - tca * tca;
+        if (d2 > radius * radius) return std::nullopt;
+        float thc = std::sqrt(radius * radius - d2);
+        t0 = tca - thc;
+        t1 = tca + thc;
+
+        // Analitic solution
+        Vector3D oc = ray.getOrigin() - center;
+        float a = ray.getDirection().dot(ray.getDirection());
+        float b = 2.0f * oc.dot(ray.getDirection());
+        float c = oc.dot(oc) - radius * radius;
+        if (!math::solveQuadratic(a, b, c, t0, t1)) return std::nullopt;
+
+        if (t0 > t1) std::swap(t0, t1);
+
+        if (t0 < 0) {
+            t0 = t1; // if t0 is negative, let's use t1 instead
+            if (t0 < 0) return std::nullopt; // both t0 and t1 are negative
+        }
+
+        return t0;
     }
 
     std::optional<Vector3D> Sphere::rayIntersectionHit(const Ray& ray) const {

@@ -24,8 +24,8 @@ namespace rendering {
     struct VideoStats {
         size_t frameCount;           ///< Number of frames in the video
         double duration;             ///< Duration in seconds
-        int width;                   ///< Width in pixels
-        int height;                  ///< Height in pixels
+        size_t width;                ///< Width in pixels
+        size_t height;               ///< Height in pixels
         double framesPerSecond;      ///< Frame rate
         bool isValid;                ///< Whether the video is valid
         size_t estimatedSizeBytes;   ///< Estimated file size in bytes
@@ -58,13 +58,13 @@ namespace rendering {
          * @brief Get the width of the video frames
          * @return int Width in pixels
          */
-        int getWidth() const { return width; }
+        size_t getWidth() const { return width; }
         
         /**
          * @brief Get the height of the video frames
          * @return int Height in pixels
          */
-        int getHeight() const { return height; }
+        size_t getHeight() const { return height; }
         
         /**
          * @brief Get the frame rate of the video
@@ -84,7 +84,7 @@ namespace rendering {
          * @return Image& Reference to the frame at the specified index
          * @throws std::out_of_range if index is invalid
          */
-        Image& getFrame(int index) { return *frames[index]; }
+        Image& getFrame(size_t index) { return *frames[index]; }
         
         /**
          * @brief Get the total number of frames in the video
@@ -112,13 +112,13 @@ namespace rendering {
          * @brief Set the width of the video frames
          * @param w New width in pixels
          */
-        void setWidth(int w) { width = w; }
+        void setWidth(size_t w) { width = w; }
         
         /**
          * @brief Set the height of the video frames
          * @param h New height in pixels
          */
-        void setHeight(int h) { height = h; }
+        void setHeight(size_t h) { height = h; }
         
         /**
          * @brief Set the frame rate of the video
@@ -146,7 +146,7 @@ namespace rendering {
          */
         void clearFrames() { 
             // Delete all frame objects
-            for (int i = 0; i < frames.size(); ++i) {
+            for (size_t i = 0; i < frames.size(); ++i) {
                 delete frames[i];
             }
             // Reset the vector completely
@@ -158,7 +158,7 @@ namespace rendering {
          * @param index Index of the frame to remove
          * @throws std::out_of_range if index is invalid
          */
-        void removeFrame(int index) { frames.erase(index); }
+        void removeFrame(size_t index) { frames.erase(index); }
 
         /**
          * @brief Insert a frame at a specific position
@@ -166,7 +166,7 @@ namespace rendering {
          * @param img Image to insert
          * @throws std::out_of_range if index is invalid
          */
-        void insertFrame(int index, const Image& img);
+        void insertFrame(size_t index, const Image& img);
 
         #pragma endregion
 
@@ -177,7 +177,7 @@ namespace rendering {
          * @return bool True if video has valid dimensions, frame rate, and all frames match dimensions
          */
         bool isValid() const {
-            if (width <= 0 || height <= 0 || framesPerSecond <= 0) {
+            if (width == 0 || height == 0 || framesPerSecond == 0) {
                 return false;
             }
             for (const auto& frame : frames) {
@@ -202,7 +202,7 @@ namespace rendering {
          * @param newWidth New width for all frames
          * @param newHeight New height for all frames
          */
-        void resizeVideo(int newWidth, int newHeight);
+        void resizeVideo(size_t newWidth, size_t newHeight);
 
         /**
          * @brief Create a copy of the video with a subset of frames
@@ -211,7 +211,7 @@ namespace rendering {
          * @return Video New video containing the specified frame range
          * @throws std::out_of_range if frame indices are invalid
          */
-        Video extractFrameRange(int startFrame, int endFrame) const;
+        Video extractFrameRange(size_t startFrame, size_t endFrame) const;
 
         /**
          * @brief Reverse the order of all frames in the video
@@ -226,7 +226,7 @@ namespace rendering {
          * @return Image Thumbnail image
          * @throws std::out_of_range if frameIndex is invalid
          */
-        Image createThumbnail(int frameIndex, int thumbnailWidth, int thumbnailHeight) const;
+        Image createThumbnail(size_t frameIndex, size_t thumbnailWidth, size_t thumbnailHeight) const;
 
         /**
          * @brief Export video as a sequence of individual frame images
@@ -259,8 +259,8 @@ namespace rendering {
         #pragma endregion
 
     private:
-        int width;                  ///< Width of video frames in pixels
-        int height;                 ///< Height of video frames in pixels
+        size_t width;                  ///< Width of video frames in pixels
+        size_t height;                 ///< Height of video frames in pixels
         double framesPerSecond;     ///< Frame rate in frames per second
         math::Vector<Image> frames; ///< Sequence of image frame pointers
 
@@ -290,7 +290,7 @@ namespace rendering {
          * @param padding Number of digits for zero-padding
          * @return std::string Formatted filename
          */
-        std::string generateFrameFilename(int frameIndex, int padding = 4) const;
+        std::string generateFrameFilename(size_t frameIndex, int padding = 4) const;
     };
 
 }

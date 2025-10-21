@@ -61,19 +61,19 @@ namespace rendering {
          * @brief Get the width of the image.
          * @return The width in pixels.
          */
-        int getWidth() const;
+    size_t getWidth() const;
 
         /**
          * @brief Get the height of the image.
          * @return The height in pixels.
          */
-        int getHeight() const;
+    size_t getHeight() const;
 
         /**
          * @brief Get the total number of pixels in the image.
          * @return The number of pixels (width * height).
          */
-        int getNumPixels() const;
+    size_t getNumPixels() const;
 
         /**
          * @brief Check if the image is valid (no null colors).
@@ -88,7 +88,7 @@ namespace rendering {
          * @return Pointer to the color at the specified location.
          * @throws std::out_of_range if coordinates are out of bounds.
          */
-        const RGBA_Color* getPixel(int x, int y) const;
+    const RGBA_Color* getPixel(size_t x, size_t y) const;
 
         /**
          * @brief Set a color at the specified coordinates.
@@ -97,7 +97,7 @@ namespace rendering {
          * @param color The color to set.
          * @throws std::out_of_range if coordinates are out of bounds.
          */
-        void setPixel(int x, int y, const RGBA_Color& color);
+    void setPixel(size_t x, size_t y, const RGBA_Color& color);
 
         /**
          * @brief Fill the entire image with a single color.
@@ -117,7 +117,7 @@ namespace rendering {
          * @param newHeight The new height in pixels.
          * @throws std::invalid_argument if new dimensions are non-positive.
          */
-        void resize(int newWidth, int newHeight);
+    void resize(size_t newWidth, size_t newHeight);
 
         /**
          * @brief Convert the entire image to grayscale.
@@ -149,8 +149,8 @@ namespace rendering {
         const math::Matrix<RGBA_Color>& getPixelMatrix() const;
 
     private:
-        int width;                          ///< Width of the image in pixels
-        int height;                         ///< Height of the image in pixels
+        size_t width;                          ///< Width of the image in pixels
+        size_t height;                         ///< Height of the image in pixels
         math::Matrix<RGBA_Color> pixels;    ///< Matrix storing color data as pointers
     };
 

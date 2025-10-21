@@ -397,7 +397,7 @@ namespace geometry {
     }
 
     Quaternion Quaternion::fromRotationMatrix(const math::Matrix<double>& rotationMatrix) {
-        if (rotationMatrix.getRows() != 3 || rotationMatrix.getCols() != 3) {
+        if (rotationMatrix.getRows() != static_cast<size_t>(3) || rotationMatrix.getCols() != static_cast<size_t>(3)) {
             throw std::invalid_argument("Rotation matrix must be 3x3");
         }
 

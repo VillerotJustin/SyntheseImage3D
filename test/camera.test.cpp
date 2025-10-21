@@ -241,8 +241,8 @@ void testCameraRenderScene2DColor() {
 
     // Check that some pixels have been rendered (not all default/black)
     bool hasNonBlackPixels = false;
-    for (int y = 0; y < image.getHeight() && !hasNonBlackPixels; ++y) {
-        for (int x = 0; x < image.getWidth() && !hasNonBlackPixels; ++x) {
+    for (size_t y = 0; y < image.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < image.getWidth() && !hasNonBlackPixels; ++x) {
             const RGBA_Color* pixel = image.getPixel(x, y);
             if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
                 hasNonBlackPixels = true;
@@ -261,8 +261,10 @@ void testCameraRenderScene2DColor() {
 void testCameraRenderScene2DDepth() {
     // Create camera
     Vector3D origin(0, 0, -5);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 10.0, 10.0, normal);
+    // Build top-right and bottom-left points explicitly instead of using the old ctor
+    Vector3D topRight = origin + Vector3D(10.0, 0, 0);
+    Vector3D bottomLeft = origin + Vector3D(0, 10.0, 0);
+    Rectangle viewport(origin, topRight, bottomLeft);
     Camera camera(viewport);
     
     // Create some shapes to render
@@ -289,8 +291,8 @@ void testCameraRenderScene2DDepth() {
 
     // Check that some pixels have depth values (not all default/black)
     bool hasNonBlackPixels = false;
-    for (int y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
-        for (int x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
+    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
             const RGBA_Color* pixel = depthImage.getPixel(x, y);
             if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
                 hasNonBlackPixels = true;

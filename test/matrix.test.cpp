@@ -80,8 +80,8 @@ void testMatrixConstructors() {
     assert(sizedMatrix.getCols() == 4);
     
     // Check that all elements are initialized to nullptr
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 4; ++j) {
+    for (size_t i = 0; i < sizedMatrix.getRows(); ++i) {
+        for (size_t j = 0; j < sizedMatrix.getCols(); ++j) {
             assert(sizedMatrix(i, j) == nullptr);
         }
     }
@@ -231,8 +231,8 @@ void testMatrixMethods() {
     matrix.clear();
     
     // All elements should be nullptr after clear
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 2; ++j) {
+    for (size_t i = 0; i < matrix.getRows(); ++i) {
+        for (size_t j = 0; j < matrix.getCols(); ++j) {
             assert(matrix(i, j) == nullptr);
         }
     }

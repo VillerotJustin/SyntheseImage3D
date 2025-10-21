@@ -228,7 +228,7 @@ namespace geometry {
         Vector3D intersectionPoint = ray.getPointAt(t);
         
         // Check if intersection point is within the rectangle bounds
-        if (containsPoint(intersectionPoint)) {
+        if (this->containsPoint(intersectionPoint)) {
             return t; // Return intersection depth
         } else {
             return std::nullopt; // No intersection with rectangle bounds

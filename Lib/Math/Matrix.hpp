@@ -27,7 +27,7 @@ namespace math {
          * @param rows The number of rows in the matrix.
          * @param cols The number of columns in the matrix.
          */
-        Matrix(int rows, int cols);
+    Matrix(size_t rows, size_t cols);
 
         /**
          * Constructor that initializes a matrix using a given 2D array of pointers.
@@ -36,7 +36,7 @@ namespace math {
          * @param rows The number of rows in the matrix.
          * @param cols The number of columns in the matrix.
          */
-        Matrix(T*** a, int rows, int cols);
+    Matrix(T*** a, size_t rows, size_t cols);
 
         /**
          * Default constructor that initializes a 1x1 matrix with a nullptr.
@@ -68,7 +68,7 @@ namespace math {
          * @param y Column index.
          * @return Reference to the pointer at (x, y).
          */
-        inline T*& operator()(const int x, const int y) { return p[x][y]; }
+    inline T*& operator()(const size_t x, const size_t y) { return p[x][y]; }
 
         /**
          * Overloaded operator for element access (const version).
@@ -78,7 +78,7 @@ namespace math {
          * @param y Column index.
          * @return Const reference to the pointer at (x, y).
          */
-        inline const T* operator()(const int x, const int y) const { return p[x][y]; }
+    inline const T* operator()(const size_t x, const size_t y) const { return p[x][y]; }
 
         /**
          * Overloaded assignment operator that copies pointer values from another matrix.
@@ -95,7 +95,7 @@ namespace math {
          * @param r1 The index of the first row.
          * @param r2 The index of the second row.
          */
-        void swapRows(int r1, int r2);
+    void swapRows(size_t r1, size_t r2);
 
         /**
          * Returns the transpose of the matrix.
@@ -114,14 +114,14 @@ namespace math {
          *
          * @return The number of rows.
          */
-        int getRows() const;
+    size_t getRows() const;
 
         /**
          * Gets the number of columns in the matrix.
          *
          * @return The number of columns.
          */
-        int getCols() const;
+    size_t getCols() const;
 
         /**
          * Overloaded output stream operator to print the matrix addresses.
@@ -134,7 +134,7 @@ namespace math {
         friend std::ostream& operator<<(std::ostream& os, const Matrix<U>& m);
 
     private:
-        int rows_, cols_;
+    size_t rows_, cols_;
         T ***p{}; /// Pointer to the 2D array holding the matrix pointers
 
         /**
@@ -146,22 +146,22 @@ namespace math {
     /* TEMPLATE IMPLEMENTATION */
 
     template<typename T>
-    Matrix<T>::Matrix(const int rows, const int cols) : rows_(rows), cols_(cols)
+    Matrix<T>::Matrix(const size_t rows, const size_t cols) : rows_(rows), cols_(cols)
     {
         allocSpace();
-        for (int i = 0; i < rows_; ++i) {
-            for (int j = 0; j < cols_; ++j) {
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
                 p[i][j] = nullptr;
             }
         }
     }
 
     template<typename T>
-    Matrix<T>::Matrix(T*** a, const int rows, const int cols) : rows_(rows), cols_(cols)
+    Matrix<T>::Matrix(T*** a, const size_t rows, const size_t cols) : rows_(rows), cols_(cols)
     {
         allocSpace();
-        for (int i = 0; i < rows_; ++i) {
-            for (int j = 0; j < cols_; ++j) {
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
                 p[i][j] = a[i][j];
             }
         }
@@ -177,7 +177,7 @@ namespace math {
     template<typename T>
     Matrix<T>::~Matrix()
     {
-        for (int i = 0; i < rows_; ++i) {
+        for (size_t i = 0; i < rows_; ++i) {
             delete[] p[i];
         }
         delete[] p;
@@ -187,8 +187,8 @@ namespace math {
     Matrix<T>::Matrix(const Matrix& m) : rows_(m.rows_), cols_(m.cols_)
     {
         allocSpace();
-        for (int i = 0; i < rows_; ++i) {
-            for (int j = 0; j < cols_; ++j) {
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
                 p[i][j] = m.p[i][j];
             }
         }
@@ -202,7 +202,7 @@ namespace math {
         }
 
         if (rows_ != m.rows_ || cols_ != m.cols_) {
-            for (int i = 0; i < rows_; ++i) {
+            for (size_t i = 0; i < rows_; ++i) {
                 delete[] p[i];
             }
             delete[] p;
@@ -212,8 +212,8 @@ namespace math {
             allocSpace();
         }
 
-        for (int i = 0; i < rows_; ++i) {
-            for (int j = 0; j < cols_; ++j) {
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
                 p[i][j] = m.p[i][j];
             }
         }
@@ -221,7 +221,7 @@ namespace math {
     }
 
     template<typename T>
-    void Matrix<T>::swapRows(int r1, int r2)
+    void Matrix<T>::swapRows(size_t r1, size_t r2)
     {
         T** temp = p[r1];
         p[r1] = p[r2];
@@ -232,8 +232,8 @@ namespace math {
     Matrix<T> Matrix<T>::transpose()
     {
         Matrix ret(cols_, rows_);
-        for (int i = 0; i < rows_; ++i) {
-            for (int j = 0; j < cols_; ++j) {
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
                 ret.p[j][i] = p[i][j];
             }
         }
@@ -243,21 +243,21 @@ namespace math {
     template<typename T>
     void Matrix<T>::clear()
     {
-        for (int i = 0; i < rows_; ++i) {
-            for (int j = 0; j < cols_; ++j) {
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
                 p[i][j] = nullptr;
             }
         }
     }
 
     template<typename T>
-    int Matrix<T>::getRows() const 
+    size_t Matrix<T>::getRows() const 
     { 
         return rows_; 
     }
 
     template<typename T>
-    int Matrix<T>::getCols() const 
+    size_t Matrix<T>::getCols() const 
     { 
         return cols_; 
     }
@@ -266,7 +266,7 @@ namespace math {
     void Matrix<T>::allocSpace()
     {
         p = new T**[rows_];
-        for (int i = 0; i < rows_; ++i) {
+        for (size_t i = 0; i < rows_; ++i) {
             p[i] = new T*[cols_];
         }
     }
@@ -274,13 +274,13 @@ namespace math {
     template<typename T>
     std::ostream& operator<<(std::ostream& os, const Matrix<T>& m)
     {
-        for (int i = 0; i < m.rows_; ++i) {
+        for (size_t i = 0; i < m.rows_; ++i) {
             if (m.p[i][0] == nullptr) {
                 os << "nullptr";
             } else {
                 os << m.p[i][0];
             }
-            for (int j = 1; j < m.cols_; ++j) {
+            for (size_t j = 1; j < m.cols_; ++j) {
                 if (m.p[i][j] == nullptr) {
                     os << " nullptr";
                 } else {

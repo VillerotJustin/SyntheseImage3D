@@ -209,6 +209,13 @@ namespace geometry {
          */
         bool rayIntersect(const Ray& ray) const;
 
+        /**
+         * Get the distance from the ray origin to the intersection point with the rectangle
+         * @param ray The ray to check
+         * @return std::optional<double> Distance to intersection point, or nullopt if no intersection
+         */      
+        std::optional<double> rayIntersectDepth(const Ray& ray) const;
+
     private:
         Vector3D origin;  // Origin point (corner)
         Vector3D lengthDir; // Length direction unit vector

@@ -36,7 +36,7 @@ namespace rendering {
          * @param viewportLength The length of the camera's viewport
          * @param direction The direction vector the camera is facing (will be normalized)
          */
-        Camera(const Vector3D& position, double viewportWidth, double viewportLength, const Vector3D& direction);
+        Camera(const Rectangle& viewport, float FOV_Angle = 65.0f);
 
         /**
          * Get the viewport rectangle of the camera
@@ -109,12 +109,6 @@ namespace rendering {
          * @param translation The vector to translate the camera
          */
         void translate(const Vector3D& translation);
-
-        /**
-         * Get the position of the camera (origin of the viewport)
-         * @return Vector3D The position of the camera
-         */
-        Vector3D getPosition() const;
 
         /**
          * Get the origin point of the camera's field of view (FOV)

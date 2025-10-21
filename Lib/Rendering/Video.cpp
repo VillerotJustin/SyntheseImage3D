@@ -17,8 +17,8 @@ double Video::getDuration() const {
     return static_cast<double>(frames.size()) / framesPerSecond;
 }
 
-void Video::insertFrame(int index, const Image& img) {
-    if (index < 0 || index > static_cast<int>(frames.size())) {
+void Video::insertFrame(size_t index, const Image& img) {
+    if (index > frames.size()) {
         throw std::out_of_range("Frame index out of range");
     }
     frames.insert(index, new Image(img));
@@ -58,8 +58,8 @@ void Video::exportToFile(const std::string& filename, const std::string& filepat
     }
 }
 
-void Video::resizeVideo(int newWidth, int newHeight) {
-    if (newWidth <= 0 || newHeight <= 0) {
+void Video::resizeVideo(size_t newWidth, size_t newHeight) {
+    if (newWidth == 0 || newHeight == 0) {
         throw std::invalid_argument("New dimensions must be positive");
     }
     
@@ -71,15 +71,14 @@ void Video::resizeVideo(int newWidth, int newHeight) {
     height = newHeight;
 }
 
-Video Video::extractFrameRange(int startFrame, int endFrame) const {
-    if (startFrame < 0 || endFrame < 0 || startFrame >= static_cast<int>(frames.size()) || 
-        endFrame > static_cast<int>(frames.size()) || startFrame >= endFrame) {
+Video Video::extractFrameRange(size_t startFrame, size_t endFrame) const {
+    if (startFrame >= frames.size() || endFrame > frames.size() || startFrame >= endFrame) {
         throw std::out_of_range("Invalid frame range");
     }
     
     Video result(width, height, framesPerSecond);
     
-    for (int i = startFrame; i < endFrame; ++i) {
+    for (size_t i = startFrame; i < endFrame; ++i) {
         result.addFrame(*frames[i]);
     }
     
@@ -90,12 +89,12 @@ void Video::reverseFrames() {
     std::reverse(frames.begin(), frames.end());
 }
 
-Image Video::createThumbnail(int frameIndex, int thumbnailWidth, int thumbnailHeight) const {
-    if (frameIndex < 0 || frameIndex >= static_cast<int>(frames.size())) {
+Image Video::createThumbnail(size_t frameIndex, size_t thumbnailWidth, size_t thumbnailHeight) const {
+    if (frameIndex >= frames.size()) {
         throw std::out_of_range("Frame index out of range");
     }
-    
-    if (thumbnailWidth <= 0 || thumbnailHeight <= 0) {
+
+    if (thumbnailWidth == 0 || thumbnailHeight == 0) {
         throw std::invalid_argument("Thumbnail dimensions must be positive");
     }
 
@@ -109,7 +108,7 @@ void Video::exportFrameSequence(const std::string& basePath, const std::string& 
     // Extract directory and create frame files
     std::string directory = basePath.substr(0, basePath.find_last_of("/\\"));
     
-    for (int i = 0; i < frames.size(); ++i) {
+    for (size_t i = 0; i < frames.size(); ++i) {
         std::string frameFilename = baseFilename + "_frame_" + std::to_string(i);
         
         try {
@@ -148,7 +147,7 @@ void Video::exportMKV(const std::string& filename, const std::string& filepath) 
     
     try {
         // Export frames as temporary BMP files with zero-padded names
-        for (int i = 0; i < frames.size(); ++i) {
+        for (size_t i = 0; i < frames.size(); ++i) {
             // Create zero-padded frame number (6 digits)
             std::string frameNumber = std::to_string(i);
             frameNumber = std::string(6 - frameNumber.length(), '0') + frameNumber;
@@ -203,7 +202,7 @@ void Video::exportMP4(const std::string& filename, const std::string& filepath) 
     
     try {
         // Export frames as temporary PNG files
-        for (int i = 0; i < frames.size(); ++i) {
+        for (size_t i = 0; i < frames.size(); ++i) {
             std::string frameFile = "frame_" + std::string(6 - std::to_string(i).length(), '0') + std::to_string(i);
             frames[i]->toBitmapFile(frameFile, tempDir);
         }
@@ -238,7 +237,7 @@ void Video::exportAsGif(const std::string& filename, const std::string& filepath
     
     try {
         // Export frames as temporary PNG files
-        for (int i = 0; i < frames.size(); ++i) {
+        for (size_t i = 0; i < frames.size(); ++i) {
             std::string frameFile = "frame_" + std::string(6 - std::to_string(i).length(), '0') + std::to_string(i);
             frames[i]->toBitmapFile(frameFile, tempDir);
         }

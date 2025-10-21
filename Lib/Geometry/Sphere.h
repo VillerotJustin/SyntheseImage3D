@@ -122,8 +122,7 @@ namespace geometry {
          * @param double t step while advancing the ray (default 0.01)
          * @return double Distance to intersection point, or -1 if no intersection
          */
-        double rayMarchDistance(const Ray& ray, double t = 0.01) const;
-
+        std::optional<double> rayMarchDistance(const Ray& ray, double t = 0.01) const;
 
         /**
          * Check if a ray intersects the sphere
@@ -131,6 +130,13 @@ namespace geometry {
          * @return bool True if the ray intersects the sphere, false otherwise
          */
         bool rayIntersect(const Ray& ray) const;
+
+        /**
+         * Get the distance from the ray origin to the intersection point with the sphere
+         * @param Ray ray The ray to check
+         * @return std::optional<double> Distance to intersection point, or nullopt if no intersection
+         */
+        std::optional<double> rayIntersectDepth(const Ray& ray) const;
 
         /**
          * Get the distance from the ray origin to the intersection point with the sphere
