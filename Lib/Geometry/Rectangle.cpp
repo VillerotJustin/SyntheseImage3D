@@ -232,4 +232,36 @@ namespace geometry {
         return containsPoint(intersectionPoint);
     }
 
+    std::optional<double> Rectangle::rayIntersectDepth(const Ray& ray) const {
+        // First, check if ray intersects the plane containing the rectangle
+        Vector3D rayDir = ray.getDirection();
+        Vector3D rayOrigin = ray.getOrigin();
+        
+        // Check if ray is parallel to the plane
+        double denominator = rayDir.dot(normal);
+        if (std::abs(denominator) < 1e-9) {
+            // Ray is parallel to the plane
+            return std::nullopt;
+        }
+        
+        // Calculate intersection parameter t
+        Vector3D toOrigin = origin - rayOrigin;
+        double t = toOrigin.dot(normal) / denominator;
+        
+        // Check if intersection point is behind the ray origin
+        if (t < 0) {
+            return std::nullopt;
+        }
+        
+        // Calculate intersection point
+        Vector3D intersectionPoint = ray.getPointAt(t);
+        
+        // Check if intersection point is within the rectangle bounds
+        if (containsPoint(intersectionPoint)) {
+            return t; // Return intersection depth
+        } else {
+            return std::nullopt; // No intersection with rectangle bounds
+        }
+    }
+
 } // namespace geometry

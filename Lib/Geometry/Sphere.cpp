@@ -133,7 +133,7 @@ namespace geometry {
         return false;
     }
 
-    double Sphere::rayIntersectionDistance(const Ray& ray, double t) const {
+    std::optional<double> Sphere::rayIntersectDepth(const Ray& ray, double t) const {
         // Vector from ray origin to sphere center
         Vector3D oc = ray.getOrigin() - center;
         double distancefromCenterToRayOrigin = oc.length();
@@ -154,7 +154,7 @@ namespace geometry {
                 return progress;
             }
         }
-        return -1.0; // No intersection
+        return std::nullopt;
     }
 
 

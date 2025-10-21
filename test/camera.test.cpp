@@ -40,6 +40,7 @@ void testCameraRotation();
 void testCameraTranslation();
 void testCameraRayGeneration();
 void testCameraRenderScene2DColor();
+void testCameraRenderScene2DDepth();
 
 int main() {
     std::cout << "Running Camera tests..." << std::endl;
@@ -62,7 +63,10 @@ int main() {
         
         testCameraRenderScene2DColor();
         std::cout << "✓ Camera render scene tests passed" << std::endl;
-        
+
+        testCameraRenderScene2DDepth();
+        std::cout << "✓ Camera render scene depth tests passed" << std::endl;
+
         std::cout << "All Camera tests passed!" << std::endl;
         return 0;
         
@@ -241,4 +245,50 @@ void testCameraRenderScene2DColor() {
     // Note: This test might be flaky depending on the exact rendering logic
     // If shapes are not intersecting the camera rays, all pixels might be black
     std::cout << "Note: Render test completed - check output manually if needed" << std::endl;
+}
+
+void testCameraRenderScene2DDepth() {
+    // Create camera
+    Vector3D origin(0, 0, -5);
+    Vector3D normal(0, 0, 1);
+    Rectangle viewport(origin, 10.0, 10.0, normal);
+    Camera camera(viewport);
+    
+    // Create some shapes to render
+    math::Vector<Camera::ShapeVariant> shapes;
+    
+    // Add a sphere at the origin
+    Sphere sphere(Vector3D(4, 4, 0), 2.0);
+    Shape<::geometry::Sphere> sphereShape(sphere);
+    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    shapes.append(sphereVariant);
+    
+    // Add a box 
+    Box box(Vector3D(5, 5, 10), 2.0, 2.0, 2.0, Vector3D(0, 0, 1));
+    Shape<::geometry::Box> boxShape(box);
+    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    shapes.append(boxVariant);
+    
+    // Render small test image
+    Image depthImage = camera.renderScene2DDepth(720, 720, shapes);
+    
+    // Basic checks on the rendered image
+    assert(depthImage.getWidth() == 720);
+    assert(depthImage.getHeight() == 720);
+
+    // Check that some pixels have depth values (not all default/black)
+    bool hasNonBlackPixels = false;
+    for (int y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
+        for (int x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = depthImage.getPixel(x, y);
+            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
+                hasNonBlackPixels = true;
+            }
+        }
+    }
+
+    depthImage.toBitmapFile("test_depth_output", "./test/test_by_product/camera/");
+    
+    // We expect some pixels to have depth values since we have shapes in the scene
+    std::cout << "Note: Depth render test completed - check output manually if needed" << std::endl;
 }

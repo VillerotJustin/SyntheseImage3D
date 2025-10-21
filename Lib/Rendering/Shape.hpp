@@ -17,15 +17,6 @@
 
 namespace rendering {
 
-    // Forward declarations for geometry types
-    namespace geometry {
-        class Box;
-        class Circle;
-        class Plane;
-        class Rectangle;
-        class Sphere;
-    }
-
     /**
      * @brief Type trait to check if a type is an allowed geometry type
      */
@@ -33,11 +24,11 @@ namespace rendering {
     struct is_allowed_geometry : std::false_type {};
 
     // Specializations for allowed types
-    template<> struct is_allowed_geometry<::geometry::Box> : std::true_type {};
-    template<> struct is_allowed_geometry<::geometry::Circle> : std::true_type {};
-    template<> struct is_allowed_geometry<::geometry::Plane> : std::true_type {};
-    template<> struct is_allowed_geometry<::geometry::Rectangle> : std::true_type {};
-    template<> struct is_allowed_geometry<::geometry::Sphere> : std::true_type {};
+    template<> struct is_allowed_geometry<geometry::Box> : std::true_type {};
+    template<> struct is_allowed_geometry<geometry::Circle> : std::true_type {};
+    template<> struct is_allowed_geometry<geometry::Plane> : std::true_type {};
+    template<> struct is_allowed_geometry<geometry::Rectangle> : std::true_type {};
+    template<> struct is_allowed_geometry<geometry::Sphere> : std::true_type {};
 
     // Helper variable template for easier usage
     template<typename T>

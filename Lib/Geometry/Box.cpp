@@ -174,4 +174,55 @@ namespace geometry {
         return tmax >= 0;
     }
 
+    std::optional<double> Box::rayIntersectDepth(const Ray& ray) const {
+        // Using the "slab" method for ray-box intersection
+        Vector3D rayDir = ray.getDirection();
+        Vector3D rayOrigin = ray.getOrigin();
+        Vector3D minCorner = getMinCorner();
+        Vector3D maxCorner = getMaxCorner();
+        
+        double tmin = -std::numeric_limits<double>::infinity();
+        double tmax = std::numeric_limits<double>::infinity();
+        
+        // Check intersection with each pair of parallel planes (slabs)
+        for (int i = 0; i < 3; ++i) {
+            double rayDirComponent = (i == 0) ? rayDir.x() : (i == 1) ? rayDir.y() : rayDir.z();
+            double rayOriginComponent = (i == 0) ? rayOrigin.x() : (i == 1) ? rayOrigin.y() : rayOrigin.z();
+            double minComponent = (i == 0) ? minCorner.x() : (i == 1) ? minCorner.y() : minCorner.z();
+            double maxComponent = (i == 0) ? maxCorner.x() : (i == 1) ? maxCorner.y() : maxCorner.z();
+            
+            if (std::abs(rayDirComponent) < 1e-9) {
+                // Ray is parallel to this pair of planes
+                if (rayOriginComponent < minComponent || rayOriginComponent > maxComponent) {
+                    return std::nullopt; // Ray is outside the slab
+                }
+            } else {
+                // Calculate intersection parameters
+                double t1 = (minComponent - rayOriginComponent) / rayDirComponent;
+                double t2 = (maxComponent - rayOriginComponent) / rayDirComponent;
+                
+                // Ensure t1 <= t2
+                if (t1 > t2) {
+                    std::swap(t1, t2);
+                }
+                
+                // Update tmin and tmax
+                tmin = std::max(tmin, t1);
+                tmax = std::min(tmax, t2);
+                
+                // Check if intersection interval is empty
+                if (tmin > tmax) {
+                    return std::nullopt;
+                }
+            }
+        }
+        
+        // Ray intersects box if tmax >= 0 (intersection is in front of ray origin)
+        if (tmax >= 0) {
+            return tmin >= 0 ? tmin : tmax; // Return nearest positive intersection
+        } else {
+            return std::nullopt; // Intersection is behind the ray origin
+        }
+    }
+
 } // namespace geometry

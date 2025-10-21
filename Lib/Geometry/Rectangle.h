@@ -8,6 +8,8 @@
 #include "./Vector3D.h"
 #include "./Ray.h"
 
+#include <optional>
+
 namespace geometry {
 
     /**
@@ -189,6 +191,13 @@ namespace geometry {
          * @return bool True if the ray intersects the box
          */
         bool rayIntersect(const Ray& ray) const;
+
+        /**
+         * Get the intersection depth of a ray with the box
+         * @param ray The ray to check intersection with
+         * @return std::optional<double> Depth of intersection if it exists, std::nullopt otherwise
+         */
+        std::optional<double> rayIntersectDepth(const Ray& ray) const;
 
         /**
          * Generate two orthogonal vectors in the plane of the rectangle

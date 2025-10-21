@@ -204,6 +204,13 @@ namespace geometry {
          */
         bool rayIntersect(const Ray& ray) const;
 
+        /**
+         * Get the intersection depth of a ray with the box
+         * @param ray The ray to check intersection with
+         * @return std::optional<double> Depth of intersection if it exists, std::nullopt otherwise
+         */
+        std::optional<double> rayIntersectDepth(const Ray& ray) const;
+
     private:
         Vector3D origin;  // Origin point (minimum corner)
         double w;         // Width (x-axis)

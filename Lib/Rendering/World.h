@@ -23,9 +23,6 @@
 #include <variant>
 #include <algorithm>
 
-
-using namespace geometry;
-
 namespace rendering {
 
     class World {
@@ -74,9 +71,17 @@ namespace rendering {
          */
         Image renderScene2DColor(int imageWidth, int imageHeight) const;
 
+        /**
+         * Render the scene to a depth map from the camera's perspective
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @return Image The rendered depth map image
+         */
+        Image renderScene2DDepth(int imageWidth, int imageHeight) const;
+
 
     private:
-        using ShapeVariant = std::variant<Shape<Box>, Shape<Circle>, Shape<Plane>, Shape<Rectangle>, Shape<Sphere>>;
+        using ShapeVariant = std::variant<Shape<geometry::Box>, Shape<geometry::Circle>, Shape<geometry::Plane>, Shape<geometry::Rectangle>, Shape<geometry::Sphere>>;
         math::Vector<ShapeVariant> objects;
 
         Camera camera;

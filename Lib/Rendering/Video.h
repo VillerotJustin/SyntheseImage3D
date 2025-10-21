@@ -269,6 +269,28 @@ namespace rendering {
          * @return bool True if all frames match the video dimensions
          */
         bool validateFrameDimensions() const;
+
+        /**
+         * @brief Create a directory if it doesn't exist
+         * @param dirPath Path to the directory to create
+         * @return bool True if directory exists or was created successfully
+         */
+        bool createDirectory(const std::string& dirPath) const;
+
+        /**
+         * @brief Ensure path ends with appropriate separator
+         * @param path Path to normalize
+         * @return std::string Normalized path with trailing separator
+         */
+        std::string normalizePath(const std::string& path) const;
+
+        /**
+         * @brief Generate zero-padded frame filename
+         * @param frameIndex Index of the frame
+         * @param padding Number of digits for zero-padding
+         * @return std::string Formatted filename
+         */
+        std::string generateFrameFilename(int frameIndex, int padding = 4) const;
     };
 
 }

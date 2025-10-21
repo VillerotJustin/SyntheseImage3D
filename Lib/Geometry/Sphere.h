@@ -115,7 +115,13 @@ namespace geometry {
          */
         bool rayIntersect(const Ray& ray, double t = 0.01) const;
 
-        double rayIntersectionDistance(const Ray& ray, double t = 0.01) const;
+        /**
+         * Get the intersection distance of a ray with the sphere
+         * @param Ray ray The ray to check
+         * @param double t step while advancing the ray (default 0.01)
+         * @return std::optional<double> Depth of intersection if it exists, std::nullopt otherwise
+         */
+        std::optional<double> rayIntersectDepth(const Ray& ray, double t = 0.01) const;
 
         /**
          * Check if a line intersects the sphere

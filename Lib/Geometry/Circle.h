@@ -7,6 +7,7 @@
 
 #include "./Vector3D.h"
 #include "./Ray.h"
+#include <optional>
 
 namespace geometry {
 
@@ -90,11 +91,18 @@ namespace geometry {
         bool isValid() const;
 
         /**
-         * Check if a ray intersects with the box
+         * Check if a ray intersects with the Circle    
          * @param ray The ray to check intersection with
-         * @return bool True if the ray intersects the box
+         * @return bool True if the ray intersects the circle
          */
         bool rayIntersect(const Ray& ray) const;
+
+        /**
+         * Get the intersection depth of a ray with the Circle
+         * @param ray The ray to check intersection with
+         * @return std::optional<double> Depth of intersection if it exists, std::nullopt otherwise
+         */
+        std::optional<double> rayIntersectDepth(const Ray& ray) const;
 
     private:
         Vector3D center;

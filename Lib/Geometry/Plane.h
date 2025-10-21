@@ -8,6 +8,7 @@
 #include "./Vector3D.h"
 #include "./Ray.h"
 
+#include <optional>
 namespace geometry {
 
     class Plane {
@@ -110,6 +111,9 @@ namespace geometry {
          * @return bool True if the ray intersects the box
          */
         bool rayIntersect(const Ray& ray) const;
+
+        std::optional<double> rayIntersectDepth(const Ray& ray) const;
+
 
     private:
         Vector3D normal;

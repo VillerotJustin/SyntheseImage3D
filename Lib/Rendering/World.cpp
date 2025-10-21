@@ -8,10 +8,10 @@ namespace rendering {
 
     World::World()
         : objects(math::Vector<ShapeVariant>(0)),
-          camera(Rectangle(Vector3D(0, 0, 0), 100.0, 100.0, Vector3D(0, 0, -1)))
+          camera(geometry::Vector3D(0, 0, 5), 10.0, 10.0, geometry::Vector3D(0, 0, -1))
     {
-        // Default constructor - initialize empty world
-        // Camera rectangle initialized in initializer list
+        // Default constructor - initialize empty world with default camera
+        // Camera positioned at (0,0,5) with 10x10 viewport looking toward origin
     }
 
     int World::getObjectCount() const {
@@ -44,6 +44,16 @@ namespace rendering {
         }
 
         return camera.renderScene2DColor(imageWidth, imageHeight, objects);
+    }
+
+    Image World::renderScene2DDepth(int imageWidth, int imageHeight) const {
+        // Dispatch rendering based on the type of shapes in the world
+        // For simplicity, we assume all shapes are of the same type here
+        if (objects.size() == 0) {
+            return Image(imageWidth, imageHeight); // Return empty image if no objects
+        }
+
+        return camera.renderScene2DDepth(imageWidth, imageHeight, objects);
     }
 
 } // namespace rendering

@@ -70,10 +70,82 @@ namespace rendering
     }
 
     // Constructor from file
-    Image::Image(const std::string &filename, const std::string &filePath) : width(0), height(0), pixels(1, 1) {
+    Image::Image(const std::string &filename, const std::string &filePath) {
         std::string fullPath = filePath + filename;
-        std::string command = "identify -format \"%w %h\" " + fullPath + " 2> /dev/null";
-        // TODO Implement file reading using an image processing library
+        
+        // Get image dimensions using ImageMagick identify command
+        std::string command = "identify -format \"%w %h\" \"" + fullPath + "\" 2> /dev/null";
+        FILE *pipe = popen(command.c_str(), "r");
+        if (!pipe)
+        {
+            throw std::runtime_error("Failed to open pipe for image identification");
+        }
+        
+        int w, h;
+        if (fscanf(pipe, "%d %d", &w, &h) != 2) {
+            pclose(pipe);
+            throw std::runtime_error("Failed to read image dimensions from file: " + fullPath);
+        }
+        pclose(pipe);
+        
+        if (w <= 0 || h <= 0) {
+            throw std::runtime_error("Invalid image dimensions in file: " + fullPath);
+        }
+        
+        // Initialize image with detected dimensions
+        width = w;
+        height = h;
+        pixels = math::Matrix<RGBA_Color>(height, width);
+        
+        // Read pixel data using ImageMagick convert command
+        // Convert to RGBA text format for easy parsing
+        std::string convertCmd = "convert \"" + fullPath + "\" -depth 8 txt:- 2> /dev/null";
+        FILE *convertPipe = popen(convertCmd.c_str(), "r");
+        if (!convertPipe) {
+            throw std::runtime_error("Failed to open pipe for image conversion");
+        }
+        
+        char line[512];
+        // Skip the header line
+        if (!fgets(line, sizeof(line), convertPipe)) {
+            pclose(convertPipe);
+            throw std::runtime_error("Failed to read image data header");
+        }
+        
+        // Read pixel data line by line
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                if (!fgets(line, sizeof(line), convertPipe)) {
+                    pclose(convertPipe);
+                    throw std::runtime_error("Unexpected end of image data");
+                }
+                
+                // Parse line format: "x,y: (r,g,b,a) #RRGGBBAA color_name"
+                int px, py, r, g, b, a;
+                if (sscanf(line, "%d,%d: (%d,%d,%d,%d)", &px, &py, &r, &g, &b, &a) == 6) {
+                    // Convert from 0-255 range to 0.0-1.0 range
+                    double red = r / 255.0;
+                    double green = g / 255.0;
+                    double blue = b / 255.0;
+                    double alpha = a / 255.0;
+                    
+                    pixels(y, x) = new RGBA_Color(red, green, blue, alpha);
+                } else if (sscanf(line, "%d,%d: (%d,%d,%d)", &px, &py, &r, &g, &b) == 5) {
+                    // RGB format without alpha
+                    double red = r / 255.0;
+                    double green = g / 255.0;
+                    double blue = b / 255.0;
+                    
+                    pixels(y, x) = new RGBA_Color(red, green, blue, 1.0);
+                } else {
+                    pclose(convertPipe);
+                    throw std::runtime_error("Failed to parse pixel data at position (" + 
+                                           std::to_string(x) + "," + std::to_string(y) + ")");
+                }
+            }
+        }
+        
+        pclose(convertPipe);
     }
 
     // Assignment operator
@@ -375,27 +447,138 @@ namespace rendering
     }
 
     void Image::toPngFile(const std::string &filename, const std::string &filePath) const {
-        (void)filename;
-        (void)filePath;
-        // Placeholder for PNG file writing implementation
-        // This would typically use a library like libpng
-        throw std::runtime_error("PNG file writing not implemented");
+        std::string fullPath = filePath + filename + ".png";
+        
+        // Create directory if it doesn't exist
+        size_t lastSlash = fullPath.find_last_of("/\\");
+        if (lastSlash != std::string::npos)
+        {
+            std::string dirPath = fullPath.substr(0, lastSlash);
+            #ifdef _WIN32
+                std::string mkdirCmd = "mkdir \"" + dirPath + "\" 2>nul";
+            #else
+                std::string mkdirCmd = "mkdir -p \"" + dirPath + "\" 2>/dev/null";
+            #endif
+            system(mkdirCmd.c_str());
+        }
+        
+        // Create a temporary BMP file first
+        std::string tempBmpPath = filePath + filename + ".tmp.bmp";
+        toBitmapFile(filename + ".tmp", filePath);
+        
+        // Convert BMP to PNG using ImageMagick
+        std::string convertCmd = "convert \"" + tempBmpPath + "\" \"" + fullPath + "\"";
+        int result = system(convertCmd.c_str());
+        
+        // Check if conversion was successful before cleaning up
+        if (result != 0) {
+            // Clean up temporary BMP file before throwing
+            #ifdef _WIN32
+                std::string removeCmd = "del \"" + tempBmpPath + "\" 2>nul";
+            #else
+                std::string removeCmd = "rm -f \"" + tempBmpPath + "\" 2>/dev/null";
+            #endif
+            system(removeCmd.c_str());
+            throw std::runtime_error("Failed to convert image to PNG format. ImageMagick might not be installed or accessible.");
+        }
+        
+        // Clean up temporary BMP file only after successful conversion
+        #ifdef _WIN32
+            std::string removeCmd = "del \"" + tempBmpPath + "\" 2>nul";
+        #else
+            std::string removeCmd = "rm -f \"" + tempBmpPath + "\" 2>/dev/null";
+        #endif
+        system(removeCmd.c_str());
     }
 
     void Image::toJpegFile(const std::string &filename, const std::string &filePath) const {
-        (void)filename;
-        (void)filePath;
-        // Placeholder for JPEG file writing implementation
-        // This would typically use a library like libjpeg
-        throw std::runtime_error("JPEG file writing not implemented");
+        std::string fullPath = filePath + filename + ".jpg";
+        
+        // Create directory if it doesn't exist
+        size_t lastSlash = fullPath.find_last_of("/\\");
+        if (lastSlash != std::string::npos)
+        {
+            std::string dirPath = fullPath.substr(0, lastSlash);
+            #ifdef _WIN32
+                std::string mkdirCmd = "mkdir \"" + dirPath + "\" 2>nul";
+            #else
+                std::string mkdirCmd = "mkdir -p \"" + dirPath + "\" 2>/dev/null";
+            #endif
+            system(mkdirCmd.c_str());
+        }
+        
+        // Create a temporary BMP file first
+        std::string tempBmpPath = filePath + filename + ".tmp.bmp";
+        toBitmapFile(filename + ".tmp", filePath);
+        
+        // Convert BMP to JPEG using ImageMagick with quality setting
+        std::string convertCmd = "convert \"" + tempBmpPath + "\" -quality 90 \"" + fullPath + "\"";
+        int result = system(convertCmd.c_str());
+        
+        // Check if conversion was successful before cleaning up
+        if (result != 0) {
+            // Clean up temporary BMP file before throwing
+            #ifdef _WIN32
+                std::string removeCmd = "del \"" + tempBmpPath + "\" 2>nul";
+            #else
+                std::string removeCmd = "rm -f \"" + tempBmpPath + "\" 2>/dev/null";
+            #endif
+            system(removeCmd.c_str());
+            throw std::runtime_error("Failed to convert image to JPEG format. ImageMagick might not be installed or accessible.");
+        }
+        
+        // Clean up temporary BMP file only after successful conversion
+        #ifdef _WIN32
+            std::string removeCmd = "del \"" + tempBmpPath + "\" 2>nul";
+        #else
+            std::string removeCmd = "rm -f \"" + tempBmpPath + "\" 2>/dev/null";
+        #endif
+        system(removeCmd.c_str());
     }
 
     void Image::toTiffFile(const std::string &filename, const std::string &filePath) const {
-        (void)filename;
-        (void)filePath;
-        // Placeholder for TIFF file writing implementation
-        // This would typically use a library like libtiff
-        throw std::runtime_error("TIFF file writing not implemented");
+        std::string fullPath = filePath + filename + ".tiff";
+        
+        // Create directory if it doesn't exist
+        size_t lastSlash = fullPath.find_last_of("/\\");
+        if (lastSlash != std::string::npos)
+        {
+            std::string dirPath = fullPath.substr(0, lastSlash);
+            #ifdef _WIN32
+                std::string mkdirCmd = "mkdir \"" + dirPath + "\" 2>nul";
+            #else
+                std::string mkdirCmd = "mkdir -p \"" + dirPath + "\" 2>/dev/null";
+            #endif
+            system(mkdirCmd.c_str());
+        }
+        
+        // Create a temporary BMP file first
+        std::string tempBmpPath = filePath + filename + ".tmp.bmp";
+        toBitmapFile(filename + ".tmp", filePath);
+        
+        // Convert BMP to TIFF using ImageMagick with LZW compression
+        std::string convertCmd = "convert \"" + tempBmpPath + "\" -compress lzw \"" + fullPath + "\"";
+        int result = system(convertCmd.c_str());
+        
+        // Check if conversion was successful before cleaning up
+        if (result != 0) {
+            // Clean up temporary BMP file before throwing
+            #ifdef _WIN32
+                std::string removeCmd = "del \"" + tempBmpPath + "\" 2>nul";
+            #else
+                std::string removeCmd = "rm -f \"" + tempBmpPath + "\" 2>/dev/null";
+            #endif
+            system(removeCmd.c_str());
+            throw std::runtime_error("Failed to convert image to TIFF format. ImageMagick might not be installed or accessible.");
+        }
+        
+        // Clean up temporary BMP file only after successful conversion
+        #ifdef _WIN32
+            std::string removeCmd = "del \"" + tempBmpPath + "\" 2>nul";
+        #else
+            std::string removeCmd = "rm -f \"" + tempBmpPath + "\" 2>/dev/null";
+        #endif
+        system(removeCmd.c_str());
     }
 
     Image Image::copy() const {

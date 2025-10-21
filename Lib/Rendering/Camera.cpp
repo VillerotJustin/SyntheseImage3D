@@ -7,7 +7,10 @@
 
 namespace rendering {
 
-    Camera::Camera(Rectangle viewport) : viewport(viewport) {
+    Camera::Camera(const Vector3D& position, double viewportWidth, double viewportLength, const Vector3D& direction) 
+        : position(position), viewportWidth(viewportWidth), viewportLength(viewportLength), direction(direction.normal()),
+          viewport(position, viewportLength, viewportWidth, direction.normal()) {
+        // Constructor initializes all members including viewport
     }
 
     const Rectangle& Camera::getViewport() const {
@@ -18,30 +21,63 @@ namespace rendering {
         this->viewport = viewport;
     }
 
+    void Camera::updateViewport() {
+        // Create a viewport rectangle centered at the camera position
+        // The viewport is positioned at the camera position facing in the camera direction
+        viewport = Rectangle(position, viewportLength, viewportWidth, direction);
+    }
+
+    const Vector3D& Camera::getPosition() const {
+        return position;
+    }
+
+    void Camera::setPosition(const Vector3D& position) {
+        this->position = position;
+        updateViewport();
+    }
+
+    const Vector3D& Camera::getDirection() const {
+        return direction;
+    }
+
+    void Camera::setDirection(const Vector3D& direction) {
+        this->direction = direction.normal();
+        updateViewport();
+    }
+
+    double Camera::getViewportWidth() const {
+        return viewportWidth;
+    }
+
+    void Camera::setViewportWidth(double width) {
+        this->viewportWidth = width;
+        updateViewport();
+    }
+
+    double Camera::getViewportLength() const {
+        return viewportLength;
+    }
+
+    void Camera::setViewportLength(double length) {
+        this->viewportLength = length;
+        updateViewport();
+    }
+
     void Camera::rotate(Quaternion rotation) {
-        // Get the current viewport properties
-        Vector3D origin = viewport.getOrigin();
-        double length = viewport.getLength();
-        double width = viewport.getWidth();
-        Vector3D normal = viewport.getNormal();
+        // Apply rotation to the camera's direction vector
+        direction = rotation * direction;
+        direction = direction.normal(); // Ensure it stays normalized
         
-        // Apply rotation to the viewport's normal vector
-        Vector3D rotatedNormal = rotation * normal;
-        
-        // Create a new viewport with the rotated orientation
-        viewport = Rectangle(origin, length, width, rotatedNormal);
+        // Update the viewport with the new direction
+        updateViewport();
     }
 
     void Camera::translate(const Vector3D& translation) {
-        // Get current viewport properties
-        Vector3D currentOrigin = viewport.getOrigin();
-        Vector3D newOrigin = currentOrigin + translation;
-        double length = viewport.getLength();
-        double width = viewport.getWidth();
-        Vector3D normal = viewport.getNormal();
+        // Update camera position
+        position = position + translation;
         
-        // Create a new viewport at the translated position
-        viewport = Rectangle(newOrigin, length, width, normal);
+        // Update the viewport with the new position
+        updateViewport();
     }
 
     Ray Camera::generateRay(const Vector3D& pointOnViewport) const {
@@ -164,5 +200,95 @@ namespace rendering {
         }
         return image;
     }
+
+    Image Camera::renderScene2DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const {
+        Image image(imageWidth, imageHeight);
+
+        if (shapes.size() == 0) {
+            return image; // Return empty image if no shapes
+        }
+
+        Vector3D viewportLengthVec, viewportWidthVec;
+
+        // Use Rectangle's robust basis vector generation
+        viewport.generateBasisVectors(viewportLengthVec, viewportWidthVec);
+        
+        // Scale by viewport dimensions
+        viewportLengthVec = viewportLengthVec * viewport.getLength();
+        viewportWidthVec = viewportWidthVec * viewport.getWidth();
+
+        // For each pixel in the image, generate a ray through the corresponding point on the viewport
+        for (int y = 0; y < imageHeight; ++y) {
+            for (int x = 0; x < imageWidth; ++x) {
+                // Map pixel coordinates to viewport coordinates
+                // Use (x + 0.5) / imageWidth to center pixels and ensure values are in [0,1]
+                double u = (static_cast<double>(x) + 0.5) / imageWidth;
+                double v = (static_cast<double>(y) + 0.5) / imageHeight;
+                
+                // Map from [0,1] to [0, 1] range for viewport coordinates
+                Vector3D pixelPosition = viewport.getOrigin() + 
+                                         (u) * viewportLengthVec + 
+                                         (v) * viewportWidthVec;
+                Ray ray = generateRay(pixelPosition);
+
+                // Track the closest intersection distance and color
+                double closestDistance = std::numeric_limits<double>::infinity();
+                RGBA_Color pixelColor(0, 0, 0, 1); // Default to black
+                bool hitFound = false;
+
+                // Check for intersections with all shapes
+                for (int i = 0; i < shapes.size(); ++i) {
+                    std::visit([&](auto&& shape) {
+                        using T = std::decay_t<decltype(shape)>;
+                        
+                        std::optional<double> distance = std::nullopt;
+                        if (shape.getGeometry()) {
+                            if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                                distance = shape.getGeometry()->rayIntersectDepth(ray);
+                            } else {
+                                distance = shape.getGeometry()->rayIntersectDepth(ray);
+                            }
+                        }
+                        
+                        // Update pixel color if this intersection is closer
+                        if (distance && *distance < closestDistance) {
+                            closestDistance = *distance;
+                            hitFound = true;
+
+                            pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
+
+                            if (pixelColor != RGBA_Color(0, 0, 0, 1)) {
+                                // Scale color intensity based on depth (closer = brighter)
+                                double intensity = std::max(0.0, 1.0 - (closestDistance / 100.0)); // Adjust scaling factor as needed
+                                pixelColor.setR(pixelColor.r() * intensity);
+                                pixelColor.setG(pixelColor.g() * intensity);
+                                pixelColor.setB(pixelColor.b() * intensity);
+                            } else {
+                                // Set appropriate color based on shape type
+                                if constexpr (std::is_same_v<T, Shape<Box>>) {
+                                    pixelColor = RGBA_Color(1, 0, 0, 1); // Red
+                                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                                    pixelColor = RGBA_Color(0, 1, 0, 1); // Green
+                                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                                    pixelColor = RGBA_Color(0.5, 0.5, 0.5, 1); // Gray
+                                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                                    pixelColor = RGBA_Color(0, 0, 1, 1); // Blue
+                                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                                    pixelColor = RGBA_Color(1, 1, 1, 1); // White
+                                }
+                            }
+                        }
+
+                    }, *shapes[i]);
+                }
+                
+                // Set the final pixel color (only if we found a hit)
+                if (hitFound) {
+                    image.setPixel(x, y, pixelColor);
+                }
+            }
+        }
+        return image;
+    }                
 
 }
