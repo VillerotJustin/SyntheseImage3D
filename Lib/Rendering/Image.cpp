@@ -394,8 +394,17 @@ namespace rendering
     header[24] = (unsigned char)(h_i >> 16);
     header[25] = (unsigned char)(h_i >> 24);
 
+        // Normalize filePath to ensure it ends with a directory separator
+        std::string dirPathPrefix = filePath;
+        if (!dirPathPrefix.empty()) {
+            char last = dirPathPrefix.back();
+            if (last != '/' && last != '\\') {
+                dirPathPrefix.push_back('/');
+            }
+        }
+
         // Create directory if it doesn't exist
-        std::string fullPath = filePath + filename + ".bmp";
+        std::string fullPath = dirPathPrefix + filename + ".bmp";
 
         // Extract directory path
         size_t lastSlash = fullPath.find_last_of("/\\");

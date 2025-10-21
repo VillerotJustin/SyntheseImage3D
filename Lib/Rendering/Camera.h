@@ -124,7 +124,7 @@ namespace rendering {
          * @param shapes The vector of shapes in the scene
          * @return Image The rendered image
          */
-        Image renderScene2DColor(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
+        Image renderScene2DColor(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const;
 
         /**
          * Render the scene to a depth map from the camera's perspective
@@ -134,7 +134,7 @@ namespace rendering {
          * @param shapes The vector of shapes in the scene
          * @return Image The rendered depth map image
          */
-        Image renderScene2DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
+        Image renderScene2DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const;
 
         /**
          * Render the depth map of the scene from the camera's perspective
@@ -144,7 +144,7 @@ namespace rendering {
          * @param shapes The vector of shapes in the scene
          * @return Image The rendered depth map image
          */
-        Image renderScene3DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
+        Image renderScene3DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const;
 
         /**
          * Generate a ray using a point on the viewport and the normal vector

@@ -5,6 +5,7 @@
 #include "./Rectangle.h"
 #include "./Quaternion.h"
 #include "../Math/math_common.h"
+#include <iostream>
 
 namespace geometry {
 
@@ -66,6 +67,9 @@ namespace geometry {
         Vector3D toPoint = point - origin;
         double distToPlane = std::abs(toPoint.dot(normal));
         if (distToPlane > tolerance) {
+            // Debug: point is off the plane
+            std::cerr << "[Rectangle::containsPoint] rejected: off-plane dist=" << distToPlane
+                      << " tol=" << tolerance << " point=" << point << " origin=" << origin << " normal=" << normal << std::endl;
             return false; // Point is not in the plane of the rectangle
         }
         
@@ -78,8 +82,14 @@ namespace geometry {
         double widthCoord = fromOrigin.dot(widthDir);
 
         // Check if within rectangle bounds
-        return (lengthCoord >= -tolerance && lengthCoord <= l + tolerance &&
-            widthCoord >= -tolerance && widthCoord <= w + tolerance);
+        bool inside = (lengthCoord >= -tolerance && lengthCoord <= l + tolerance &&
+                       widthCoord >= -tolerance && widthCoord <= w + tolerance);
+        if (!inside) {
+            // Debug: coordinates outside bounds
+            std::cerr << "[Rectangle::containsPoint] rejected: local coords (len, wid)=(" << lengthCoord << ", " << widthCoord << ")"
+                      << " ranges [0," << l << "] [0," << w << "] point=" << point << " origin=" << origin << std::endl;
+        }
+        return inside;
     }
 
     bool Rectangle::isPointOnEdge(const Vector3D& point, double tolerance) const {
@@ -112,8 +122,9 @@ namespace geometry {
         Vector3D fromOrigin = projectedPoint - origin;
         
         // Get coordinates in rectangle's local coordinate system
-        double lengthCoord = fromOrigin.dot(lengthDir*l);
-        double widthCoord = fromOrigin.dot(widthDir*w);
+        // Use dot with the normalized direction vectors to obtain local coordinates in world units
+        double lengthCoord = fromOrigin.dot(lengthDir);
+        double widthCoord = fromOrigin.dot(widthDir);
 
         // Clamp coordinates to rectangle bounds
         lengthCoord = std::max(0.0, std::min(l, lengthCoord));

@@ -27,7 +27,8 @@ namespace rendering {
     }
 
     void Camera::setPosition(const Vector3D& position) {
-        viewport.translate(position - viewport.getOrigin());
+        // Apply translation and store the updated viewport
+        viewport = viewport.translate(position - viewport.getOrigin());
     }
 
     const Vector3D& Camera::getDirection() const {
@@ -78,13 +79,16 @@ namespace rendering {
     }
 
     Ray Camera::generateRay(const Vector3D& pointOnViewport) const {
-        if (!viewport.containsPoint(pointOnViewport)) {
+        // Allow a tolerance proportional to viewport size to account for floating-point roundoff
+        double maxDim = std::max(viewport.getLength(), viewport.getWidth());
+        const double tolerance = std::max(1e-6, maxDim * 1e-4); // e.g. for 10-unit viewport -> 0.001
+        if (!viewport.containsPoint(pointOnViewport, tolerance)) {
             throw std::invalid_argument("Point is not on the viewport rectangle");
         }
         return Ray(pointOnViewport, viewport.getNormal());
     }
 
-    Image Camera::renderScene2DColor(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const {
+    Image Camera::renderScene2DColor(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const {
         Image image(imageWidth, imageHeight);
 
         if (shapes.size() == 0) {
@@ -99,14 +103,13 @@ namespace rendering {
         viewportWidthVec = viewportWidthVec * viewport.getWidth();
 
         // For each pixel in the image, generate a ray through the corresponding point on the viewport
-        for (int y = 0; y < imageHeight; ++y) {
-            for (int x = 0; x < imageWidth; ++x) {
-                double u = (static_cast<double>(x) + 0.5) / imageWidth;
-                double v = (static_cast<double>(y) + 0.5) / imageHeight;
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double u = (static_cast<double>(x) + 0.5) / static_cast<double>(imageWidth);
+                double v = (static_cast<double>(y) + 0.5) / static_cast<double>(imageHeight);
 
-                Vector3D pixelPosition = viewport.getOrigin() +
-                                         (u) * viewportLengthVec +
-                                         (v) * viewportWidthVec;
+                // Use Rectangle's parametric point method to avoid coordinate/ordering issues
+                Vector3D pixelPosition = viewport.getPointAt(u, v);
                 Ray ray = generateRay(pixelPosition);
 
                 double closestDistance = std::numeric_limits<double>::infinity();
@@ -185,7 +188,7 @@ namespace rendering {
         return image;
     }
 
-    Image Camera::renderScene2DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const {
+    Image Camera::renderScene2DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const {
         Image image(imageWidth, imageHeight);
 
         if (shapes.size() == 0) {
@@ -201,14 +204,13 @@ namespace rendering {
         viewportLengthVec = viewportLengthVec * viewport.getLength();
         viewportWidthVec = viewportWidthVec * viewport.getWidth();
 
-        for (int y = 0; y < imageHeight; ++y) {
-            for (int x = 0; x < imageWidth; ++x) {
-                double u = (static_cast<double>(x) + 0.5) / imageWidth;
-                double v = (static_cast<double>(y) + 0.5) / imageHeight;
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double u = (static_cast<double>(x)) / static_cast<double>(imageWidth);
+                double v = (static_cast<double>(y)) / static_cast<double>(imageHeight);
 
-                Vector3D pixelPosition = viewport.getOrigin() +
-                                         (u) * viewportLengthVec +
-                                         (v) * viewportWidthVec;
+                // Use Rectangle's parametric point method to avoid coordinate/ordering issues
+                Vector3D pixelPosition = viewport.getPointAt(u, v);
                 Ray ray = generateRay(pixelPosition);
 
                 double closestDistance = std::numeric_limits<double>::infinity();
