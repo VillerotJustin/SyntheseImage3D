@@ -53,6 +53,18 @@ namespace rendering {
         void translate(const Vector3D& translation);
 
         /**
+         * Get the position of the camera (origin of the viewport)
+         * @return Vector3D The position of the camera
+         */
+        Vector3D getPosition() const;
+
+        /**
+         * Get the origin point of the camera's field of view (FOV)
+         * @return Vector3D The FOV origin point
+         */
+        Vector3D getFOVOrigin() const;
+
+        /**
          * Render the scene from the camera's perspective
          * @tparam T The geometry type of the shapes to render
          * @param imageWidth The width of the output image in pixels
@@ -64,6 +76,16 @@ namespace rendering {
         Image renderScene2DColor(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
 
         /**
+         * Render the depth map of the scene from the camera's perspective
+         * @tparam T The geometry type of the shapes to render
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @param shapes The vector of shapes in the scene
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
+
+        /**
          * Generate a ray using a point on the viewport and the normal vector
          * @param pointOnViewport A point on the viewport rectangle
          * @return Ray The generated ray from the camera through the point
@@ -71,6 +93,7 @@ namespace rendering {
         Ray generateRay(const Vector3D& pointOnViewport) const;
     private:
         Rectangle viewport;
+        float FOV_Angle = 65.0f; // Field of View angle degrees
     };
 
 }

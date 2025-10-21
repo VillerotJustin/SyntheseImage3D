@@ -20,6 +20,8 @@ namespace math {
     }
 
 
+    bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float &x1);
+
     // TODO All basic math function to remove cmath need
 }
 

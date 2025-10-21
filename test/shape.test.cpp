@@ -79,16 +79,18 @@ void testShapeConstructors() {
     // Create test objects for construction
     ::geometry::Vector3D origin(0.0, 0.0, 0.0);
     ::geometry::Vector3D normal(0.0, 0.0, 1.0);
+    ::geometry::Vector3D topRight = origin + ::geometry::Vector3D(2.0, 0.0, 0.0);
+    ::geometry::Vector3D bottomLeft = origin + ::geometry::Vector3D(0.0, 3.0, 0.0);
     ::geometry::Box testBox(origin, 2.0, 3.0, 4.0, normal);
     RGBA_Color red(1.0f, 0.0f, 0.0f, 1.0f);
-    
+
     // Test constructor with geometry only (Box)
     Shape<::geometry::Box> boxOnly(testBox);
     assert(boxOnly.hasGeometry());
     assert(!boxOnly.hasColor());
     assert(!boxOnly.isComplete());
     assert(boxOnly.getGeometry() != nullptr);
-    
+
     // Test constructor with geometry and color (Box)
     Shape<::geometry::Box> completeBoxShape(testBox, red);
     assert(completeBoxShape.hasGeometry());
@@ -97,14 +99,14 @@ void testShapeConstructors() {
     assert(completeBoxShape.getGeometry() != nullptr);
     assert(completeBoxShape.getColor() != nullptr);
     assert(*completeBoxShape.getColor() == red);
-    
+
     // Test constructor with unique_ptr geometry and color (Box)
     auto boxPtr = std::make_unique<::geometry::Box>(testBox);
     Shape<::geometry::Box> ptrBoxShape(std::move(boxPtr), red);
     assert(ptrBoxShape.hasGeometry());
     assert(ptrBoxShape.hasColor());
     assert(ptrBoxShape.isComplete());
-    
+
     // Test copy constructor (Box)
     Shape<::geometry::Box> copiedBoxShape(completeBoxShape);
     assert(copiedBoxShape.hasGeometry());
@@ -112,38 +114,41 @@ void testShapeConstructors() {
     assert(copiedBoxShape.isComplete());
     assert(copiedBoxShape.getGeometry() != completeBoxShape.getGeometry()); // Different objects
     assert(*copiedBoxShape.getColor() == *completeBoxShape.getColor()); // Same values
-    
+
     // Test move constructor (Box)
     Shape<::geometry::Box> originalForMove(testBox, red);
     Shape<::geometry::Box> movedBoxShape(std::move(originalForMove));
     assert(movedBoxShape.hasGeometry());
     assert(movedBoxShape.hasColor());
     assert(movedBoxShape.isComplete());
-    
+
     // Test with Sphere
     ::geometry::Vector3D center(1.0, 2.0, 3.0);
     ::geometry::Sphere testSphere(center, 5.0);
     RGBA_Color blue(0.0f, 0.0f, 1.0f, 1.0f);
-    
+
     Shape<::geometry::Sphere> sphereShape(testSphere, blue);
     assert(sphereShape.hasGeometry());
     assert(sphereShape.hasColor());
     assert(sphereShape.isComplete());
-    
+
     // Test with Circle
     ::geometry::Circle testCircle(center, 3.0, normal);
     Shape<::geometry::Circle> circleShape(testCircle, blue);
     assert(circleShape.hasGeometry());
     assert(circleShape.hasColor());
     assert(circleShape.isComplete());
-    
+
     // Test with Rectangle
-    ::geometry::Rectangle testRect(origin, 5.0, 3.0, normal);
+    ::geometry::Vector3D rectTopLeft = origin;
+    ::geometry::Vector3D rectTopRight = rectTopLeft + ::geometry::Vector3D(5.0, 0.0, 0.0);
+    ::geometry::Vector3D rectBottomLeft = rectTopLeft + ::geometry::Vector3D(0.0, 3.0, 0.0);
+    ::geometry::Rectangle testRect(rectTopLeft, rectTopRight, rectBottomLeft);
     Shape<::geometry::Rectangle> rectShape(testRect, blue);
     assert(rectShape.hasGeometry());
     assert(rectShape.hasColor());
     assert(rectShape.isComplete());
-    
+
     // Test with Plane
     ::geometry::Plane testPlane(origin, normal);
     Shape<::geometry::Plane> planeShape(testPlane, blue);
@@ -259,7 +264,10 @@ void testConvenienceMethods() {
     
     ::geometry::Vector3D origin(0.0, 0.0, 0.0);
     ::geometry::Vector3D normal(0.0, 0.0, 1.0);
-    ::geometry::Rectangle testRect(origin, 5.0, 3.0, normal);
+    ::geometry::Vector3D rectTopLeft = origin;
+    ::geometry::Vector3D rectTopRight = rectTopLeft + ::geometry::Vector3D(5.0, 0.0, 0.0);
+    ::geometry::Vector3D rectBottomLeft = rectTopLeft + ::geometry::Vector3D(0.0, 3.0, 0.0);
+    ::geometry::Rectangle testRect(rectTopLeft, rectTopRight, rectBottomLeft);
     shape.setGeometry(testRect);
     assert(!shape.isComplete()); // Has geometry but no color
     
@@ -373,7 +381,10 @@ void testTypeAliases() {
     assert(coloredSphere.getGeometry()->getRadius() == 4.0);
     
     // Test with Rectangle
-    ::geometry::Rectangle testRect(origin, 6.0, 8.0, normal);
+    ::geometry::Vector3D rectTopLeft = origin;
+    ::geometry::Vector3D rectTopRight = rectTopLeft + ::geometry::Vector3D(6.0, 0.0, 0.0);
+    ::geometry::Vector3D rectBottomLeft = rectTopLeft + ::geometry::Vector3D(0.0, 8.0, 0.0);
+    ::geometry::Rectangle testRect(rectTopLeft, rectTopRight, rectBottomLeft);
     Shape<::geometry::Rectangle> coloredRect(testRect, purple);
     assert(coloredRect.hasGeometry());
     assert(coloredRect.hasColor());

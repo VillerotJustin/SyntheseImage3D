@@ -3,6 +3,7 @@
 //
 
 #include "Camera.h"
+#include "../Math/Matrix.hpp"
 #include <limits>
 
 namespace rendering {
@@ -19,40 +20,39 @@ namespace rendering {
     }
 
     void Camera::rotate(Quaternion rotation) {
-        // Get the current viewport properties
-        Vector3D origin = viewport.getOrigin();
-        double length = viewport.getLength();
-        double width = viewport.getWidth();
-        Vector3D normal = viewport.getNormal();
-        
-        // Apply rotation to the viewport's normal vector
-        Vector3D rotatedNormal = rotation * normal;
-        
-        // Create a new viewport with the rotated orientation
-        viewport = Rectangle(origin, length, width, rotatedNormal);
+        viewport = viewport.rotate(rotation);
     }
 
     void Camera::translate(const Vector3D& translation) {
-        // Get current viewport properties
-        Vector3D currentOrigin = viewport.getOrigin();
-        Vector3D newOrigin = currentOrigin + translation;
-        double length = viewport.getLength();
-        double width = viewport.getWidth();
+        viewport = viewport.translate(translation);
+    }
+
+    Vector3D Camera::getPosition() const {
+        return viewport.getOrigin();
+    }
+
+    Vector3D Camera::getFOVOrigin() const {
+        // Compute the FOV origin using the viewport center and FOV_Angle (in degrees)
+        Vector3D center = viewport.getCenter();
         Vector3D normal = viewport.getNormal();
-        
-        // Create a new viewport at the translated position
-        viewport = Rectangle(newOrigin, length, width, normal);
+        // Calculate the distance from the center to the FOV origin using the FOV angle
+        // Assume FOV_Angle is the vertical field of view in degrees
+        double fovAngleRad = FOV_Angle * M_PI / 180.0;
+        double halfHeight = viewport.getWidth() / 2.0;
+        double distance = halfHeight / tan(fovAngleRad / 2.0);
+        Vector3D fovOrigin = center - normal * distance;
+        return fovOrigin;
     }
 
     Ray Camera::generateRay(const Vector3D& pointOnViewport) const {
-        // Get the closest point on the viewport plane to the given point
-        Vector3D closestPoint = viewport.closestPointOnRectangle(pointOnViewport);
+        if (!viewport.containsPoint(pointOnViewport)) {
+            throw std::invalid_argument("Point is not on the viewport rectangle");
+        }
         
         // Create and return the ray
-        return Ray(closestPoint, viewport.getNormal());
+        return Ray(pointOnViewport, viewport.getNormal());
     }
 
-    // TODO fix later shape overlap issue
     Image Camera::renderScene2DColor(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const {
         Image image(imageWidth, imageHeight);
 
@@ -62,9 +62,9 @@ namespace rendering {
 
         Vector3D viewportLengthVec, viewportWidthVec;
 
-        // Use Rectangle's robust basis vector generation
-        viewport.generateBasisVectors(viewportLengthVec, viewportWidthVec);
-        
+        viewportLengthVec = viewport.getLengthVec();
+        viewportWidthVec = viewport.getWidthVec();
+
         // Scale by viewport dimensions
         viewportLengthVec = viewportLengthVec * viewport.getLength();
         viewportWidthVec = viewportWidthVec * viewport.getWidth();
@@ -127,10 +127,11 @@ namespace rendering {
                             }
                         } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
                             const Sphere* sphere = shape.getGeometry();
-                            if (sphere && sphere->rayIntersect(ray)) {
-                                intersects = true;
-                                Vector3D shapeCenter = sphere->getCenter();
-                                intersectionDistance = (ray.getOrigin() - shapeCenter).length();
+                            if (sphere) {
+                                if (auto hitPoint = sphere->rayIntersectionHit(ray)) {
+                                    intersects = true;
+                                    intersectionDistance = (ray.getOrigin() - *hitPoint).length();
+                                }
                             }
                         }
                         
@@ -164,5 +165,85 @@ namespace rendering {
         }
         return image;
     }
+
+
+
+//     Image Camera::renderScene3DDepth(const int imageWidth, const int imageHeight, const math::Vector<ShapeVariant>& shapes) const {
+//         Vector3D FOV_Origin = this->getFOVOrigin();
+
+//         Rectangle viewport = this->getViewport();
+
+//         Image newImage(imageWidth, imageHeight);
+//         math::Matrix<double> depthBuffer(imageWidth, imageHeight);
+//         for (size_t i = 0; i < imageWidth; i++)
+//         {
+//             for (size_t j = 0; j < imageHeight; j++)
+//             {
+//                 depthBuffer(i, j) = std::numeric_limits<double>::max();
+//             }
+            
+//         }
+        
+
+//         Vector3D topLeft = this->getTopLeftCorner();
+//         Vector3D lengthVec = this->getLengthVector();
+
+//         for (int y = 0; y < imageHeight; y++) {
+//             for (int x = 0; x < imageWidth; x++) {
+//                 double u = static_cast<double>(x) / (imageWidth - 1);
+//                 double v = static_cast<double>(y) / (imageHeight - 1);
+
+//                 Vector3 viewportPoint = topLeft + u * lengthVec - v * heightVec;
+//                 Ray ray(FOV_Origin, (viewportPoint - FOV_Origin).normalize());
+
+//                 RGBA_Color color;
+//                 double closestHit = std::numeric_limits<double>::max();
+
+//                 for (const auto& shape : world.getShapes()) {
+//                     // Compute intersections and shading here
+
+//                     double hitDistance;
+
+//                     if (shape->intersect(ray, hitDistance)) {
+//                         if (hitDistance < closestHit) {
+//                             closestHit = hitDistance;
+//                             color = shape->GetColor();
+//                         }
+//                     }
+//                 }
+
+//                 if (closestHit < std::numeric_limits<double>::max() && color.isValid()) {
+//                     newImage.setPixel(x, y, color);
+//                     depthBuffer.set(x, y, closestHit);
+//                 } else {
+//                     newImage.setPixel(x, y, world.getBackgroundColor());
+//                 }
+
+//                 newImage.setPixel(x, y, color);
+//             }
+//         }
+
+//         double max_depth = 0.0;;
+//         for (int y = 0; y < imageHeight; y++) {
+//             for (int x = 0; x < imageWidth; x++) {
+//                 double depth = depthBuffer.get(x, y);
+//                 if (depth < std::numeric_limits<double>::max()) {
+//                     max_depth = std::max(max_depth, depth);
+//                 }
+//             }
+//         }
+
+//         for (int y = 0; y < imageHeight; y++) {
+//             for (int x = 0; x < imageWidth; x++) {
+//                 double depth = depthBuffer.get(x, y);
+//                 if (depth < std::numeric_limits<double>::max()) {
+//                     newImage.setPixel(x, y, newImage.getPixel(x, y).applyDepthShading(depth, max_depth));
+//                 }
+//             }
+//         }
+
+//         return newImage;
+// }
+
 
 }

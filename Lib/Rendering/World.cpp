@@ -8,7 +8,7 @@ namespace rendering {
 
     World::World()
         : objects(math::Vector<ShapeVariant>(0)),
-          camera(Rectangle(Vector3D(0, 0, 0), 100.0, 100.0, Vector3D(0, 0, -1)))
+          camera(Rectangle(Vector3D(0, 0, 0), Vector3D(0, 100, 0), Vector3D(0, 0, 100)))
     {
         // Default constructor - initialize empty world
         // Camera rectangle initialized in initializer list
