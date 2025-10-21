@@ -111,6 +111,18 @@ namespace rendering {
         void translate(const Vector3D& translation);
 
         /**
+         * Get the position of the camera (origin of the viewport)
+         * @return Vector3D The position of the camera
+         */
+        Vector3D getPosition() const;
+
+        /**
+         * Get the origin point of the camera's field of view (FOV)
+         * @return Vector3D The FOV origin point
+         */
+        Vector3D getFOVOrigin() const;
+
+        /**
          * Render the scene from the camera's perspective
          * @tparam T The geometry type of the shapes to render
          * @param imageWidth The width of the output image in pixels
@@ -131,23 +143,24 @@ namespace rendering {
         Image renderScene2DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
 
         /**
+         * Render the depth map of the scene from the camera's perspective
+         * @tparam T The geometry type of the shapes to render
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @param shapes The vector of shapes in the scene
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DDepth(int imageWidth, int imageHeight, math::Vector<ShapeVariant> shapes) const;
+
+        /**
          * Generate a ray using a point on the viewport and the normal vector
          * @param pointOnViewport A point on the viewport rectangle
          * @return Ray The generated ray from the camera through the point
          */
         Ray generateRay(const Vector3D& pointOnViewport) const;
     private:
-        Vector3D position;   // Camera center position in world space
-        double viewportWidth;  // Width of the viewport
-        double viewportLength; // Length of the viewport 
-        Vector3D direction;  // Direction the camera is facing (normalized)
-        Rectangle viewport;  // Generated from camera parameters
-        double focalLength = 1.0; // Focal length for perspective projection
-        
-        /**
-         * Update the internal viewport rectangle based on current camera parameters
-         */
-        void updateViewport();
+        Rectangle viewport;
+        float FOV_Angle = 65.0f; // Field of View angle degrees
     };
 
 }

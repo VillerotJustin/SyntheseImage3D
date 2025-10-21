@@ -81,127 +81,138 @@ int main() {
 
 void testCameraConstructor() {
     // Test basic constructor
-    Vector3D origin(0, 0, 0);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 10.0, 8.0, normal);
-    
+    Vector3D topLeft(0, 0, 0);
+    Vector3D topRight = topLeft + Vector3D(10.0, 0, 0);
+    Vector3D bottomLeft = topLeft + Vector3D(0, 8.0, 0);
+    Rectangle viewport(topLeft, topRight, bottomLeft);
+
     Camera camera(viewport);
-    
+
     // Test that viewport is stored correctly
     const Rectangle& storedViewport = camera.getViewport();
-    assert(isEqual(storedViewport.getOrigin(), origin));
-    assert(isEqual(storedViewport.getLength(), 10.0));
-    assert(isEqual(storedViewport.getWidth(), 8.0));
-    assert(isEqual(storedViewport.getNormal(), normal));
+    assert(isEqual(storedViewport.getOrigin(), topLeft));
+    assert(isEqual(storedViewport.getLength(), (topRight - topLeft).length()));
+    assert(isEqual(storedViewport.getWidth(), (bottomLeft - topLeft).length()));
+    Vector3D expectedNormal = (topRight - topLeft).cross(bottomLeft - topLeft).normal();
+    assert(isEqual(storedViewport.getNormal(), expectedNormal));
 }
 
 void testCameraViewportOperations() {
     // Create initial camera
-    Vector3D origin(0, 0, 0);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 10.0, 8.0, normal);
+    Vector3D topLeft(0, 0, 0);
+    Vector3D topRight = topLeft + Vector3D(10.0, 0, 0);
+    Vector3D bottomLeft = topLeft + Vector3D(0, 8.0, 0);
+    Rectangle viewport(topLeft, topRight, bottomLeft);
     Camera camera(viewport);
-    
+
     // Test getViewport
     const Rectangle& retrievedViewport = camera.getViewport();
-    assert(isEqual(retrievedViewport.getOrigin(), origin));
-    assert(isEqual(retrievedViewport.getLength(), 10.0));
-    assert(isEqual(retrievedViewport.getWidth(), 8.0));
-    
+    assert(isEqual(retrievedViewport.getOrigin(), topLeft));
+    assert(isEqual(retrievedViewport.getLength(), (topRight - topLeft).length()));
+    assert(isEqual(retrievedViewport.getWidth(), (bottomLeft - topLeft).length()));
+
     // Test setViewport
-    Vector3D newOrigin(5, 5, 5);
-    Vector3D newNormal(1, 0, 0);
-    Rectangle newViewport(newOrigin, 15.0, 12.0, newNormal);
-    
+    Vector3D newTopLeft(5, 5, 5);
+    Vector3D newTopRight = newTopLeft + Vector3D(15.0, 0, 0);
+    Vector3D newBottomLeft = newTopLeft + Vector3D(0, 12.0, 0);
+    Rectangle newViewport(newTopLeft, newTopRight, newBottomLeft);
+
     camera.setViewport(newViewport);
-    
+
     const Rectangle& updatedViewport = camera.getViewport();
-    assert(isEqual(updatedViewport.getOrigin(), newOrigin));
-    assert(isEqual(updatedViewport.getLength(), 15.0));
-    assert(isEqual(updatedViewport.getWidth(), 12.0));
-    assert(isEqual(updatedViewport.getNormal(), newNormal));
+    assert(isEqual(updatedViewport.getOrigin(), newTopLeft));
+    assert(isEqual(updatedViewport.getLength(), (newTopRight - newTopLeft).length()));
+    assert(isEqual(updatedViewport.getWidth(), (newBottomLeft - newTopLeft).length()));
+    Vector3D expectedNormal = (newTopRight - newTopLeft).cross(newBottomLeft - newTopLeft).normal();
+    assert(isEqual(updatedViewport.getNormal(), expectedNormal));
 }
 
 void testCameraRotation() {
     // Create camera with viewport facing +Z
-    Vector3D origin(0, 0, 0);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 10.0, 8.0, normal);
+    Vector3D topLeft(0, 0, 0);
+    Vector3D topRight = topLeft + Vector3D(10.0, 0, 0);
+    Vector3D bottomLeft = topLeft + Vector3D(0, 8.0, 0);
+    Rectangle viewport(topLeft, topRight, bottomLeft);
     Camera camera(viewport);
-    
+
     // Create 90-degree rotation around Y axis (should rotate normal from +Z to +X)
     Vector3D axis(0, 1, 0);
     double angle = M_PI / 2.0; // 90 degrees
     Quaternion rotation(axis, angle);
-    
+
     // Apply rotation
     camera.rotate(rotation);
-    
+
     // Check that normal has been rotated
     const Rectangle& rotatedViewport = camera.getViewport();
     Vector3D expectedNormal(1, 0, 0); // +Z rotated 90° around Y becomes +X
-    
+
     // Allow some tolerance for floating point precision
     assert(isEqual(rotatedViewport.getNormal(), expectedNormal, 1e-6));
-    
+
     // Verify other properties remain unchanged
-    assert(isEqual(rotatedViewport.getOrigin(), origin));
-    assert(isEqual(rotatedViewport.getLength(), 10.0));
-    assert(isEqual(rotatedViewport.getWidth(), 8.0));
+    assert(isEqual(rotatedViewport.getOrigin(), topLeft));
+    assert(isEqual(rotatedViewport.getLength(), (topRight - topLeft).length()));
+    assert(isEqual(rotatedViewport.getWidth(), (bottomLeft - topLeft).length()));
 }
 
 void testCameraTranslation() {
     // Create camera
-    Vector3D origin(0, 0, 0);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 10.0, 8.0, normal);
+    Vector3D topLeft(0, 0, 0);
+    Vector3D topRight = topLeft + Vector3D(10.0, 0, 0);
+    Vector3D bottomLeft = topLeft + Vector3D(0, 8.0, 0);
+    Rectangle viewport(topLeft, topRight, bottomLeft);
     Camera camera(viewport);
-    
+
     // Apply translation
     Vector3D translation(5, -3, 2);
     camera.translate(translation);
-    
+
     // Check that origin has been translated
     const Rectangle& translatedViewport = camera.getViewport();
-    Vector3D expectedOrigin = origin + translation;
-    
+    Vector3D expectedOrigin = topLeft + translation;
+
     assert(isEqual(translatedViewport.getOrigin(), expectedOrigin));
-    
+
     // Verify other properties remain unchanged
-    assert(isEqual(translatedViewport.getNormal(), normal));
-    assert(isEqual(translatedViewport.getLength(), 10.0));
-    assert(isEqual(translatedViewport.getWidth(), 8.0));
+    Vector3D expectedNormal = (topRight - topLeft).cross(bottomLeft - topLeft).normal();
+    assert(isEqual(translatedViewport.getNormal(), expectedNormal));
+    assert(isEqual(translatedViewport.getLength(), (topRight - topLeft).length()));
+    assert(isEqual(translatedViewport.getWidth(), (bottomLeft - topLeft).length()));
 }
 
 void testCameraRayGeneration() {
     // Create camera with viewport at origin facing +Z
-    Vector3D origin(0, 0, 0);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 4.0, 4.0, normal);
+    Vector3D topLeft(0, 0, 0);
+    Vector3D topRight = topLeft + Vector3D(4.0, 0, 0);
+    Vector3D bottomLeft = topLeft + Vector3D(0, 4.0, 0);
+    Rectangle viewport(topLeft, topRight, bottomLeft);
     Camera camera(viewport);
-    
+
     // Test ray generation from center of viewport
     Vector3D centerPoint = viewport.getCenter();
     Ray ray = camera.generateRay(centerPoint);
-    
+
     // Ray should start at the center point and point in the normal direction
+    Vector3D expectedNormal = (topRight - topLeft).cross(bottomLeft - topLeft).normal();
     assert(isEqual(ray.getOrigin(), centerPoint));
-    assert(isEqual(ray.getDirection(), normal));
-    
+    assert(isEqual(ray.getDirection(), expectedNormal));
+
     // Test ray generation from corner of viewport
     Vector3D cornerPoint = viewport.getOrigin();
     Ray cornerRay = camera.generateRay(cornerPoint);
-    
+
     // Ray should start at corner and point in normal direction
     assert(isEqual(cornerRay.getOrigin(), cornerPoint));
-    assert(isEqual(cornerRay.getDirection(), normal));
+    assert(isEqual(cornerRay.getDirection(), expectedNormal));
 }
 
 void testCameraRenderScene2DColor() {
     // Create camera
-    Vector3D origin(0, 0, -5);
-    Vector3D normal(0, 0, 1);
-    Rectangle viewport(origin, 10.0, 10.0, normal);
+    Vector3D topLeft(0, 0, -5);
+    Vector3D topRight = topLeft + Vector3D(10.0, 0, 0);
+    Vector3D bottomLeft = topLeft + Vector3D(0, 10.0, 0);
+    Rectangle viewport(topLeft, topRight, bottomLeft);
     Camera camera(viewport);
     
     // Create some shapes to render

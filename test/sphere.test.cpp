@@ -203,10 +203,23 @@ void testSphereIntersections() {
     // Test intersection points (should return Circle for intersecting spheres)
     auto intersection = sphere1.intersectionPoints(sphere2);
     assert(intersection.has_value());
-    
+    // Should be a Circle for intersecting spheres
+    assert(std::holds_alternative<Circle>(intersection.value()));
+
     // For non-intersecting spheres
     auto noIntersection = sphere1.intersectionPoints(sphere3);
     assert(!noIntersection.has_value());
+
+    // Test tangent spheres (should return Vector3D)
+    auto tangentIntersection = sphere1.intersectionPoints(sphere4);
+    assert(tangentIntersection.has_value());
+    assert(std::holds_alternative<Vector3D>(tangentIntersection.value()));
+
+    // Test identical spheres (should return Sphere)
+    Sphere identicalSphere(center1, radius1);
+    auto identicalIntersection = sphere1.intersectionPoints(identicalSphere);
+    assert(identicalIntersection.has_value());
+    assert(std::holds_alternative<Sphere>(identicalIntersection.value()));
 }
 
 void testSphereRayIntersections() {
@@ -219,19 +232,32 @@ void testSphereRayIntersections() {
     Vector3D rayDirection(1, 0, 0);
     Ray ray1(rayOrigin, rayDirection);
     
-    assert(sphere.rayIntersect(ray1, 0.1));
+    assert(sphere.rayIntersect(ray1));
     
     // Test ray that misses sphere
     Vector3D rayOrigin2(-5, 5, 0);  // Too high
     Ray ray2(rayOrigin2, rayDirection);
     
-    assert(!sphere.rayIntersect(ray2, 0.1));
+    assert(!sphere.rayIntersect(ray2));
     
     // Test ray starting inside sphere
     Vector3D rayOrigin3(0, 0, 0);   // At center
     Ray ray3(rayOrigin3, rayDirection);
     
-    assert(sphere.rayIntersect(ray3, 0.1));
+    assert(sphere.rayIntersect(ray3));
+
+    // Test ray recover hit 
+    auto hit = sphere.rayIntersectionHit(ray1);
+
+    // check if hit is Vector3D (should be at x = -2, y = 0, z = 0)
+    assert(hit.has_value());
+    assert(isEqual(hit.value().x(), -2.0));
+    assert(isEqual(hit.value().y(), 0.0));
+    assert(isEqual(hit.value().z(), 0.0));
+
+    // Check if no hit (ray2 misses the sphere)
+    auto missHit = sphere.rayIntersectionHit(ray2);
+    assert(!missHit.has_value());
 }
 
 void testSphereLineIntersections() {

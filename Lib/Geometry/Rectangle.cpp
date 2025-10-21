@@ -3,20 +3,35 @@
 //
 
 #include "./Rectangle.h"
+#include "./Quaternion.h"
 #include "../Math/math_common.h"
 
 namespace geometry {
 
     // Constructor
-    Rectangle::Rectangle(const Vector3D& origin, double l, double w, const Vector3D& normal)
-        : origin(origin), l(l), w(w), normal(normal.normal()) {
-        // Ensure the normal is normal and dimensions are positive for a valid rectangle
-        if (normal.length() == 0) {
-            throw std::invalid_argument("Normal vector cannot be zero");
-        }
-        if (l <= 0 || w <= 0) {
-            throw std::invalid_argument("Length and width must be positive");
-        }
+    // Rectangle::Rectangle(const Vector3D& origin, double l, double w, const Vector3D& normal)
+    //     : origin(origin), l(l), w(w), normal(normal.normal()) {
+    //     // Ensure the normal is normal and dimensions are positive for a valid rectangle
+    //     if (normal.length() == 0) {
+    //         throw std::invalid_argument("Normal vector cannot be zero");
+    //     }
+    //     if (l <= 0 || w <= 0) {
+    //         throw std::invalid_argument("Length and width must be positive");
+    //     }
+    // }
+
+    Rectangle::Rectangle(const Vector3D& TopLeft, const Vector3D& TopRight, const Vector3D& BottomLeft) {
+        origin = TopLeft;
+        lengthDir = (TopRight - TopLeft);
+        widthDir = (BottomLeft - TopLeft);
+
+        l = lengthDir.length();
+        w = widthDir.length();
+
+        if (l > 0) lengthDir = lengthDir.normal();
+        if (w > 0) widthDir = widthDir.normal();
+
+        normal = lengthDir.cross(widthDir).normal();
     }
 
     double Rectangle::getArea() const {
@@ -27,16 +42,19 @@ namespace geometry {
         return 2.0 * (l + w);
     }
 
+    Vector3D Rectangle::getLengthVec() const {
+        return lengthDir;
+    }
+
+    Vector3D Rectangle::getWidthVec() const {
+        return widthDir;
+    }
+
     Vector3D Rectangle::getCenter() const {
-        Vector3D lengthDir, widthDir;
-        generateBasisVectors(lengthDir, widthDir);
         return origin + (l / 2.0) * lengthDir + (w / 2.0) * widthDir;
     }
 
     void Rectangle::getCorners(Vector3D corners[4]) const {
-        Vector3D lengthDir, widthDir;
-        generateBasisVectors(lengthDir, widthDir);
-        
         corners[0] = origin;                                    // Origin corner
         corners[1] = origin + l * lengthDir;                   // Length corner
         corners[2] = origin + l * lengthDir + w * widthDir;    // Opposite corner
@@ -55,16 +73,13 @@ namespace geometry {
         Vector3D projectedPoint = projectPointToPlane(point);
         Vector3D fromOrigin = projectedPoint - origin;
         
-        Vector3D lengthDir, widthDir;
-        generateBasisVectors(lengthDir, widthDir);
-        
         // Get coordinates in rectangle's local coordinate system
         double lengthCoord = fromOrigin.dot(lengthDir);
         double widthCoord = fromOrigin.dot(widthDir);
-        
+
         // Check if within rectangle bounds
         return (lengthCoord >= -tolerance && lengthCoord <= l + tolerance &&
-                widthCoord >= -tolerance && widthCoord <= w + tolerance);
+            widthCoord >= -tolerance && widthCoord <= w + tolerance);
     }
 
     bool Rectangle::isPointOnEdge(const Vector3D& point, double tolerance) const {
@@ -74,18 +89,15 @@ namespace geometry {
         
         Vector3D projectedPoint = projectPointToPlane(point);
         Vector3D fromOrigin = projectedPoint - origin;
-        
-        Vector3D lengthDir, widthDir;
-        generateBasisVectors(lengthDir, widthDir);
-        
-        double lengthCoord = fromOrigin.dot(lengthDir);
-        double widthCoord = fromOrigin.dot(widthDir);
-        
-        // Check if on any edge
-        bool onLengthEdge = (std::abs(lengthCoord) <= tolerance || std::abs(lengthCoord - l) <= tolerance);
-        bool onWidthEdge = (std::abs(widthCoord) <= tolerance || std::abs(widthCoord - w) <= tolerance);
-        
-        return onLengthEdge || onWidthEdge;
+
+    double lengthCoord = fromOrigin.dot(lengthDir);
+    double widthCoord = fromOrigin.dot(widthDir);
+
+    // Check if on any edge
+    bool onLengthEdge = (std::abs(lengthCoord) <= tolerance || std::abs(lengthCoord - l) <= tolerance);
+    bool onWidthEdge = (std::abs(widthCoord) <= tolerance || std::abs(widthCoord - w) <= tolerance);
+
+    return onLengthEdge || onWidthEdge;
     }
 
     Vector3D Rectangle::projectPointToPlane(const Vector3D& point) const {
@@ -99,13 +111,10 @@ namespace geometry {
         Vector3D projectedPoint = projectPointToPlane(point);
         Vector3D fromOrigin = projectedPoint - origin;
         
-        Vector3D lengthDir, widthDir;
-        generateBasisVectors(lengthDir, widthDir);
-        
         // Get coordinates in rectangle's local coordinate system
-        double lengthCoord = fromOrigin.dot(lengthDir);
-        double widthCoord = fromOrigin.dot(widthDir);
-        
+        double lengthCoord = fromOrigin.dot(lengthDir*l);
+        double widthCoord = fromOrigin.dot(widthDir*w);
+
         // Clamp coordinates to rectangle bounds
         lengthCoord = std::max(0.0, std::min(l, lengthCoord));
         widthCoord = std::max(0.0, std::min(w, widthCoord));
@@ -124,21 +133,25 @@ namespace geometry {
         u = std::max(0.0, std::min(1.0, u));
         v = std::max(0.0, std::min(1.0, v));
         
-        Vector3D lengthDir, widthDir;
-        generateBasisVectors(lengthDir, widthDir);
-        
         return origin + (u * l) * lengthDir + (v * w) * widthDir;
     }
 
     Rectangle Rectangle::translate(const Vector3D& offset) const {
-        return Rectangle(origin + offset, l, w, normal);
+        return Rectangle(origin + offset, origin + offset + l * lengthDir, origin + offset + w * widthDir);
     }
 
     Rectangle Rectangle::scale(double lengthScale, double widthScale) const {
         if (lengthScale <= 0 || widthScale <= 0) {
             return *this; // Return unchanged if invalid scale factors
         }
-        return Rectangle(origin, l * lengthScale, w * widthScale, normal);
+        return Rectangle(origin, origin + l * lengthDir * lengthScale, origin + w * widthDir * widthScale);
+    }
+
+    Rectangle Rectangle::rotate(Quaternion rotation) const {
+        Vector3D newOrigin = rotation * origin;
+        Vector3D newLengthDir = rotation * lengthDir;
+        Vector3D newWidthDir = rotation * widthDir;
+        return Rectangle(newOrigin, newOrigin + l * newLengthDir, newOrigin + w * newWidthDir);
     }
 
     void Rectangle::setOrigin(const Vector3D& newOrigin) {
@@ -160,48 +173,6 @@ namespace geometry {
 
     bool Rectangle::isValid() const {
         return l > 0 && w > 0 && normal.length() > 0;
-    }
-
-    void Rectangle::generateBasisVectors(Vector3D& lengthDir, Vector3D& widthDir) const {
-        // Generate two orthogonal vectors in the plane perpendicular to the normal
-        // This method is mathematically robust and handles all edge cases
-        
-        Vector3D n = normal; // Ensure we're working with the normalized normal
-        
-        // Choose an initial reference vector that's not parallel to the normal
-        Vector3D reference;
-        if (std::abs(n.x()) < 0.9) {
-            reference = Vector3D(1, 0, 0);  // Use X-axis if normal is not mostly along X
-        } else if (std::abs(n.y()) < 0.9) {
-            reference = Vector3D(0, 1, 0);  // Use Y-axis if normal is not mostly along Y  
-        } else {
-            reference = Vector3D(0, 0, 1);  // Use Z-axis if normal is mostly along X or Y
-        }
-        
-        // Generate the first basis vector using Gram-Schmidt process
-        lengthDir = reference - n * reference.dot(n);
-        
-        // Check if the result is too small (parallel case)
-        if (lengthDir.length() < 1e-9) {
-            // Try a different reference vector
-            if (std::abs(n.z()) < 0.9) {
-                reference = Vector3D(0, 0, 1);
-            } else {
-                reference = Vector3D(1, 0, 0);
-            }
-            lengthDir = reference - n * reference.dot(n);
-        }
-        
-        // Normalize the first basis vector
-        lengthDir = lengthDir.normal();
-        
-        // Generate the second basis vector using cross product
-        // This guarantees orthogonality to both normal and lengthDir
-        widthDir = n.cross(lengthDir);
-        
-        // The cross product should already be normalized since both inputs are normalized
-        // and orthogonal, but normalize for safety
-        widthDir = widthDir.normal();
     }
 
     bool Rectangle::rayIntersect(const Ray& ray) const {

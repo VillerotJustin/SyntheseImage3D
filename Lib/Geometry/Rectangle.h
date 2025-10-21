@@ -6,6 +6,7 @@
 #define RECTANGLE_H
 
 #include "./Vector3D.h"
+#include "./Quaternion.h"
 #include "./Ray.h"
 
 #include <optional>
@@ -37,8 +38,17 @@ namespace geometry {
          * @param l Length of the rectangle
          * @param w Width of the rectangle
          * @param normal Normal vector perpendicular to the rectangle plane (will be normalized)
+         * deprecated Use the constructor with three corner points instead.
          */
-        Rectangle(const Vector3D& origin, double l, double w, const Vector3D& normal);
+        //Rectangle(const Vector3D& origin, double l, double w, const Vector3D& normal);
+
+        /**
+         * Constructor for Rectangle using three corner points
+         * @param TopLeft Top-left corner point of the rectangle
+         * @param TopRight Top-right corner point of the rectangle
+         * @param BottomLeft Bottom-left corner point of the rectangle
+         */
+        Rectangle(const Vector3D& TopLeft, const Vector3D& TopRight, const Vector3D& BottomLeft);
 
         /**
          * Get the origin point of the rectangle
@@ -161,6 +171,13 @@ namespace geometry {
         Rectangle scale(double lengthScale, double widthScale) const;
 
         /**
+         * Rotate the rectangle by a quaternion
+         * @param rotation The quaternion representing the rotation
+         * @return Rectangle New rotated rectangle
+         */
+        Rectangle rotate(Quaternion rotation) const;
+
+        /**
          * Set the origin of the rectangle
          * @param newOrigin The new origin point
          */
@@ -192,21 +209,10 @@ namespace geometry {
          */
         bool rayIntersect(const Ray& ray) const;
 
-        /**
-         * Get the intersection depth of a ray with the box
-         * @param ray The ray to check intersection with
-         * @return std::optional<double> Depth of intersection if it exists, std::nullopt otherwise
-         */
-        std::optional<double> rayIntersectDepth(const Ray& ray) const;
-
-        /**
-         * Generate two orthogonal vectors in the plane of the rectangle
-         * Used for parametric representation and corner calculations
-         */
-        void generateBasisVectors(Vector3D& lengthDir, Vector3D& widthDir) const;
-
     private:
         Vector3D origin;  // Origin point (corner)
+        Vector3D lengthDir; // Length direction unit vector
+        Vector3D widthDir;  // Width direction unit vector
         double l;         // Length
         double w;         // Width  
         Vector3D normal;  // Normal vector (perpendicular to rectangle plane)

@@ -8,7 +8,7 @@ namespace rendering {
 
     World::World()
         : objects(math::Vector<ShapeVariant>(0)),
-          camera(geometry::Vector3D(0, 0, 5), 10.0, 10.0, geometry::Vector3D(0, 0, -1))
+          camera(Rectangle(Vector3D(0, 0, 0), Vector3D(0, 100, 0), Vector3D(0, 0, 100)))
     {
         // Default constructor - initialize empty world with default camera
         // Camera positioned at (0,0,5) with 10x10 viewport looking toward origin
