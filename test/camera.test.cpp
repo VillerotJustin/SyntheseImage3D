@@ -41,6 +41,8 @@ void testCameraTranslation();
 void testCameraRayGeneration();
 void testCameraRenderScene2DColor();
 void testCameraRenderScene2DDepth();
+void testCameraRenderScene3DColor();
+void testCameraRenderScene3DDepth();
 
 int main() {
     std::cout << "Running Camera tests..." << std::endl;
@@ -66,6 +68,12 @@ int main() {
 
         testCameraRenderScene2DDepth();
         std::cout << "✓ Camera render scene depth tests passed" << std::endl;
+
+        testCameraRenderScene3DColor();
+        std::cout << "✓ Camera render scene 3D color tests passed" << std::endl;
+
+        testCameraRenderScene3DDepth();
+        std::cout << "✓ Camera render scene 3D depth tests passed" << std::endl;
 
         std::cout << "All Camera tests passed!" << std::endl;
         return 0;
@@ -260,7 +268,7 @@ void testCameraRenderScene2DColor() {
 
 void testCameraRenderScene2DDepth() {
     // Create camera
-    Vector3D origin(0, 0, -5);
+    Vector3D origin(0, 0, -10);
     // Build top-right and bottom-left points explicitly instead of using the old ctor
     Vector3D topRight = origin + Vector3D(10.0, 0, 0);
     Vector3D bottomLeft = origin + Vector3D(0, 10.0, 0);
@@ -271,7 +279,7 @@ void testCameraRenderScene2DDepth() {
     math::Vector<Camera::ShapeVariant> shapes;
     
     // Add a sphere at the origin
-    Sphere sphere(Vector3D(4, 4, 0), 2.0);
+    Sphere sphere(Vector3D(4, 4, 0), 3.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
     Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
@@ -304,4 +312,176 @@ void testCameraRenderScene2DDepth() {
     
     // We expect some pixels to have depth values since we have shapes in the scene
     std::cout << "Note: Depth render test completed - check output manually if needed" << std::endl;
+}
+
+void testCameraRenderScene3DColor() {
+    // Create camera
+    Vector3D origin(-10, -10, -5);
+    // Build top-right and bottom-left points explicitly instead of using the old ctor
+    Vector3D topRight = origin + Vector3D(20.0, 0, 0);
+    Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
+    Rectangle viewport(origin, topRight, bottomLeft);
+    Camera camera(viewport);
+    
+    // Create some shapes to render
+    math::Vector<Camera::ShapeVariant> shapes;
+    
+    // Add a sphere at the origin
+    Sphere sphere(Vector3D(0, 0, 0), 4.0);
+    Shape<::geometry::Sphere> sphereShape(sphere);
+    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    shapes.append(sphereVariant);
+    
+    // Add a box 
+    Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
+    Shape<::geometry::Box> boxShape(box);
+    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    shapes.append(boxVariant);
+
+    // Add walls (Back top bottom right & left)
+    Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
+    Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
+    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    shapes.append(backWallVariant);
+
+    Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
+    Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
+    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    shapes.append(leftWallVariant);
+
+    Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
+    Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
+    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    shapes.append(rightWallVariant);
+
+    Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
+    Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
+    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    shapes.append(topWallVariant);
+
+    Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
+    Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
+    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    shapes.append(bottomWallVariant);
+
+    // Render small test image
+    Image depthImage = camera.renderScene3DColor(720, 720, shapes);
+    
+    // Basic checks on the rendered image
+    assert(depthImage.getWidth() == 720);
+    assert(depthImage.getHeight() == 720);
+
+    // Check that some pixels have depth values (not all default/black)
+    bool hasNonBlackPixels = false;
+    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = depthImage.getPixel(x, y);
+            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
+                hasNonBlackPixels = true;
+            }
+        }
+    }
+
+    assert(hasNonBlackPixels);
+
+    depthImage.toBitmapFile("test_3d_color_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Color render test completed - check output manually if needed" << std::endl;
+
+    // Test with bigger FOV
+    camera = Camera(viewport, 120.0f); // Wider FOV
+    depthImage = camera.renderScene3DColor(720, 720, shapes);
+    depthImage.toBitmapFile("test_3d_color_wide_fov_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Color render with wide FOV test completed - check output manually if needed" << std::endl;
+
+    // Test with smaller FOV
+    camera = Camera(viewport, 30.0f); // Narrower FOV
+    depthImage = camera.renderScene3DColor(720, 720, shapes);
+    depthImage.toBitmapFile("test_3d_color_narrow_fov_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Color render with narrow FOV test completed - check output manually if needed" << std::endl;
+}
+
+void testCameraRenderScene3DDepth() {
+    // Create camera
+    Vector3D origin(-10, -10, -5);
+    // Build top-right and bottom-left points explicitly instead of using the old ctor
+    Vector3D topRight = origin + Vector3D(20.0, 0, 0);
+    Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
+    Rectangle viewport(origin, topRight, bottomLeft);
+    Camera camera(viewport);
+    
+    // Create some shapes to render
+    math::Vector<Camera::ShapeVariant> shapes;
+    
+    // Add a sphere at the origin
+    Sphere sphere(Vector3D(0, 0, 0), 4.0);
+    Shape<::geometry::Sphere> sphereShape(sphere);
+    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    shapes.append(sphereVariant);
+    
+    // Add a box 
+    Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
+    Shape<::geometry::Box> boxShape(box);
+    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    shapes.append(boxVariant);
+
+    // Add walls (Back top bottom right & left)
+    Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
+    Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
+    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    shapes.append(backWallVariant);
+
+    Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
+    Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
+    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    shapes.append(leftWallVariant);
+
+    Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
+    Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
+    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    shapes.append(rightWallVariant);
+
+    Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
+    Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
+    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    shapes.append(topWallVariant);
+
+    Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
+    Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
+    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    shapes.append(bottomWallVariant);
+
+    // Render small test image
+    Image depthImage = camera.renderScene3DDepth(720, 720, shapes);
+    
+    // Basic checks on the rendered image
+    assert(depthImage.getWidth() == 720);
+    assert(depthImage.getHeight() == 720);
+
+    // Check that some pixels have depth values (not all default/black)
+    bool hasNonBlackPixels = false;
+    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = depthImage.getPixel(x, y);
+            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
+                hasNonBlackPixels = true;
+            }
+        }
+    }
+
+    assert(hasNonBlackPixels);
+
+    depthImage.toBitmapFile("test_3d_depth_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Depth render test completed - check output manually if needed" << std::endl;
+
+    // Test with bigger FOV
+    camera = Camera(viewport, 120.0f); // Wider FOV
+    depthImage = camera.renderScene3DDepth(720, 720, shapes);
+    depthImage.toBitmapFile("test_3d_depth_wide_fov_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Depth render with wide FOV test completed - check output manually if needed" << std::endl;
+
+    // Test with smaller FOV
+    camera = Camera(viewport, 30.0f); // Narrower FOV
+    depthImage = camera.renderScene3DDepth(720, 720, shapes);
+    depthImage.toBitmapFile("test_3d_depth_narrow_fov_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Depth render with narrow FOV test completed - check output manually if needed" << std::endl;
 }

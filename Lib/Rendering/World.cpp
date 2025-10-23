@@ -56,4 +56,24 @@ namespace rendering {
         return camera.renderScene2DDepth(imageWidth, imageHeight, objects);
     }
 
+    Image World::renderScene3DColor(int imageWidth, int imageHeight) const {
+        // Dispatch rendering based on the type of shapes in the world
+        // For simplicity, we assume all shapes are of the same type here
+        if (objects.size() == 0) {
+            return Image(imageWidth, imageHeight); // Return empty image if no objects
+        }
+
+        return camera.renderScene3DColor(imageWidth, imageHeight, objects);
+    }
+
+    Image World::renderScene3DDepth(int imageWidth, int imageHeight) const {
+        // Dispatch rendering based on the type of shapes in the world
+        // For simplicity, we assume all shapes are of the same type here
+        if (objects.size() == 0) {
+            return Image(imageWidth, imageHeight); // Return empty image if no objects
+        }
+
+        return camera.renderScene3DDepth(imageWidth, imageHeight, objects);
+    }
+
 } // namespace rendering

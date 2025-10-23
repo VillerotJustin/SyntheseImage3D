@@ -59,6 +59,10 @@ namespace rendering {
         viewport.scale(length / viewport.getLength(), 1.0);
     }
 
+    double Camera::getViewportAspectRatio() const {
+        return viewport.getWidth() / viewport.getLength();
+    }
+
     void Camera::rotate(Quaternion rotation) {
         viewport = viewport.rotate(rotation);
     }
@@ -204,6 +208,16 @@ namespace rendering {
         viewportLengthVec = viewportLengthVec * viewport.getLength();
         viewportWidthVec = viewportWidthVec * viewport.getWidth();
 
+        // Use a matrix of pointers to doubles for depth buffer
+        math::Matrix<double> depthBuffer(imageWidth, imageHeight);
+        
+        // Initialize depth buffer with pointers to infinity values
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                depthBuffer(x, y) = new double(std::numeric_limits<double>::infinity());
+            }
+        }
+
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 double u = (static_cast<double>(x)) / static_cast<double>(imageWidth);
@@ -232,12 +246,7 @@ namespace rendering {
 
                             pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
 
-                            if (pixelColor != RGBA_Color(0, 0, 0, 1)) {
-                                double intensity = std::max(0.0, 1.0 - (closestDistance / 100.0));
-                                pixelColor.setR(pixelColor.r() * intensity);
-                                pixelColor.setG(pixelColor.g() * intensity);
-                                pixelColor.setB(pixelColor.b() * intensity);
-                            } else {
+                            if (pixelColor == RGBA_Color(0, 0, 0, 1)) {
                                 if constexpr (std::is_same_v<T, Shape<Box>>) {
                                     pixelColor = RGBA_Color(1, 0, 0, 1); // Red
                                 } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
@@ -256,13 +265,248 @@ namespace rendering {
                 }
 
                 if (hitFound) {
+                    // Store depth
+                    *depthBuffer(x, y) = closestDistance;
+                    // Store color
                     image.setPixel(x, y, pixelColor);
                 }
             }
         }
+
+        // Apply depth-based shading
+        double max_depth = -1.0;
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double depth = *depthBuffer(x, y);
+                if (depth > max_depth && depth < std::numeric_limits<double>::infinity()) {
+                    max_depth = depth;
+                }
+            }
+        }
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double depth = *depthBuffer(x, y);
+                if (depth < std::numeric_limits<double>::infinity()) {
+                    RGBA_Color pixelColor = *image.getPixel(x, y);
+                    double intensity = std::max(0.0, 1.2 - (depth / max_depth));
+                    pixelColor.setR(pixelColor.r() * intensity);
+                    pixelColor.setG(pixelColor.g() * intensity);
+                    pixelColor.setB(pixelColor.b() * intensity);
+                    image.setPixel(x, y, pixelColor);
+                }
+            }
+        }
+
+        // Clean up depth buffer
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                delete depthBuffer(x, y);
+            }
+        }
+
+        // TODO fix janky depth color
+
         return image;
     }
 
-    // renderScene3DDepth left unimplemented (declared in header). If needed, implement here.
+    Image Camera::renderScene3DColor(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const {
+        // Check Image aspect ratio
+        if (static_cast<double>(imageWidth) / static_cast<double>(imageHeight) != getViewportAspectRatio()) {
+            throw std::invalid_argument("Image aspect ratio does not match camera viewport aspect ratio");
+        }
 
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0) {
+            return Image3D; // Return empty image if no shapes
+        }
+
+        Vector3D viewportLengthVec = viewport.getLengthVec();
+        Vector3D viewportWidthVec = viewport.getWidthVec();
+
+        // Scale by viewport dimensions
+        viewportLengthVec = viewportLengthVec * viewport.getLength();
+        viewportWidthVec = viewportWidthVec * viewport.getWidth();
+
+        Vector3D fovOrigin = getFOVOrigin();
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double u = (static_cast<double>(x)) / static_cast<double>(imageWidth);
+                double v = (static_cast<double>(y)) / static_cast<double>(imageHeight);
+
+                // Use Rectangle's parametric point method to avoid coordinate/ordering issues
+                Vector3D pixelPosition = viewport.getPointAt(u, v);
+                Ray ray(fovOrigin, (pixelPosition - fovOrigin).normal());
+
+                double closestDistance = std::numeric_limits<double>::infinity();
+                bool hitFound = false;
+                RGBA_Color pixelColor(0, 0, 0, 1); // Default to black
+
+                for (size_t i = 0; i < shapes.size(); ++i) {
+                    std::visit([&](auto&& shape) {
+                        using T = std::decay_t<decltype(shape)>;
+
+                        std::optional<double> distance = std::nullopt;
+                        if (shape.getGeometry()) {
+                            distance = shape.getGeometry()->rayIntersectDepth(ray);
+                        }
+
+                        if (distance && *distance < closestDistance) {
+                            closestDistance = *distance;
+                            hitFound = true;
+
+                            pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
+
+                            if (pixelColor == RGBA_Color(0, 0, 0, 1)) {
+                                if constexpr (std::is_same_v<T, Shape<Box>>) {
+                                    pixelColor = RGBA_Color(1, 0, 0, 1); // Red
+                                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                                    pixelColor = RGBA_Color(0, 1, 0, 1); // Green
+                                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                                    pixelColor = RGBA_Color(0.5, 0.5, 0.5, 1); // Gray
+                                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                                    pixelColor = RGBA_Color(0, 0, 1, 1); // Blue
+                                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                                    pixelColor = RGBA_Color(1, 1, 1, 1); // White
+                                }
+                            }
+                        }
+
+                    }, *shapes[i]);
+                }
+                
+                // Store the depth and color for this pixel
+                if (hitFound) {
+                    Image3D.setPixel(x, y, pixelColor);
+                }
+            }
+        }
+
+        return Image3D;
+    }
+    
+    Image Camera::renderScene3DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const {
+        // Check Image aspect ratio
+        if (static_cast<double>(imageWidth) / static_cast<double>(imageHeight) != getViewportAspectRatio()) {
+            throw std::invalid_argument("Image aspect ratio does not match camera viewport aspect ratio");
+        }
+
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0) {
+            return Image3D; // Return empty image if no shapes
+        }
+
+        Vector3D viewportLengthVec = viewport.getLengthVec();
+        Vector3D viewportWidthVec = viewport.getWidthVec();
+
+        // Scale by viewport dimensions
+        viewportLengthVec = viewportLengthVec * viewport.getLength();
+        viewportWidthVec = viewportWidthVec * viewport.getWidth();
+
+        Vector3D fovOrigin = getFOVOrigin();
+
+        // Use a matrix of pointers to doubles for depth buffer
+        math::Matrix<double> depthBuffer(imageWidth, imageHeight);
+        
+        // Initialize depth buffer with pointers to infinity values
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                depthBuffer(x, y) = new double(std::numeric_limits<double>::infinity());
+            }
+        }
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double u = (static_cast<double>(x)) / static_cast<double>(imageWidth);
+                double v = (static_cast<double>(y)) / static_cast<double>(imageHeight);
+
+                // Use Rectangle's parametric point method to avoid coordinate/ordering issues
+                Vector3D pixelPosition = viewport.getPointAt(u, v);
+                Ray ray(fovOrigin, (pixelPosition - fovOrigin).normal());
+
+                double closestDistance = std::numeric_limits<double>::infinity();
+                bool hitFound = false;
+                RGBA_Color pixelColor(0, 0, 0, 1); // Default to black
+
+                for (size_t i = 0; i < shapes.size(); ++i) {
+                    std::visit([&](auto&& shape) {
+                        using T = std::decay_t<decltype(shape)>;
+
+                        std::optional<double> distance = std::nullopt;
+                        if (shape.getGeometry()) {
+                            distance = shape.getGeometry()->rayIntersectDepth(ray);
+                        }
+
+                        if (distance && *distance < closestDistance) {
+                            closestDistance = *distance;
+                            hitFound = true;
+
+                            pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
+
+                            if (pixelColor == RGBA_Color(0, 0, 0, 1)) {
+                                if constexpr (std::is_same_v<T, Shape<Box>>) {
+                                    pixelColor = RGBA_Color(1, 0, 0, 1); // Red
+                                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                                    pixelColor = RGBA_Color(0, 1, 0, 1); // Green
+                                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                                    pixelColor = RGBA_Color(0.5, 0.5, 0.5, 1); // Gray
+                                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                                    pixelColor = RGBA_Color(0, 0, 1, 1); // Blue
+                                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                                    pixelColor = RGBA_Color(1, 1, 1, 1); // White
+                                }
+                            }
+                        }
+
+                    }, *shapes[i]);
+                }
+                
+                // Store the depth and color for this pixel
+                if (hitFound) {
+                    *depthBuffer(x, y) = closestDistance;
+                    Image3D.setPixel(x, y, pixelColor);
+                }
+            }
+        }
+
+        // Apply depth-based shading
+        double max_depth = -1.0;
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double depth = *depthBuffer(x, y);
+                if (depth > max_depth && depth < std::numeric_limits<double>::infinity()) {
+                    max_depth = depth;
+                }
+            }
+        }
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double depth = *depthBuffer(x, y);
+                if (depth < std::numeric_limits<double>::infinity()) {
+                    RGBA_Color pixelColor = *Image3D.getPixel(x, y);
+                    double intensity = std::max(0.0, 1.2 - (depth / max_depth));
+                    pixelColor.setR(pixelColor.r() * intensity);
+                    pixelColor.setG(pixelColor.g() * intensity);
+                    pixelColor.setB(pixelColor.b() * intensity);
+                    Image3D.setPixel(x, y, pixelColor);
+                }
+            }
+        }
+
+        // Clean up depth buffer
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                delete depthBuffer(x, y);
+            }
+        }
+
+        return Image3D;
+    }
+    
 }

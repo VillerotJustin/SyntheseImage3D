@@ -99,6 +99,12 @@ namespace rendering {
         void setViewportLength(double length);
 
         /**
+         * Get the viewport aspect ratio (width / length)
+         * @return double The viewport aspect ratio
+         */
+        double getViewportAspectRatio() const;
+
+        /**
         * Rotate the camera around its origin by a given quaternion
         * @param rotation The quaternion representing the rotation
         */
@@ -135,6 +141,16 @@ namespace rendering {
          * @return Image The rendered depth map image
          */
         Image renderScene2DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const;
+
+        /**
+         * Render the depth map of the scene from the camera's perspective
+         * @tparam T The geometry type of the shapes to render
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @param shapes The vector of shapes in the scene
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DColor(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const;
 
         /**
          * Render the depth map of the scene from the camera's perspective

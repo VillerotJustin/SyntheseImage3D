@@ -79,6 +79,22 @@ namespace rendering {
          */
         Image renderScene2DDepth(int imageWidth, int imageHeight) const;
 
+        /**
+         * Render the scene with just default color
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DColor(int imageWidth, int imageHeight) const;
+
+        /**
+         * Render the scene with depth lighting
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DDepth(int imageWidth, int imageHeight) const;
+
 
     private:
         using ShapeVariant = std::variant<Shape<geometry::Box>, Shape<geometry::Circle>, Shape<geometry::Plane>, Shape<geometry::Rectangle>, Shape<geometry::Sphere>>;
