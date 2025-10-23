@@ -14,6 +14,14 @@ namespace rendering {
         // Camera positioned at (0,0,5) with 10x10 viewport looking toward origin
     }
 
+    void World::removeObjectAt(const size_t index) {
+        if (index >= objects.size()) {
+            throw std::out_of_range("Object index out of bounds");
+        }
+        delete objects[index];
+        objects.erase(index);
+    }
+
     void World::addLight(const Light& light) {
         Light* newLight = new Light(light);
         lights.append(newLight);

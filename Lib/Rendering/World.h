@@ -40,11 +40,9 @@ namespace rendering {
 
         /**
          * Remove an object from the world
-         * @tparam T The geometry type of the shape to remove
-         * @param shape The shape to remove
+         * @param index The index of the shape to remove
          */
-        template<typename T>
-        void removeObject(const Shape<T>& shape);
+        void removeObjectAt(const size_t index);
 
         /**
          * Add a light to the world
@@ -139,33 +137,8 @@ namespace rendering {
 
     template<typename T>
     void World::addObject(const Shape<T>& shape) {
-        static_assert(is_allowed_geometry_v<T>, "Type T must be an allowed geometry type");
-        
-        // Create a copy of the shape and store it in the variant
-        ShapeVariant shapeVariant = shape;
-        objects.append(new ShapeVariant(std::move(shapeVariant)));
-    }
-
-    template<typename T>
-    void World::removeObject(const Shape<T>& shape) {
-        static_assert(is_allowed_geometry_v<T>, "Type T must be an allowed geometry type");
-        
-        // Find and remove the first matching shape
-        for (size_t i = 0; i < objects.size(); ++i) {
-            if (objects[i] != nullptr) {
-                // Check if this variant holds a Shape<T>
-                if (std::holds_alternative<Shape<T>>(*objects[i])) {
-                    const Shape<T>& stored_shape = std::get<Shape<T>>(*objects[i]);
-                    
-                    // Compare geometry pointers (simple comparison - you might want to implement proper equality)
-                    if (stored_shape.getGeometry() == shape.getGeometry()) {
-                        delete objects[i];
-                        objects.erase(i);
-                        return;
-                    }
-                }
-            }
-        }
+        ShapeVariant* shapeVariant = new ShapeVariant{shape};
+        objects.append(shapeVariant);
     }
 
 }

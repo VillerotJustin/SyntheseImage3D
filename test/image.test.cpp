@@ -155,7 +155,7 @@ Image createColorGradient(int width, int height) {
 void testBitmapOutput() {
     std::cout << "\n=== Testing Bitmap Output ===" << std::endl;
     
-    const std::string outputPath = "test/test_by_product/";
+    const std::string outputPath = "test/test_by_product/image";
     
     try {
         // Test 1: Basic gradient pattern

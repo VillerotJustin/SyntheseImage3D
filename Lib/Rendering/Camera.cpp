@@ -525,7 +525,118 @@ namespace rendering {
     }
     
     Image Camera::renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const {
-        throw std::runtime_error("Not yet implemented");
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0 || lights.size() == 0) {
+            return Image3D; // Return empty image if no shapes or lights
+        }
+
+        Vector3D viewportLengthVec = viewport.getLengthVec();
+        Vector3D viewportWidthVec = viewport.getWidthVec();
+
+        // Scale by viewport dimensions
+        viewportLengthVec = viewportLengthVec * viewport.getLength();
+        viewportWidthVec = viewportWidthVec * viewport.getWidth();
+
+        Vector3D fovOrigin = getFOVOrigin();
+
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double u = (static_cast<double>(x)) / static_cast<double>(imageWidth);
+                double v = (static_cast<double>(y)) / static_cast<double>(imageHeight);
+
+                // Use Rectangle's parametric point method to avoid coordinate/ordering issues
+                Vector3D pixelPosition = viewport.getPointAt(u, v);
+                Ray ray(fovOrigin, (pixelPosition - fovOrigin).normal());
+
+                double closestDistance = std::numeric_limits<double>::infinity();
+                double lightIntensity = 0.0;
+                bool hitFound = false;
+                RGBA_Color pixelColor(0, 0, 0, 1); // Default to black
+
+                for (size_t i = 0; i < shapes.size(); ++i) {
+                    std::visit([&](auto&& shape) {
+                        using T = std::decay_t<decltype(shape)>;
+
+                        std::optional<double> distance = std::nullopt;
+                        if (shape.getGeometry()) {
+                            distance = shape.getGeometry()->rayIntersectDepth(ray);
+                        }
+
+                        if (distance && *distance < closestDistance) {
+                            closestDistance = *distance;
+                            hitFound = true;
+
+                            // Calculate light intensity at the hit point
+                            Vector3D hitPoint = ray.getPointAt(*distance);
+                            lightIntensity = 0.0;
+                            for (const Light* light : lights) {
+                                Vector3D hitToLight = (light->getPosition() - hitPoint);
+                                double distanceToLight = hitToLight.length();
+                                Vector3D lightDir = hitToLight.normal();
+                                
+                                // Offset the shadow ray origin slightly to avoid self-intersection
+                                const double epsilon = 1e-4;
+                                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
+                                bool inShadow = false;
+                                
+                                for (size_t j = 0; j < shapes.size(); ++j) {
+                                    if (i == j) continue; // Skip self
+                                    std::visit([&](auto&& otherShape) {
+                                        if (otherShape.getGeometry()) {
+                                            auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
+                                            // Check if intersection is between hit point and light
+                                            if (shadowDist && *shadowDist < distanceToLight) {
+                                                inShadow = true;
+                                            }
+                                        }
+                                    }, *shapes[j]);
+                                    if (inShadow) break;
+                                }
+
+                                if (!inShadow) {
+                                    // Do something with distance
+                                    lightIntensity += light->getIntensity();
+                                }
+                            }
+
+                            lightIntensity = std::max(0.2, std::min(lightIntensity, 1.0)); // Clamp between 0.2 and 1
+
+                            pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
+
+                            if (pixelColor == RGBA_Color(0, 0, 0, 1)) {
+                                if constexpr (std::is_same_v<T, Shape<Box>>) {
+                                    pixelColor = RGBA_Color(1, 0, 0, 1); // Red
+                                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                                    pixelColor = RGBA_Color(0, 1, 0, 1); // Green
+                                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                                    pixelColor = RGBA_Color(0.5, 0.5, 0.5, 1); // Gray
+                                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                                    pixelColor = RGBA_Color(0, 0, 1, 1); // Blue
+                                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                                    pixelColor = RGBA_Color(1, 1, 1, 1); // White
+                                }
+                            }
+                        }
+
+                    }, *shapes[i]);
+                }
+                
+                // Store the depth and color for this pixel
+                if (hitFound) {
+                    RGBA_Color lightedPixelColor(
+                        std::min(1.0, pixelColor.r() * lightIntensity),
+                        std::min(1.0, pixelColor.g() * lightIntensity),
+                        std::min(1.0, pixelColor.b() * lightIntensity),
+                        pixelColor.a()
+                    );
+
+                    Image3D.setPixel(x, y, lightedPixelColor);
+                }
+            }
+        }
+
+        return Image3D;
     }
 
 }

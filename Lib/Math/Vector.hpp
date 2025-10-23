@@ -276,9 +276,9 @@ namespace math {
 
     template<typename T>
     void Vector<T>::clear() {
-        for (size_t i = 0; i < m_size; ++i) {
-            elements[i] = nullptr;
-        }
+        delete[] elements;
+        elements = nullptr;
+        m_size = 0;
     }
 
     template<typename T>
