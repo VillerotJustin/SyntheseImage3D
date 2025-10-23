@@ -37,8 +37,21 @@ namespace rendering {
 
     void Camera::setDirection(const Vector3D& direction) {
         Quaternion rotationQuat = Quaternion::fromVectorToVector(viewport.getNormal(), direction);
-        // Recreate the rectangle with the same origin and sizes but new normal
-        viewport = viewport.rotate(rotationQuat);
+        
+        // Store the exact dimensions before rotation to preserve aspect ratio perfectly
+        double length = viewport.getLength();
+        double width = viewport.getWidth();
+        Vector3D origin = viewport.getOrigin();
+        
+        // Rotate the direction vectors and renormalize to prevent numerical drift
+        Vector3D newLengthDir = (rotationQuat * viewport.getLengthVec()).normal();
+        Vector3D newWidthDir = (rotationQuat * viewport.getWidthVec()).normal();
+        
+        // Reconstruct the rectangle
+        viewport = Rectangle(origin, origin + length * newLengthDir, origin + width * newWidthDir);
+        
+        // Force exact dimensions to prevent any floating-point drift
+        viewport.setDimensions(length, width);
     }
 
     double Camera::getViewportWidth() const {
@@ -390,7 +403,9 @@ namespace rendering {
     
     Image Camera::renderScene3DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const {
         // Check Image aspect ratio
-        if (static_cast<double>(imageWidth) / static_cast<double>(imageHeight) != getViewportAspectRatio()) {
+        double aspectRatio = static_cast<double>(imageWidth) / static_cast<double>(imageHeight);
+        double precision = 1e-6;
+        if (std::abs(aspectRatio - getViewportAspectRatio()) > precision) {
             throw std::invalid_argument("Image aspect ratio does not match camera viewport aspect ratio");
         }
 
@@ -509,4 +524,8 @@ namespace rendering {
         return Image3D;
     }
     
+    Image Camera::renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const {
+        throw std::runtime_error("Not yet implemented");
+    }
+
 }

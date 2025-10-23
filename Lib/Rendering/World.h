@@ -19,6 +19,7 @@
 #include "./Image.h"
 #include "./Shape.hpp"
 #include "./Camera.h"
+#include "./Light.h"
 
 #include <variant>
 #include <algorithm>
@@ -46,10 +47,28 @@ namespace rendering {
         void removeObject(const Shape<T>& shape);
 
         /**
+         * Add a light to the world
+         * @param light The light to add
+         */
+        void addLight(const Light& light);
+
+        /**
+         * Remove a light from the world
+         * @param light The light to remove
+         */
+        void removeLight(const Light& light);
+
+        /**
+         * Remove a light from the world
+         * @param index The index of the light to remove
+         */
+        void removeLightAt(const size_t& index);
+
+        /**
          * Get the number of objects in the world
          * @return The number of objects
          */
-        int getObjectCount() const;
+        size_t getObjectCount() const;
 
         /**
          * Get the camera
@@ -69,7 +88,7 @@ namespace rendering {
          * @param imageHeight The height of the output image in pixels
          * @return Image The rendered image
          */
-        Image renderScene2DColor(int imageWidth, int imageHeight) const;
+        Image renderScene2DColor(size_t imageWidth, size_t imageHeight) const;
 
         /**
          * Render the scene to a depth map from the camera's perspective
@@ -77,7 +96,7 @@ namespace rendering {
          * @param imageHeight The height of the output image in pixels
          * @return Image The rendered depth map image
          */
-        Image renderScene2DDepth(int imageWidth, int imageHeight) const;
+        Image renderScene2DDepth(size_t imageWidth, size_t imageHeight) const;
 
         /**
          * Render the scene with just default color
@@ -85,7 +104,7 @@ namespace rendering {
          * @param imageHeight The height of the output image in pixels
          * @return Image The rendered depth map image
          */
-        Image renderScene3DColor(int imageWidth, int imageHeight) const;
+        Image renderScene3DColor(size_t imageWidth, size_t imageHeight) const;
 
         /**
          * Render the scene with depth lighting
@@ -93,12 +112,22 @@ namespace rendering {
          * @param imageHeight The height of the output image in pixels
          * @return Image The rendered depth map image
          */
-        Image renderScene3DDepth(int imageWidth, int imageHeight) const;
+        Image renderScene3DDepth(size_t imageWidth, size_t imageHeight) const;
+
+        /**
+         * Render the scene with light lighting
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DLight(size_t imageWidth, size_t imageHeight) const;
 
 
     private:
         using ShapeVariant = std::variant<Shape<geometry::Box>, Shape<geometry::Circle>, Shape<geometry::Plane>, Shape<geometry::Rectangle>, Shape<geometry::Sphere>>;
         math::Vector<ShapeVariant> objects;
+
+        math::Vector<Light> lights;
 
         Camera camera;
     };
@@ -122,7 +151,7 @@ namespace rendering {
         static_assert(is_allowed_geometry_v<T>, "Type T must be an allowed geometry type");
         
         // Find and remove the first matching shape
-        for (int i = 0; i < objects.size(); ++i) {
+        for (size_t i = 0; i < objects.size(); ++i) {
             if (objects[i] != nullptr) {
                 // Check if this variant holds a Shape<T>
                 if (std::holds_alternative<Shape<T>>(*objects[i])) {

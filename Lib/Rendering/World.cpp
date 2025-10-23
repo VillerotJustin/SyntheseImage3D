@@ -14,7 +14,30 @@ namespace rendering {
         // Camera positioned at (0,0,5) with 10x10 viewport looking toward origin
     }
 
-    int World::getObjectCount() const {
+    void World::addLight(const Light& light) {
+        Light* newLight = new Light(light);
+        lights.append(newLight);
+    }
+
+    void World::removeLight(const Light& light) {
+        for (size_t i = 0; i < lights.size(); ++i) {
+            if (*lights[i] == light) {
+                delete lights[i];
+                lights.erase(i);
+                return;
+            }
+        }
+    }
+
+    void World::removeLightAt(const size_t& index) {
+        if (index >= lights.size()) {
+            throw std::out_of_range("Light index out of bounds");
+        }
+        delete lights[index];
+        lights.erase(index);
+    }
+
+    size_t World::getObjectCount() const {
         return objects.size();
     }
 
@@ -36,7 +59,7 @@ namespace rendering {
         objects.clear();
     }
 
-    Image World::renderScene2DColor(int imageWidth, int imageHeight) const {
+    Image World::renderScene2DColor(size_t imageWidth, size_t imageHeight) const {
         // Dispatch rendering based on the type of shapes in the world
         // For simplicity, we assume all shapes are of the same type here
         if (objects.size() == 0) {
@@ -46,7 +69,7 @@ namespace rendering {
         return camera.renderScene2DColor(imageWidth, imageHeight, objects);
     }
 
-    Image World::renderScene2DDepth(int imageWidth, int imageHeight) const {
+    Image World::renderScene2DDepth(size_t imageWidth, size_t imageHeight) const {
         // Dispatch rendering based on the type of shapes in the world
         // For simplicity, we assume all shapes are of the same type here
         if (objects.size() == 0) {
@@ -56,7 +79,7 @@ namespace rendering {
         return camera.renderScene2DDepth(imageWidth, imageHeight, objects);
     }
 
-    Image World::renderScene3DColor(int imageWidth, int imageHeight) const {
+    Image World::renderScene3DColor(size_t imageWidth, size_t imageHeight) const {
         // Dispatch rendering based on the type of shapes in the world
         // For simplicity, we assume all shapes are of the same type here
         if (objects.size() == 0) {
@@ -66,7 +89,7 @@ namespace rendering {
         return camera.renderScene3DColor(imageWidth, imageHeight, objects);
     }
 
-    Image World::renderScene3DDepth(int imageWidth, int imageHeight) const {
+    Image World::renderScene3DDepth(size_t imageWidth, size_t imageHeight) const {
         // Dispatch rendering based on the type of shapes in the world
         // For simplicity, we assume all shapes are of the same type here
         if (objects.size() == 0) {
@@ -74,6 +97,16 @@ namespace rendering {
         }
 
         return camera.renderScene3DDepth(imageWidth, imageHeight, objects);
+    }
+
+    Image World::renderScene3DLight(size_t imageWidth, size_t imageHeight) const {
+        // Dispatch rendering based on the type of shapes in the world
+        // For simplicity, we assume all shapes are of the same type here
+        if (objects.size() == 0) {
+            return Image(imageWidth, imageHeight); // Return empty image if no objects
+        }
+
+        return camera.renderScene3DLight(imageWidth, imageHeight, objects, lights);
     }
 
 } // namespace rendering

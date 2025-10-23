@@ -18,6 +18,7 @@
 
 #include "./Image.h"
 #include "./Shape.hpp"
+#include "./Light.h"
 
 
 using namespace geometry;
@@ -161,6 +162,17 @@ namespace rendering {
          * @return Image The rendered depth map image
          */
         Image renderScene3DDepth(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes) const;
+
+        /**
+         * Render the depth map of the scene from the camera's perspective
+         * @tparam T The geometry type of the shapes to render
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @param shapes The vector of shapes in the scene
+         * @param lights The vector of lights in the scene
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
 
         /**
          * Generate a ray using a point on the viewport and the normal vector

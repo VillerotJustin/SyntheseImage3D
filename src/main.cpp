@@ -99,9 +99,9 @@ int main() {
         // Camera setup with new constructor
         double cameraDistance = cubeSize - 1.0; // Distance from center
         // Calculate viewport dimensions to match image aspect ratio (800:600 = 4:3)
-        double aspectRatio = static_cast<double>(imageWidth) / imageHeight; // 800/600 = 1.333...
+        double aspectRatio = static_cast<double>(imageWidth) / static_cast<double>(imageHeight); // 800/600 = 1.333...
         double viewportHeight = 10.0; // Base viewport height
-        double viewportWidth = viewportHeight * aspectRatio; // Width = height * aspect ratio
+        double viewportWidth = viewportHeight / aspectRatio; // Width = height * aspect ratio
         Vector3D cameraPosition(0, 0, cameraDistance); // Initial position
         Vector3D cameraDirection(0, 0, -1); // Look toward center
         
@@ -117,7 +117,13 @@ int main() {
         Vector3D topRight = cameraPosition + Vector3D( viewportWidth / 2.0,  viewportHeight / 2.0, 0.0);
         Vector3D bottomLeft = cameraPosition + Vector3D(-viewportWidth / 2.0, -viewportHeight / 2.0, 0.0);
         Camera camera(Rectangle(topLeft, topRight, bottomLeft));
+        
+        // Debug: Print actual viewport dimensions and aspect ratio
         std::cout << "  ✓ Camera created successfully" << std::endl;
+        std::cout << "  DEBUG: Viewport Length (l): " << camera.getViewport().getLength() << std::endl;
+        std::cout << "  DEBUG: Viewport Width (w): " << camera.getViewport().getWidth() << std::endl;
+        std::cout << "  DEBUG: Viewport Aspect Ratio (w/l): " << camera.getViewportAspectRatio() << std::endl;
+        std::cout << "  DEBUG: Image Aspect Ratio: " << (static_cast<double>(imageWidth) / imageHeight) << std::endl;
         std::cout << std::endl;
         
         std::cout << "Building 3D world..." << std::endl;
@@ -161,9 +167,12 @@ int main() {
             // Update camera
             world.getCamera().setPosition(newPosition);
             world.getCamera().setDirection(newDirection);
-            
+
+            std::cout << "  - Viewport aspect ratio: " << world.getCamera().getViewportAspectRatio() << std::endl;
+            std::cout << "  - Image aspect ratio: " << aspectRatio << std::endl;
+
             // Render frame
-            video.addFrame(world.renderScene2DDepth(imageWidth, imageHeight));
+            video.addFrame(world.renderScene3DDepth(imageWidth, imageHeight));
 
             // Save frame (you can add video saving logic here)
             std::cout << "Rendered frame " << frame + 1 << "/" << frameCount << std::endl;
