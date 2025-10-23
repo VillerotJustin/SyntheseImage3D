@@ -1,0 +1,35 @@
+=== Render Test: scene2D_depth ===
+Start time: 2025-10-24 00:19:45
+
+Camera Configuration:
+--------------------
+Origin: [0, 0, -10]
+Direction: [0, 0, 1]
+Field of View: 65
+
+Output Image:
+-------------
+Dimensions: 720x720 pixels
+
+Scene Configuration:
+-------------------
+Shapes (2 total):
+  Shape 1:
+    Type: Sphere
+    Center: [4, 4, 0]
+    Radius: 3
+    Color: None
+  Shape 2:
+    Type: Box
+    Origin: [5, 5, 10]
+    Width: 2
+    Height: 2
+    Depth: 2
+    Color: None
+
+Lights (0 total):
+
+Render Time: 363 ms
+
+-------------
+

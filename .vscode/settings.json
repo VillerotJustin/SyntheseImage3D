@@ -87,7 +87,11 @@
     "valarray": "cpp",
     "execution": "cpp",
     "__hash_table": "cpp",
-    "__tree": "cpp"
+    "__tree": "cpp",
+    "__bit_reference": "cpp",
+    "__split_buffer": "cpp",
+    "locale": "cpp",
+    "__node_handle": "cpp"
   },
   "C_Cpp.errorSquiggles": "enabled",
   "C_Cpp.vcFormat.newLine.closeBraceSameLine.emptyFunction": true,

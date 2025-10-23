@@ -2,6 +2,9 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
+#include <fstream>
+#include <chrono>
+#include <iomanip>
 #include "../Lib/Rendering/Camera.h"
 #include "../Lib/Geometry/Vector3D.h"
 #include "../Lib/Geometry/Rectangle.h"
@@ -33,6 +36,141 @@ bool isEqual(const Vector3D& a, const Vector3D& b, double epsilon = 1e-9) {
     return (a - b).length() < epsilon;
 }
 
+// Logger class for render information
+class RenderLogger {
+    std::ofstream logFile;
+    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
+
+public:
+    RenderLogger(const std::string& testName) {
+        // Create the camera directory if it doesn't exist
+        std::string dirPath = "test/test_by_product/camera";
+        if (system(("mkdir -p " + dirPath).c_str()) != 0) {
+            throw std::runtime_error("Failed to create directory: " + dirPath);
+        }
+
+        std::string logPath = dirPath + "/" + testName + ".log";
+        logFile.open(logPath);
+        if (!logFile.is_open()) {
+            throw std::runtime_error("Could not open log file: " + logPath);
+        }
+        startTime = std::chrono::high_resolution_clock::now();
+        logFile << "=== Render Test: " << testName << " ===" << std::endl;
+        logFile << "Start time: " << getCurrentTime() << std::endl << std::endl;
+    }
+
+    ~RenderLogger() {
+        if (logFile.is_open()) {
+            logFile.close();
+        }
+    }
+
+    // Just delegate to logScene with an empty lights vector
+    void logSceneObjects(const math::Vector<Camera::ShapeVariant>& shapes) {
+        logScene(shapes, math::Vector<Light>());
+    }
+
+    void logScene(const math::Vector<Camera::ShapeVariant>& shapes, const math::Vector<Light>& lights) {
+        logFile << "Scene Configuration:" << std::endl;
+        logFile << "-------------------" << std::endl;
+        
+        // Log shapes
+        logFile << "Shapes (" << shapes.size() << " total):" << std::endl;
+        for (size_t i = 0; i < shapes.size(); ++i) {
+            std::visit([&](const auto& shape) {
+                logFile << "  Shape " << i + 1 << ":" << std::endl;
+                
+                if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Sphere>>) {
+                    if (const auto* geom = shape.getGeometry()) {
+                        logFile << "    Type: Sphere" << std::endl;
+                        logFile << "    Center: " << geom->getCenter() << std::endl;
+                        logFile << "    Radius: " << geom->getRadius() << std::endl;
+                    }
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Box>>) {
+                    if (const auto* geom = shape.getGeometry()) {
+                        logFile << "    Type: Box" << std::endl;
+                        logFile << "    Origin: " << geom->getOrigin() << std::endl;
+                        logFile << "    Width: " << geom->getWidth() << std::endl;
+                        logFile << "    Height: " << geom->getHeight() << std::endl;
+                        logFile << "    Depth: " << geom->getDepth() << std::endl;
+                    }
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Rectangle>>) {
+                    if (const auto* geom = shape.getGeometry()) {
+                        logFile << "    Type: Rectangle" << std::endl;
+                        logFile << "    Origin: " << geom->getOrigin() << std::endl;
+                        logFile << "    Length: " << geom->getLength() << std::endl;
+                        logFile << "    Width: " << geom->getWidth() << std::endl;
+                    }
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Circle>>) {
+                    if (const auto* geom = shape.getGeometry()) {
+                        logFile << "    Type: Circle" << std::endl;
+                        logFile << "    Center: " << geom->getCenter() << std::endl;
+                        logFile << "    Radius: " << geom->getRadius() << std::endl;
+                    }
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Plane>>) {
+                    if (const auto* geom = shape.getGeometry()) {
+                        logFile << "    Type: Plane" << std::endl;
+                        logFile << "    Origin: " << geom->getOrigin() << std::endl;
+                        logFile << "    Normal: " << geom->getNormal() << std::endl;
+                    }
+                }
+
+                if (const auto* color = shape.getColor()) {
+                    logFile << "    Color: " << *color << std::endl;
+                } else {
+                    logFile << "    Color: None" << std::endl;
+                }
+            }, *shapes[i]);
+        }
+        logFile << std::endl;
+
+        // Log lights
+        logFile << "Lights (" << lights.size() << " total):" << std::endl;
+        for (size_t i = 0; i < lights.size(); ++i) {
+            const Light* light = lights[i];
+            logFile << "  Light " << i + 1 << ":" << std::endl;
+            logFile << "    Type: Point Light" << std::endl;
+            logFile << "    Position: " << light->getPosition() << std::endl;
+            logFile << "    Intensity: " << light->getIntensity() << std::endl;
+            logFile << "    Color: " << light->getColor() << std::endl;
+        }
+        logFile << std::endl;
+    }
+
+    void logCameraSettings(const Camera& camera, const Vector3D& origin) {
+        logFile << "Camera Configuration:" << std::endl;
+        logFile << "--------------------" << std::endl;
+        logFile << "Origin: " << origin << std::endl;
+        logFile << "Direction: " << camera.getDirection() << std::endl;
+        logFile << "Field of View: " << camera.getFOVAngle() << std::endl;
+        logFile << std::endl;
+    }
+
+    void logRenderTime() {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+        logFile << "Render Time: " << duration.count() << " ms" << std::endl << std::endl;
+        logFile << "-------------" << std::endl;
+        logFile << std::endl;
+    }
+
+    void logImageInfo(int width, int height) {
+        logFile << "Output Image:" << std::endl;
+        logFile << "-------------" << std::endl;
+        logFile << "Dimensions: " << width << "x" << height << " pixels" << std::endl;
+        logFile << std::endl;
+    }
+
+private:
+    std::string getCurrentTime() {
+        auto now = std::chrono::system_clock::now();
+        auto nowTime = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&nowTime), "%Y-%m-%d %H:%M:%S");
+        return ss.str();
+    }
+};
+
 // Test function declarations
 void testCameraConstructor();
 void testCameraViewportOperations();
@@ -44,6 +182,7 @@ void testCameraRenderScene2DDepth();
 void testCameraRenderScene3DColor();
 void testCameraRenderScene3DDepth();
 void testCameraRenderScene3DLight();
+void testCameraRenderScene3DLightAntiAliasing();
 
 int main() {
     std::cout << "Running Camera tests..." << std::endl;
@@ -78,6 +217,9 @@ int main() {
 
         testCameraRenderScene3DLight();
         std::cout << "✓ Camera render scene 3D light tests passed" << std::endl;
+
+        testCameraRenderScene3DLightAntiAliasing();
+        std::cout << "✓ Camera render scene 3D light with anti-aliasing tests passed" << std::endl;
 
         std::cout << "All Camera tests passed!" << std::endl;
         return 0;
@@ -220,12 +362,17 @@ void testCameraRayGeneration() {
 }
 
 void testCameraRenderScene2DColor() {
+    RenderLogger logger("scene2D_color");
+
     // Create camera
     Vector3D topLeft(0, 0, -5);
     Vector3D topRight = topLeft + Vector3D(10.0, 0, 0);
     Vector3D bottomLeft = topLeft + Vector3D(0, 10.0, 0);
     Rectangle viewport(topLeft, topRight, bottomLeft);
     Camera camera(viewport);
+
+    // Log camera settings
+    logger.logCameraSettings(camera, topLeft);
     
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -244,25 +391,31 @@ void testCameraRenderScene2DColor() {
     std::visit([](auto& shape) { shape.setColor(RGBA_Color(0, 1, 0, 1)); }, *boxVariant); // Green color
     shapes.append(boxVariant);
     
+    logger.logImageInfo(720, 720);
+
+    // Log scene configuration
+    logger.logSceneObjects(shapes);
+    
     // Render small test image
-    Image image = camera.renderScene2DColor(720, 720, shapes);
+    Image colorImage2D = camera.renderScene2DColor(720, 720, shapes);
+    logger.logRenderTime();
     
     // Basic checks on the rendered image
-    assert(image.getWidth() == 720);
-    assert(image.getHeight() == 720);
+    assert(colorImage2D.getWidth() == 720);
+    assert(colorImage2D.getHeight() == 720);
 
     // Check that some pixels have been rendered (not all default/black)
     bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < image.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < image.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = image.getPixel(x, y);
+    for (size_t y = 0; y < colorImage2D.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < colorImage2D.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = colorImage2D.getPixel(x, y);
             if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
                 hasNonBlackPixels = true;
             }
         }
     }
 
-    image.toBitmapFile("test_render_output", "./test/test_by_product/camera/");
+    colorImage2D.toBitmapFile("test_render_output", "./test/test_by_product/camera/");
     
     // We expect some pixels to be rendered since we have shapes in the scene
     // Note: This test might be flaky depending on the exact rendering logic
@@ -271,6 +424,8 @@ void testCameraRenderScene2DColor() {
 }
 
 void testCameraRenderScene2DDepth() {
+    RenderLogger logger("scene2D_depth");
+    
     // Create camera
     Vector3D origin(0, 0, -10);
     // Build top-right and bottom-left points explicitly instead of using the old ctor
@@ -278,6 +433,9 @@ void testCameraRenderScene2DDepth() {
     Vector3D bottomLeft = origin + Vector3D(0, 10.0, 0);
     Rectangle viewport(origin, topRight, bottomLeft);
     Camera camera(viewport);
+
+    // Log camera settings
+    logger.logCameraSettings(camera, origin);
     
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -294,31 +452,39 @@ void testCameraRenderScene2DDepth() {
     Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
     
+    logger.logImageInfo(720, 720);
+
+    // Log scene configuration
+    logger.logSceneObjects(shapes);
+    
     // Render small test image
-    Image depthImage = camera.renderScene2DDepth(720, 720, shapes);
+    Image depthImage2D = camera.renderScene2DDepth(720, 720, shapes);
+    logger.logRenderTime();
     
     // Basic checks on the rendered image
-    assert(depthImage.getWidth() == 720);
-    assert(depthImage.getHeight() == 720);
+    assert(depthImage2D.getWidth() == 720);
+    assert(depthImage2D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
     bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = depthImage.getPixel(x, y);
+    for (size_t y = 0; y < depthImage2D.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < depthImage2D.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = depthImage2D.getPixel(x, y);
             if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
                 hasNonBlackPixels = true;
             }
         }
     }
 
-    depthImage.toBitmapFile("test_depth_output", "./test/test_by_product/camera/");
+    depthImage2D.toBitmapFile("test_depth_output", "./test/test_by_product/camera/");
     
     // We expect some pixels to have depth values since we have shapes in the scene
     std::cout << "Note: Depth render test completed - check output manually if needed" << std::endl;
 }
 
 void testCameraRenderScene3DColor() {
+    RenderLogger logger("scene3D_color");
+
     // Create camera
     Vector3D origin(-10, -10, -5);
     // Build top-right and bottom-left points explicitly instead of using the old ctor
@@ -326,6 +492,10 @@ void testCameraRenderScene3DColor() {
     Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
     Rectangle viewport(origin, topRight, bottomLeft);
     Camera camera(viewport);
+
+    // Log camera settings
+    logger.logCameraSettings(camera, origin);
+    
     
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -368,18 +538,24 @@ void testCameraRenderScene3DColor() {
     Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
+    logger.logImageInfo(720, 720);
+
+    // Log scene configuration
+    logger.logSceneObjects(shapes);
+    
     // Render small test image
-    Image depthImage = camera.renderScene3DColor(720, 720, shapes);
+    Image colorImage3D = camera.renderScene3DColor(720, 720, shapes);
+    logger.logRenderTime();
     
     // Basic checks on the rendered image
-    assert(depthImage.getWidth() == 720);
-    assert(depthImage.getHeight() == 720);
+    assert(colorImage3D.getWidth() == 720);
+    assert(colorImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
     bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = depthImage.getPixel(x, y);
+    for (size_t y = 0; y < colorImage3D.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < colorImage3D.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = colorImage3D.getPixel(x, y);
             if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
                 hasNonBlackPixels = true;
             }
@@ -388,23 +564,29 @@ void testCameraRenderScene3DColor() {
 
     assert(hasNonBlackPixels);
 
-    depthImage.toBitmapFile("test_3d_color_output", "./test/test_by_product/camera/");
+    colorImage3D.toBitmapFile("test_3d_color_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
-    camera = Camera(viewport, 120.0f); // Wider FOV
-    depthImage = camera.renderScene3DColor(720, 720, shapes);
-    depthImage.toBitmapFile("test_3d_color_wide_fov_output", "./test/test_by_product/camera/");
+    camera.setFOVAngle(120.0f);
+    logger.logCameraSettings(camera, origin); // Wider FOV
+    colorImage3D = camera.renderScene3DColor(720, 720, shapes);
+    logger.logRenderTime();
+    colorImage3D.toBitmapFile("test_3d_color_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
-    camera = Camera(viewport, 30.0f); // Narrower FOV
-    depthImage = camera.renderScene3DColor(720, 720, shapes);
-    depthImage.toBitmapFile("test_3d_color_narrow_fov_output", "./test/test_by_product/camera/");
+    camera.setFOVAngle(30.0f);
+    logger.logCameraSettings(camera, origin); // Narrower FOV
+    colorImage3D = camera.renderScene3DColor(720, 720, shapes);
+    logger.logRenderTime();
+    colorImage3D.toBitmapFile("test_3d_color_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
 void testCameraRenderScene3DDepth() {
+    RenderLogger logger("scene3D_depth");
+
     // Create camera
     Vector3D origin(-10, -10, -5);
     // Build top-right and bottom-left points explicitly instead of using the old ctor
@@ -412,6 +594,10 @@ void testCameraRenderScene3DDepth() {
     Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
     Rectangle viewport(origin, topRight, bottomLeft);
     Camera camera(viewport);
+
+    // Log camera settings
+    logger.logCameraSettings(camera, origin);
+    
     
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -454,18 +640,24 @@ void testCameraRenderScene3DDepth() {
     Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
+    logger.logImageInfo(720, 720);
+
+    // Log scene configuration
+    logger.logSceneObjects(shapes);
+    
     // Render small test image
-    Image depthImage = camera.renderScene3DDepth(720, 720, shapes);
+    Image depthImage3D = camera.renderScene3DDepth(720, 720, shapes);
+    logger.logRenderTime();
     
     // Basic checks on the rendered image
-    assert(depthImage.getWidth() == 720);
-    assert(depthImage.getHeight() == 720);
+    assert(depthImage3D.getWidth() == 720);
+    assert(depthImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
     bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = depthImage.getPixel(x, y);
+    for (size_t y = 0; y < depthImage3D.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < depthImage3D.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = depthImage3D.getPixel(x, y);
             if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
                 hasNonBlackPixels = true;
             }
@@ -474,24 +666,29 @@ void testCameraRenderScene3DDepth() {
 
     assert(hasNonBlackPixels);
 
-    depthImage.toBitmapFile("test_3d_depth_output", "./test/test_by_product/camera/");
+    depthImage3D.toBitmapFile("test_3d_depth_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
-    camera = Camera(viewport, 120.0f); // Wider FOV
-    depthImage = camera.renderScene3DDepth(720, 720, shapes);
-    depthImage.toBitmapFile("test_3d_depth_wide_fov_output", "./test/test_by_product/camera/");
+    camera.setFOVAngle(120.0f);
+    logger.logCameraSettings(camera, origin); // Wider FOV
+    depthImage3D = camera.renderScene3DDepth(720, 720, shapes);
+    logger.logRenderTime();
+    depthImage3D.toBitmapFile("test_3d_depth_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
-    camera = Camera(viewport, 30.0f); // Narrower FOV
-    depthImage = camera.renderScene3DDepth(720, 720, shapes);
-    depthImage.toBitmapFile("test_3d_depth_narrow_fov_output", "./test/test_by_product/camera/");
+    camera.setFOVAngle(30.0f);
+    logger.logCameraSettings(camera, origin); // Narrower FOV
+    depthImage3D = camera.renderScene3DDepth(720, 720, shapes);
+    logger.logRenderTime();
+    depthImage3D.toBitmapFile("test_3d_depth_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
-
 void testCameraRenderScene3DLight() {
+    RenderLogger logger("scene3D_light");
+
     // Create camera
     Vector3D origin(-10, -10, -5);
     // Build top-right and bottom-left points explicitly instead of using the old ctor
@@ -499,6 +696,10 @@ void testCameraRenderScene3DLight() {
     Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
     Rectangle viewport(origin, topRight, bottomLeft);
     Camera camera(viewport);
+    
+    // Log camera settings
+    logger.logCameraSettings(camera, origin);
+    
     
     // Create the lights of the room
     Light light1(Vector3D(0, 8, -2), RGBA_Color(1.0, 1.0, 1.0, 1.0), 2.0);
@@ -561,8 +762,13 @@ void testCameraRenderScene3DLight() {
     Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
-    // Render small test image
+    // Log scene configuration
+    logger.logScene(shapes, lights);
+    
+    logger.logImageInfo(720, 720);
+    // Render with default FOV
     Image depthImage = camera.renderScene3DLight(720, 720, shapes, lights);
+    logger.logRenderTime();
     
     // Basic checks on the rendered image
     assert(depthImage.getWidth() == 720);
@@ -585,14 +791,139 @@ void testCameraRenderScene3DLight() {
     std::cout << "Note: 3D Light render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
-    camera = Camera(viewport, 120.0f); // Wider FOV
+    camera.setFOVAngle(120.0f);
+    logger.logCameraSettings(camera, origin); // Wider FOV
     depthImage = camera.renderScene3DLight(720, 720, shapes, lights);
+    logger.logRenderTime();
     depthImage.toBitmapFile("test_3d_light_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
-    camera = Camera(viewport, 30.0f); // Narrower FOV
+    camera.setFOVAngle(30.0f);
+    logger.logCameraSettings(camera, origin); // Narrower FOV
     depthImage = camera.renderScene3DLight(720, 720, shapes, lights);
+    logger.logRenderTime();
     depthImage.toBitmapFile("test_3d_light_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render with narrow FOV test completed - check output manually if needed" << std::endl;
+}
+
+void testCameraRenderScene3DLightAntiAliasing() {
+    RenderLogger logger("scene3D_light_antialiasing");
+
+    // Create camera
+    Vector3D origin(-10, -10, -5);
+    // Build top-right and bottom-left points explicitly instead of using the old ctor
+    Vector3D topRight = origin + Vector3D(20.0, 0, 0);
+    Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
+    Rectangle viewport(origin, topRight, bottomLeft);
+    Camera camera(viewport);
+
+    // Log camera settings
+    logger.logCameraSettings(camera, origin);
+    
+    
+    // Create the lights of the room
+    Light light1(Vector3D(0, 8, -2), RGBA_Color(1.0, 1.0, 1.0, 1.0), 2.0);
+    Light light2(Vector3D(-5, -5, 0), RGBA_Color(1.0, 1.0, 1.0, 1.0), 0.6);
+    Light light3(Vector3D(5, 5, -2), RGBA_Color(1.0, 0.0, 0.0, 1.0), 1.0);
+    Light light4(Vector3D(5, 5, 2), RGBA_Color(0.0, 1.0, 0.0, 1.0), 1.0);
+    Light light5(Vector3D(5, -5, -2), RGBA_Color(0.0, 0.0, 1.0, 1.0), 1.0);
+    math::Vector<Light> lights;
+    lights.append(&light1);
+    lights.append(&light2);
+    lights.append(&light3);
+    lights.append(&light4);
+    lights.append(&light5);
+
+    // Create some shapes to render
+    math::Vector<Camera::ShapeVariant> shapes;
+    
+    // Add a sphere at the origin
+    Sphere sphere(Vector3D(0, 0, 0), 4.0);
+    Shape<::geometry::Sphere> sphereShape(sphere);
+    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    shapes.append(sphereVariant);
+    
+    // Add a box 
+    Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
+    Shape<::geometry::Box> boxShape(box);
+    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    shapes.append(boxVariant);
+
+    // Add transparent rectangle
+    Vector3D rectTopLeft(-7, -7, -3);
+    Rectangle transparentRect(rectTopLeft, rectTopLeft + Vector3D(5.0, 0, 0), rectTopLeft + Vector3D(0.0, 5.0, 0.0));
+    Shape<::geometry::Rectangle> transparentRectShape(transparentRect, RGBA_Color(0.0, 0.0, 0.8, 0.3)); // Semi-transparent blue
+    Camera::ShapeVariant* transparentRectVariant = new Camera::ShapeVariant{transparentRectShape};
+    shapes.append(transparentRectVariant);
+
+    // Add walls (Back top bottom right & left)
+    Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
+    Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
+    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    shapes.append(backWallVariant);
+
+    Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
+    Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
+    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    shapes.append(leftWallVariant);
+
+    Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
+    Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
+    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    shapes.append(rightWallVariant);
+
+    Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
+    Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
+    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    shapes.append(topWallVariant);
+
+    Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
+    Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
+    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    shapes.append(bottomWallVariant);
+
+    logger.logImageInfo(720, 720);
+
+    // Log scene configuration
+    logger.logScene(shapes, lights);
+
+    // Render small test image
+    Image AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
+    
+    // Basic checks on the rendered image
+    assert(AntiAliasingImage.getWidth() == 720);
+    assert(AntiAliasingImage.getHeight() == 720);
+
+    // Check that some pixels have depth values (not all default/black)
+    bool hasNonBlackPixels = false;
+    for (size_t y = 0; y < AntiAliasingImage.getHeight() && !hasNonBlackPixels; ++y) {
+        for (size_t x = 0; x < AntiAliasingImage.getWidth() && !hasNonBlackPixels; ++x) {
+            const RGBA_Color* pixel = AntiAliasingImage.getPixel(x, y);
+            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
+                hasNonBlackPixels = true;
+            }
+        }
+    }
+
+    assert(hasNonBlackPixels);
+
+    AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Light with anti-aliasing render test completed - check output manually if needed" << std::endl;
+
+    // Test with bigger FOV
+    camera.setFOVAngle(120.0f);
+    logger.logCameraSettings(camera, origin); // Wider FOV
+    AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
+    logger.logRenderTime();
+    AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_wide_fov_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Light with anti-aliasing render with wide FOV test completed - check output manually if needed" << std::endl;
+
+    // Test with smaller FOV
+    camera.setFOVAngle(30.0f);
+    logger.logCameraSettings(camera, origin); // Narrower FOV
+    AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
+    logger.logRenderTime();
+    AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_narrow_fov_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Light with anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
 }

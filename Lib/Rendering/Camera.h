@@ -106,6 +106,18 @@ namespace rendering {
         double getViewportAspectRatio() const;
 
         /**
+         * Get the camera's field of view (FOV) angle
+         * @return double The FOV angle in degrees
+         */
+        double getFOVAngle() const;
+
+        /**
+         * Set the camera's field of view (FOV) angle
+         * @param angle The new FOV angle in degrees
+         */
+        void setFOVAngle(double angle);
+
+        /**
         * Rotate the camera around its origin by a given quaternion
         * @param rotation The quaternion representing the rotation
         */
@@ -174,6 +186,8 @@ namespace rendering {
          */
         Image renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
 
+        Image renderScene3DLightAntiAliasing(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel = 8) const;
+
         /**
          * Generate a ray using a point on the viewport and the normal vector
          * @param pointOnViewport A point on the viewport rectangle
@@ -182,7 +196,7 @@ namespace rendering {
         Ray generateRay(const Vector3D& pointOnViewport) const;
     private:
         Rectangle viewport;
-        float FOV_Angle = 65.0f; // Field of View angle degrees
+        double FOV_Angle = 65.0f; // Field of View angle degrees
     };
 
 }

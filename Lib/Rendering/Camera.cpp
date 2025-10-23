@@ -78,6 +78,14 @@ namespace rendering {
         return viewport.getWidth() / viewport.getLength();
     }
 
+    double Camera::getFOVAngle() const {
+        return FOV_Angle;
+    }
+
+    void Camera::setFOVAngle(double angle) {
+        FOV_Angle = angle;
+    }
+
     void Camera::rotate(Quaternion rotation) {
         viewport = viewport.rotate(rotation);
     }
@@ -670,6 +678,192 @@ namespace rendering {
                     RGBA_Color finalColor(accR, accG, accB, finalA);
                     Image3D.setPixel(x, y, finalColor.clamp());
                 }
+            }
+        }
+
+        return Image3D;
+    }
+
+    Image Camera::renderScene3DLightAntiAliasing(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const {
+        if (samplesPerPixel == 0 || samplesPerPixel % 4 != 0) {
+            throw std::invalid_argument("samplesPerPixel must be a multiple of 4 not zero");
+        }
+
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0 || lights.size() == 0) {
+            return Image3D; // Return empty image if no shapes or lights
+        }
+
+        Vector3D viewportLengthVec = viewport.getLengthVec();
+        Vector3D viewportWidthVec = viewport.getWidthVec();
+
+        // Scale by viewport dimensions
+        viewportLengthVec = viewportLengthVec * viewport.getLength();
+        viewportWidthVec = viewportWidthVec * viewport.getWidth();
+
+        Vector3D fovOrigin = getFOVOrigin();
+
+        size_t antiAlias_imageHeight = imageHeight * samplesPerPixel / 2;
+        size_t antiAlias_imageWidth = imageWidth * samplesPerPixel / 2;
+
+        Image Image3D_antiAliased(antiAlias_imageWidth, antiAlias_imageHeight);
+
+        for (size_t y = 0; y < antiAlias_imageHeight; ++y) {
+            for (size_t x = 0; x < antiAlias_imageWidth; ++x) {
+                double u = (static_cast<double>(x)) / static_cast<double>(antiAlias_imageWidth);
+                double v = (static_cast<double>(y)) / static_cast<double>(antiAlias_imageHeight);
+
+                // Use Rectangle's parametric point method to avoid coordinate/ordering issues
+                Vector3D pixelPosition = viewport.getPointAt(u, v);
+                Ray ray(fovOrigin, (pixelPosition - fovOrigin).normal());
+
+                // Collect all hits along the view ray and sort them front-to-back
+                struct Hit { double t; size_t idx; };
+                math::Vector<Hit> hits;
+
+                for (size_t i = 0; i < shapes.size(); ++i) {
+                    std::visit([&](auto&& shape) {
+                        if (shape.getGeometry()) {
+                            if (auto d = shape.getGeometry()->rayIntersectDepth(ray)) {
+                                // only accept hits in front of the origin
+                                if (*d > 1e-9) {
+                                    hits.append(new Hit{*d, i});
+                                }
+                            }
+                        }
+                    }, *shapes[i]);
+                }
+
+                if (!hits.empty()) {
+                    std::sort(hits.begin(), hits.end(), [](const Hit *a, const Hit *b){ return a->t < b->t; });
+
+                    // Front-to-back compositing using remaining transmittance
+                    double remaining = 1.0;
+                    double epsRemaining = 1e-6;
+                    // Accumulate premultiplied color
+                    double accR = 0.0, accG = 0.0, accB = 0.0;
+                    double accA = 0.0;
+
+                    for (const Hit *h : hits) {
+                        if (remaining <= epsRemaining) break; // fully opaque already
+
+                        // Access the shape
+                        size_t i = h->idx;
+                        std::visit([&](auto&& shape) {
+                            using T = std::decay_t<decltype(shape)>;
+
+                            // Compute lighting at this hit
+                            Vector3D hitPoint = ray.getPointAt(h->t);
+                            Vector3D normal = shape.getNormalAt(hitPoint);
+
+                            RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
+
+                            for (const Light* light : lights) {
+                                Vector3D hitToLight = (light->getPosition() - hitPoint);
+                                double distanceToLight = hitToLight.length();
+                                Vector3D lightDir = hitToLight.normal();
+
+                                const double epsilon = 1e-4;
+                                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
+
+                                double transmission = 1.0;
+
+                                for (size_t j = 0; j < shapes.size(); ++j) {
+                                    if (i == j) continue;
+                                    std::visit([&](auto&& otherShape) {
+                                        if (otherShape.getGeometry()) {
+                                            auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
+                                            if (shadowDist && *shadowDist < distanceToLight) {
+                                                const RGBA_Color* occColor = otherShape.getColor();
+                                                double occAlpha = occColor ? occColor->a() : 1.0;
+                                                if (occAlpha >= 1.0 - 1e-12) {
+                                                    transmission = 0.0;
+                                                } else {
+                                                    transmission *= (1.0 - occAlpha);
+                                                }
+                                            }
+                                        }
+                                    }, *shapes[j]);
+
+                                    if (transmission <= 1e-12) break;
+                                }
+
+                                if (transmission > 1e-12) {
+                                    double nDotL = std::max(0.0, normal.dot(lightDir));
+                                    RGBA_Color lightCol = light->getColor() * light->getIntensity();
+                                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
+                                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
+                                    accumulatedLight = accumulatedLight + contrib;
+                                }
+                            }
+
+                            // Ambient
+                            RGBA_Color ambient(0.05, 0.05, 0.05, 1.0);
+                            RGBA_Color lightEffect = (accumulatedLight + ambient).clamp();
+
+                            RGBA_Color surfColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0,0,0,1);
+                            if (surfColor == RGBA_Color(0,0,0,1)) {
+                                if constexpr (std::is_same_v<T, Shape<Box>>) {
+                                    surfColor = RGBA_Color(1,0,0,1);
+                                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                                    surfColor = RGBA_Color(0,1,0,1);
+                                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                                    surfColor = RGBA_Color(0.5,0.5,0.5,1);
+                                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                                    surfColor = RGBA_Color(0,0,1,1);
+                                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                                    surfColor = RGBA_Color(1,1,1,1);
+                                }
+                            }
+
+                            RGBA_Color litSurface = surfColor * lightEffect; // component-wise
+
+                            double srcA = surfColor.a();
+                            // premultiplied source color
+                            double srcR = litSurface.r() * srcA;
+                            double srcG = litSurface.g() * srcA;
+                            double srcB = litSurface.b() * srcA;
+
+                            // accumulate front-to-back
+                            accR += srcR * remaining;
+                            accG += srcG * remaining;
+                            accB += srcB * remaining;
+                            accA += srcA * remaining;
+
+                            remaining *= (1.0 - srcA);
+                        }, *shapes[i]);
+                    }
+
+                    // Build final color
+                    double finalA = 1.0 - remaining;
+                    RGBA_Color finalColor(accR, accG, accB, finalA);
+                    Image3D_antiAliased.setPixel(x, y, finalColor.clamp());
+                }
+            }
+        }
+
+        // Downsample anti-aliased image to final image
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
+                for (size_t ay = 0; ay < samplesPerPixel / 2; ++ay) {
+                    for (size_t ax = 0; ax < samplesPerPixel / 2; ++ax) {
+                        size_t sampleX = x * (samplesPerPixel / 2) + ax;
+                        size_t sampleY = y * (samplesPerPixel / 2) + ay;
+                        RGBA_Color sampleColor = *Image3D_antiAliased.getPixel(sampleX, sampleY);
+                        accR += sampleColor.r();
+                        accG += sampleColor.g();
+                        accB += sampleColor.b();
+                        accA += sampleColor.a();
+                    }
+                }
+
+                // TODO fix light bleeding (overexposure) by using a better tonemapping operator
+
+                double numSamples = static_cast<double>(samplesPerPixel);
+                RGBA_Color finalColor(accR / numSamples, accG / numSamples, accB / numSamples, accA / numSamples);
+                Image3D.setPixel(x, y, finalColor.clamp());
             }
         }
 
