@@ -20,20 +20,20 @@ namespace rendering {
     }
 
     RGBA_Color::RGBA_Color(double r, double g, double b, double a) : components(4) {
-        components[0] = new double(r);
-        components[1] = new double(g);
-        components[2] = new double(b);
-        components[3] = new double(a);
+        components[0] = new double(std::clamp(r, 0.0, 1.0));
+        components[1] = new double(std::clamp(g, 0.0, 1.0));
+        components[2] = new double(std::clamp(b, 0.0, 1.0));
+        components[3] = new double(std::clamp(a, 0.0, 1.0));
     }
 
     RGBA_Color::RGBA_Color(const math::Vector<double>& v) : components(4) {
         if (v.size() != 4) {
             throw std::invalid_argument("Vector must have exactly 4 components to create an RGBA Color");
         }
-        components[0] = new double(*v[0]);
-        components[1] = new double(*v[1]);
-        components[2] = new double(*v[2]);
-        components[3] = new double(*v[3]);
+        components[0] = new double(std::clamp(*v[0], 0.0, 1.0));
+        components[1] = new double(std::clamp(*v[1], 0.0, 1.0));
+        components[2] = new double(std::clamp(*v[2], 0.0, 1.0));
+        components[3] = new double(std::clamp(*v[3], 0.0, 1.0));
     }
 
     RGBA_Color::~RGBA_Color() {
@@ -85,22 +85,22 @@ namespace rendering {
     // Component setters
     void RGBA_Color::setR(double red) {
         delete components[0];
-        components[0] = new double(red);
+        components[0] = new double(std::clamp(red, 0.0, 1.0));
     }
 
     void RGBA_Color::setG(double green) {
         delete components[1];
-        components[1] = new double(green);
+        components[1] = new double(std::clamp(green, 0.0, 1.0));
     }
 
     void RGBA_Color::setB(double blue) {
         delete components[2];
-        components[2] = new double(blue);
+        components[2] = new double(std::clamp(blue, 0.0, 1.0));
     }
 
     void RGBA_Color::setA(double alpha) {
         delete components[3];
-        components[3] = new double(alpha);
+        components[3] = new double(std::clamp(alpha, 0.0, 1.0));
     }
 
     void RGBA_Color::setRGBA(double red, double green, double blue, double alpha) {
@@ -108,10 +108,10 @@ namespace rendering {
         delete components[1];
         delete components[2];
         delete components[3];
-        components[0] = new double(red);
-        components[1] = new double(green);
-        components[2] = new double(blue);
-        components[3] = new double(alpha);
+        components[0] = new double(std::clamp(red, 0.0, 1.0));
+        components[1] = new double(std::clamp(green, 0.0, 1.0));
+        components[2] = new double(std::clamp(blue, 0.0, 1.0));
+        components[3] = new double(std::clamp(alpha, 0.0, 1.0));
     }
 
     void RGBA_Color::invert() {
@@ -164,6 +164,15 @@ namespace rendering {
 
     bool RGBA_Color::operator!=(const RGBA_Color& other) const {
         return !(*this == other);
+    }
+
+    void RGBA_Color::clampself() {
+        setRGBA(
+            std::clamp(r(), 0.0, 1.0),
+            std::clamp(g(), 0.0, 1.0),
+            std::clamp(b(), 0.0, 1.0),
+            std::clamp(a(), 0.0, 1.0)
+        );
     }
 
     // Utility methods

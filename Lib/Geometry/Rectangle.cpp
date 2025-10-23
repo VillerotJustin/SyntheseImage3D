@@ -62,7 +62,10 @@ namespace geometry {
         corners[3] = origin + w * widthDir;                    // Width corner
     }
 
-    bool Rectangle::containsPoint(const Vector3D& point, double tolerance) const {
+    bool Rectangle::containsPoint(const Vector3D& point) const {
+        // Use an internal tolerance for floating-point comparisons
+        const double tolerance = 1e-6;
+
         // First check if point is in the plane of the rectangle
         Vector3D toPoint = point - origin;
         double distToPlane = std::abs(toPoint.dot(normal));
@@ -72,42 +75,42 @@ namespace geometry {
                       << " tol=" << tolerance << " point=" << point << " origin=" << origin << " normal=" << normal << std::endl;
             return false; // Point is not in the plane of the rectangle
         }
-        
+
         // Project point onto rectangle plane and check if within bounds
         Vector3D projectedPoint = projectPointToPlane(point);
         Vector3D fromOrigin = projectedPoint - origin;
-        
+
         // Get coordinates in rectangle's local coordinate system
         double lengthCoord = fromOrigin.dot(lengthDir);
         double widthCoord = fromOrigin.dot(widthDir);
 
-        // Check if within rectangle bounds
+        // Check if within rectangle bounds using internal tolerance
         bool inside = (lengthCoord >= -tolerance && lengthCoord <= l + tolerance &&
                        widthCoord >= -tolerance && widthCoord <= w + tolerance);
-        if (!inside) {
-            // Debug: coordinates outside bounds
-            std::cerr << "[Rectangle::containsPoint] rejected: local coords (len, wid)=(" << lengthCoord << ", " << widthCoord << ")"
-                      << " ranges [0," << l << "] [0," << w << "] point=" << point << " origin=" << origin << std::endl;
-        }
+        // if (!inside) {
+        //     // Debug: coordinates outside bounds
+        //     std::cerr << "[Rectangle::containsPoint] rejected: local coords (len, wid)=(" << lengthCoord << ", " << widthCoord << ")"
+        //               << " ranges [0," << l << "] [0," << w << "] point=" << point << " origin=" << origin << std::endl;
+        // }
         return inside;
     }
 
-    bool Rectangle::isPointOnEdge(const Vector3D& point, double tolerance) const {
-        if (!containsPoint(point, tolerance)) {
+    bool Rectangle::isPointOnEdge(const Vector3D& point) const {
+        if (!containsPoint(point)) {
             return false; // Point must be within rectangle bounds
         }
         
         Vector3D projectedPoint = projectPointToPlane(point);
         Vector3D fromOrigin = projectedPoint - origin;
 
-    double lengthCoord = fromOrigin.dot(lengthDir);
-    double widthCoord = fromOrigin.dot(widthDir);
+        double lengthCoord = fromOrigin.dot(lengthDir);
+        double widthCoord = fromOrigin.dot(widthDir);
 
-    // Check if on any edge
-    bool onLengthEdge = (std::abs(lengthCoord) <= tolerance || std::abs(lengthCoord - l) <= tolerance);
-    bool onWidthEdge = (std::abs(widthCoord) <= tolerance || std::abs(widthCoord - w) <= tolerance);
+        // Check if on any edge
+        bool onLengthEdge = (std::abs(lengthCoord) <= 1e-9 || std::abs(lengthCoord - l) <= 1e-9);
+        bool onWidthEdge = (std::abs(widthCoord) <= 1e-9 || std::abs(widthCoord - w) <= 1e-9);
 
-    return onLengthEdge || onWidthEdge;
+        return onLengthEdge || onWidthEdge;
     }
 
     Vector3D Rectangle::projectPointToPlane(const Vector3D& point) const {
@@ -214,7 +217,7 @@ namespace geometry {
             return false;
         }
         
-        // Calculate intersection point
+        // Calculate raw intersection point
         Vector3D intersectionPoint = ray.getPointAt(t);
         
         // Check if intersection point is within the rectangle bounds

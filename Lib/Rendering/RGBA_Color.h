@@ -171,6 +171,11 @@ namespace rendering {
         bool operator!=(const RGBA_Color& other) const;
 
         /**
+         * @brief Clamp all color components to the range [0.0, 1.0] in place.
+         */
+        void clampself();
+
+        /**
          * @brief Clamp all color components to the range [0.0, 1.0].
          * @return A new RGBA_Color with clamped components.
          */

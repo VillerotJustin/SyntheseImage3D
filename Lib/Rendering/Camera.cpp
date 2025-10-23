@@ -96,10 +96,7 @@ namespace rendering {
     }
 
     Ray Camera::generateRay(const Vector3D& pointOnViewport) const {
-        // Allow a tolerance proportional to viewport size to account for floating-point roundoff
-        double maxDim = std::max(viewport.getLength(), viewport.getWidth());
-        const double tolerance = std::max(1e-6, maxDim * 1e-4); // e.g. for 10-unit viewport -> 0.001
-        if (!viewport.containsPoint(pointOnViewport, tolerance)) {
+        if (!viewport.containsPoint(pointOnViewport)) {
             throw std::invalid_argument("Point is not on the viewport rectangle");
         }
         return Ray(pointOnViewport, viewport.getNormal());
@@ -550,7 +547,8 @@ namespace rendering {
                 Ray ray(fovOrigin, (pixelPosition - fovOrigin).normal());
 
                 double closestDistance = std::numeric_limits<double>::infinity();
-                double lightIntensity = 0.0;
+                // Accumulated colored light for this pixel's hit (initialized to zero light)
+                RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
                 bool hitFound = false;
                 RGBA_Color pixelColor(0, 0, 0, 1); // Default to black
 
@@ -569,45 +567,67 @@ namespace rendering {
 
                             // Calculate light intensity at the hit point
                             Vector3D hitPoint = ray.getPointAt(*distance);
-                            lightIntensity = 0.0;
+                            // reset accumulated light for this hit
+                            accumulatedLight = RGBA_Color(0.0, 0.0, 0.0, 1.0);
 
                             // Calculate normal at hit point if possible
                             Vector3D normal = shape.getNormalAt(hitPoint);
 
-                            // Calculate light intensity from each light source
+
+                            // Calculate light intensity and color contribution from each light source
                             for (const Light* light : lights) {
                                 Vector3D hitToLight = (light->getPosition() - hitPoint);
                                 double distanceToLight = hitToLight.length();
                                 Vector3D lightDir = hitToLight.normal();
-                                
+
                                 // Offset the shadow ray origin slightly to avoid self-intersection
                                 const double epsilon = 1e-4;
                                 Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
-                                bool inShadow = false;
-                                
+
+                                // Track transmission through potentially transparent occluders
+                                double transmission = 1.0;
+
                                 for (size_t j = 0; j < shapes.size(); ++j) {
                                     if (i == j) continue; // Skip self
                                     std::visit([&](auto&& otherShape) {
                                         if (otherShape.getGeometry()) {
                                             auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
-                                            // Check if intersection is between hit point and light
+                                            // If intersection between hit point and light, attenuate by occluder's alpha
                                             if (shadowDist && *shadowDist < distanceToLight) {
-                                                inShadow = true;
+                                                const RGBA_Color* occColor = otherShape.getColor();
+                                                double occAlpha = occColor ? occColor->a() : 1.0;
+                                                // If fully opaque, block completely
+                                                if (occAlpha >= 1.0 - 1e-12) {
+                                                    transmission = 0.0;
+                                                } else {
+                                                    // Multiply transmission by (1 - occluder opacity)
+                                                    transmission *= (1.0 - occAlpha);
+                                                }
                                             }
                                         }
                                     }, *shapes[j]);
-                                    if (inShadow) break;
+
+                                    if (transmission <= 1e-12) break; // fully blocked
                                 }
 
-                                if (!inShadow) {
-                                    // Do something with distance
-                                    lightIntensity += light->getIntensity();
+                                if (transmission > 1e-12) {
+                                    // Lambertian term: dot(normal, lightDir)
+                                    double nDotL = std::max(0.0, normal.dot(lightDir));
+
+                                    // Light color scaled by intensity, geometric attenuation (optional inverse-square)
+                                    RGBA_Color lightCol = light->getColor() * light->getIntensity();
+
+                                    // Optionally include distance attenuation (simple inverse square)
+                                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
+
+                                    // Contribution from this light factoring transmission, nDotL and distance attenuation
+                                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
+                                    accumulatedLight = accumulatedLight + contrib;
                                 }
                             }
-                            // Natural attenuation based on normal and light direction
-                            lightIntensity *= std::max(0.0, normal.dot((lights[0]->getPosition() - hitPoint).normal()));
 
-                            lightIntensity = std::max(0.2, std::min(lightIntensity, 1.0)); // Clamp between 0.2 and 1
+                            // Ensure some ambient minimum lighting
+                            // accumulatedLight components may exceed 1.0, clamp later when applying to pixel
 
                             pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
 
@@ -631,14 +651,30 @@ namespace rendering {
                 
                 // Store the depth and color for this pixel
                 if (hitFound) {
-                    RGBA_Color lightedPixelColor(
-                        std::min(1.0, pixelColor.r() * lightIntensity),
-                        std::min(1.0, pixelColor.g() * lightIntensity),
-                        std::min(1.0, pixelColor.b() * lightIntensity),
-                        pixelColor.a()
-                    );
+                    // accumulatedLight was computed per hit; if zero use small ambient
+                    RGBA_Color ambient(0.05, 0.05, 0.05, 1.0);
+                    RGBA_Color lightEffect = (accumulatedLight + ambient).clamp();
 
-                    Image3D.setPixel(x, y, lightedPixelColor);
+                    // Modulate surface color by light color (component-wise)
+                    RGBA_Color litSurface = pixelColor * lightEffect;
+
+                    // Handle alpha of the surface: composite over black background
+                    double surfAlpha = pixelColor.a();
+                    RGBA_Color finalColor;
+                    if (surfAlpha >= 1.0 - 1e-12) {
+                        finalColor = litSurface.clamp();
+                    } else {
+                        // Alpha blend over black background (or could read existing background)
+                        // premultiplied approach: result = src + (1-src.a)*dst ; dst is black so simplified
+                        finalColor = RGBA_Color(
+                            litSurface.r() * surfAlpha,
+                            litSurface.g() * surfAlpha,
+                            litSurface.b() * surfAlpha,
+                            surfAlpha
+                        ).clamp();
+                    }
+
+                    Image3D.setPixel(x, y, finalColor);
                 }
             }
         }

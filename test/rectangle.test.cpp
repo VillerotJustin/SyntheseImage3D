@@ -141,10 +141,10 @@ void testRectangleCenterAndCorners() {
 
     // Verify all corners are valid points (relax tolerance further)
     for (int i = 0; i < 4; i++) {
-        if (!rect.containsPoint(corners[i], 1e-4)) {
+        if (!rect.containsPoint(corners[i])) {
             std::cerr << "Corner " << i << " not contained: " << corners[i] << std::endl;
         }
-        assert(rect.containsPoint(corners[i], 1e-4));
+        assert(rect.containsPoint(corners[i]));
     }
 
     // Verify corners form a rectangle by checking distances

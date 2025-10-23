@@ -501,11 +501,17 @@ void testCameraRenderScene3DLight() {
     Camera camera(viewport);
     
     // Create the lights of the room
-    Light light1(Vector3D(0, 8, -2), RGBA_Color(1.0, 1.0, 1.0, 1.0), 1.0);
-    Light light2(Vector3D(-5, -5, 0), RGBA_Color(1.0, 1.0, 1.0, 1.0), 0.5);
+    Light light1(Vector3D(0, 8, -2), RGBA_Color(1.0, 1.0, 1.0, 1.0), 2.0);
+    Light light2(Vector3D(-5, -5, 0), RGBA_Color(1.0, 1.0, 1.0, 1.0), 0.6);
+    Light light3(Vector3D(5, 5, -2), RGBA_Color(1.0, 0.0, 0.0, 1.0), 1.0);
+    Light light4(Vector3D(5, 5, 2), RGBA_Color(0.0, 1.0, 0.0, 1.0), 1.0);
+    Light light5(Vector3D(5, -5, -2), RGBA_Color(0.0, 0.0, 1.0, 1.0), 1.0);
     math::Vector<Light> lights;
     lights.append(&light1);
     lights.append(&light2);
+    lights.append(&light3);
+    lights.append(&light4);
+    lights.append(&light5);
 
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -521,6 +527,13 @@ void testCameraRenderScene3DLight() {
     Shape<::geometry::Box> boxShape(box);
     Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
+
+    // Add transparent rectangle
+    Vector3D rectTopLeft(-7, -7, -3);
+    Rectangle transparentRect(rectTopLeft, rectTopLeft + Vector3D(5.0, 0, 0), rectTopLeft + Vector3D(0.0, 5.0, 0.0));
+    Shape<::geometry::Rectangle> transparentRectShape(transparentRect, RGBA_Color(0.0, 0.0, 0.8, 0.3)); // Semi-transparent blue
+    Camera::ShapeVariant* transparentRectVariant = new Camera::ShapeVariant{transparentRectShape};
+    shapes.append(transparentRectVariant);
 
     // Add walls (Back top bottom right & left)
     Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));

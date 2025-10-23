@@ -111,20 +111,19 @@ namespace geometry {
         Vector3D getWidthVec() const;
 
         /**
-         * Check if a point lies within the rectangle
+         * Check if a point lies within the rectangle. Function internally handles
+         * floating-point tolerances so callers don't need to provide one.
          * @param point The point to check
-         * @param tolerance Tolerance for floating point comparison
          * @return bool True if the point is within the rectangle
          */
-        bool containsPoint(const Vector3D& point, double tolerance = 1e-9) const;
+        bool containsPoint(const Vector3D& point) const;
 
         /**
          * Check if a point is on the edge of the rectangle
          * @param point The point to check
-         * @param tolerance Tolerance for floating point comparison
          * @return bool True if the point is on the rectangle edge
          */
-        bool isPointOnEdge(const Vector3D& point, double tolerance = 1e-9) const;
+        bool isPointOnEdge(const Vector3D& point) const;
 
         /**
          * Project a point onto the rectangle plane
