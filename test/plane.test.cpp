@@ -135,6 +135,11 @@ void testPlanePointOperations() {
     assert(plane.containsPoint(pointOnPlane1));
     assert(plane.containsPoint(pointOnPlane2));
     assert(plane.containsPoint(pointOnPlane3));
+
+    // Test getNormalAt returns the plane normal for points on the plane
+    assert(isEqual(plane.getNormalAt(pointOnPlane1), plane.getNormal()));
+    assert(isEqual(plane.getNormalAt(pointOnPlane2), plane.getNormal()));
+    assert(isEqual(plane.getNormalAt(pointOnPlane3), plane.getNormal()));
     
     // Test points not on the plane
     Vector3D pointOffPlane1(1, 2, 1);

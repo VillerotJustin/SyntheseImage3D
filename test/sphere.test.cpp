@@ -318,6 +318,9 @@ void testSphereAdvancedOperations() {
     Vector3D normal = sphere.normalAt(surfacePoint);
     Vector3D expectedNormal(1, 0, 0);  // Should point outward
     assert(isEqual(normal, expectedNormal));
+
+    // Also exercise getNormalAt if present (alias)
+    assert(isEqual(sphere.getNormalAt(surfacePoint), expectedNormal));
     
     // Test tangent plane at surface point
     Plane tangentPlane = sphere.tangentPlaneAtPoint(surfacePoint);

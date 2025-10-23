@@ -106,6 +106,13 @@ namespace geometry {
         void getPlaneEquation(double& a, double& b, double& c, double& d) const;
 
         /**
+         * Get the normal vector at a point on the plane
+         * @param point The point on the plane
+         * @return Vector3D The normal vector at the point
+         */
+        Vector3D getNormalAt(const Vector3D& point) const;
+
+        /**
          * Check if a ray intersects with the box
          * @param ray The ray to check intersection with
          * @return bool True if the ray intersects the box

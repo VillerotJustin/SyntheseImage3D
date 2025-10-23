@@ -133,6 +133,11 @@ void testCirclePointOperations() {
     assert(circle.containsPoint(pointOnCircle1));
     assert(circle.containsPoint(pointOnCircle2));
     assert(circle.containsPoint(pointOnCircle3));
+
+    // Test normals at points on the circle (should equal the circle plane normal)
+    assert(isEqual(circle.getNormalAt(pointOnCircle1), circle.getNormal()));
+    assert(isEqual(circle.getNormalAt(pointOnCircle2), circle.getNormal()));
+    assert(isEqual(circle.getNormalAt(pointOnCircle3), circle.getNormal()));
     
     // Test points NOT on the circle
     Vector3D pointInside(1, 0, 0);     // Inside the circle

@@ -202,6 +202,8 @@ namespace geometry {
          */
         bool isValid() const;
 
+        Vector3D getNormalAt(const Vector3D& point) const;
+
         /**
          * Check if a ray intersects with the box
          * @param ray The ray to check intersection with

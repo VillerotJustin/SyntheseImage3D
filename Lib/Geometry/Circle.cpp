@@ -83,6 +83,13 @@ namespace geometry {
         v = normal.cross(u).normal();
     }
 
+    Vector3D Circle::getNormalAt(const Vector3D& point) const {
+        if (!containsPoint(point)) {
+            throw std::invalid_argument("Point is not on the circle");
+        }
+        return normal;
+    }
+
     bool Circle::rayIntersect(const Ray& ray) const {
         // First, check if ray intersects the plane containing the circle
         Vector3D rayDir = ray.getDirection();

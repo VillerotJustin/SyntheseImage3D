@@ -29,6 +29,7 @@ void testBoxIntersections();
 void testBoxTransformations();
 void testBoxSetters();
 void testBoxValidation();
+void testBoxNormals();
 
 int main() {
     std::cout << "=== Box Test Suite ===" << std::endl;
@@ -60,6 +61,9 @@ int main() {
         
         testBoxValidation();
         std::cout << "✓ Box validation test passed" << std::endl;
+
+        testBoxNormals();
+        std::cout << "✓ Box normals test passed" << std::endl;
         
         std::cout << "\n🎉 All Box tests passed!" << std::endl;
         
@@ -276,4 +280,46 @@ void testBoxValidation() {
     assert(!invalidBox1.isValid());
     assert(!invalidBox2.isValid());
     assert(!invalidBox3.isValid());
+}
+
+void testBoxNormals() {
+    // Axis-aligned box (normal along Z)
+    Vector3D origin(0,0,0);
+    Vector3D znormal(0,0,1);
+    Box box(origin, 2.0, 2.0, 2.0, znormal);
+
+    // Face centers
+    Vector3D minXCenter(0.0, 1.0, 1.0);
+    Vector3D maxXCenter(2.0, 1.0, 1.0);
+    Vector3D minYCenter(1.0, 0.0, 1.0);
+    Vector3D maxYCenter(1.0, 2.0, 1.0);
+    Vector3D minZCenter(1.0, 1.0, 0.0);
+    Vector3D maxZCenter(1.0, 1.0, 2.0);
+
+    assert(isEqual(box.getNormalAt(minXCenter), Vector3D(-1,0,0)));
+    assert(isEqual(box.getNormalAt(maxXCenter), Vector3D(1,0,0)));
+    assert(isEqual(box.getNormalAt(minYCenter), Vector3D(0,-1,0)));
+    assert(isEqual(box.getNormalAt(maxYCenter), Vector3D(0,1,0)));
+    assert(isEqual(box.getNormalAt(minZCenter), Vector3D(0,0,-1)));
+    assert(isEqual(box.getNormalAt(maxZCenter), Vector3D(0,0,1)));
+
+    // Oriented box: normal is diagonal; test Z-face normals map to world-space zAxis
+    Vector3D diagNormal(1,1,1);
+    Box obox(origin, 2.0, 2.0, 2.0, diagNormal);
+    Vector3D zAxis = obox.getNormal().normal();
+    // choose stable up as in implementation
+    Vector3D worldUp = Vector3D::UNIT_Y;
+    if (std::abs(zAxis.dot(worldUp)) > 0.99) worldUp = Vector3D::UNIT_X;
+    Vector3D xAxis = worldUp.cross(zAxis).normal();
+    Vector3D yAxis = zAxis.cross(xAxis).normal();
+
+    // point on min Z face center in local coords (cx=w/2, cy=h/2, cz=0)
+    Vector3D minZ_oriented = origin + xAxis*(obox.getWidth()/2.0) + yAxis*(obox.getHeight()/2.0) + zAxis*0.0;
+    Vector3D maxZ_oriented = origin + xAxis*(obox.getWidth()/2.0) + yAxis*(obox.getHeight()/2.0) + zAxis*(obox.getDepth());
+
+    Vector3D normalAtMinZ = obox.getNormalAt(minZ_oriented);
+    Vector3D normalAtMaxZ = obox.getNormalAt(maxZ_oriented);
+
+    assert(isEqual(normalAtMinZ, zAxis * -1.0));
+    assert(isEqual(normalAtMaxZ, zAxis));
 }

@@ -115,7 +115,7 @@ namespace geometry {
          * @param tolerance Tolerance for floating point comparison
          * @return bool True if the point is on the surface
          */
-        bool isPointOnSurface(const Vector3D& point, double tolerance = 1e-9) const;
+        bool isPointOnSurface(const Vector3D& point) const;
 
         /**
          * Get the center point of the box
@@ -196,6 +196,14 @@ namespace geometry {
          * @return bool True if the box is valid
          */
         bool isValid() const;
+
+        /**
+         * Get the normal vector at a given point on the box surface
+         * @param point The point on the box surface
+         * @return Vector3D Normal vector at the point
+         * @throws std::runtime_error if the point is not on the surface
+         */
+        Vector3D getNormalAt(const Vector3D& point) const;
 
         /**
          * Check if a ray intersects with the box

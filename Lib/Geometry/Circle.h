@@ -91,6 +91,13 @@ namespace geometry {
         bool isValid() const;
 
         /**
+         * Get the normal vector at a specific point on the circle
+         * @param point The point on the circle
+         * @return Vector3D The normal vector at the specified point
+         */
+        Vector3D getNormalAt(const Vector3D& point) const;
+
+        /**
          * Check if a ray intersects with the Circle    
          * @param ray The ray to check intersection with
          * @return bool True if the ray intersects the circle

@@ -108,6 +108,13 @@ namespace geometry {
         std::optional<std::variant<Circle, Vector3D, Sphere>> intersectionPoints(const Sphere& other) const;
 
         /**
+         * Get the normal vector at a point on the surface of the sphere
+         * @param Vector3D point Point on the surface
+         * @return Vector3D Normal vector at the point
+         */
+        Vector3D getNormalAt(const Vector3D& point) const;
+
+        /**
          * Check if a ray intersects the sphere
          * @param Ray ray The ray to check
          * @param double t step while advancing the ray (default 0.01)

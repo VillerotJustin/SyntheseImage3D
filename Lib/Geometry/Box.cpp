@@ -26,26 +26,58 @@ namespace geometry {
     }
 
     bool Box::containsPoint(const Vector3D& point) const {
-        Vector3D relativePoint = point - origin;
-        return (relativePoint.x() >= 0 && relativePoint.x() <= w &&
-                relativePoint.y() >= 0 && relativePoint.y() <= h &&
-                relativePoint.z() >= 0 && relativePoint.z() <= p);
+        // Project the point into the box local coordinate system (xAxis, yAxis, zAxis)
+        Vector3D zAxis = normal.normal();
+        Vector3D worldUp = Vector3D::UNIT_Y;
+        if (std::abs(zAxis.dot(worldUp)) > 0.99) {
+            worldUp = Vector3D::UNIT_X;
+        }
+        Vector3D xAxis = worldUp.cross(zAxis);
+        if (xAxis.zero()) {
+            xAxis = Vector3D::UNIT_X.cross(zAxis);
+        }
+        xAxis = xAxis.normal();
+        Vector3D yAxis = zAxis.cross(xAxis).normal();
+
+        Vector3D rel = point - origin;
+        double cx = rel.dot(xAxis);
+        double cy = rel.dot(yAxis);
+        double cz = rel.dot(zAxis);
+
+        return (cx >= 0 && cx <= w && cy >= 0 && cy <= h && cz >= 0 && cz <= p);
     }
 
-    bool Box::isPointOnSurface(const Vector3D& point, double tolerance) const {
-        Vector3D relativePoint = point - origin;
-        
-        // Check if point is within the box bounds
-        if (relativePoint.x() < -tolerance || relativePoint.x() > w + tolerance ||
-            relativePoint.y() < -tolerance || relativePoint.y() > h + tolerance ||
-            relativePoint.z() < -tolerance || relativePoint.z() > p + tolerance) {
+    bool Box::isPointOnSurface(const Vector3D& point) const {
+        // Use a small tolerance for floating point comparisons
+        const double tol = 1e-9;
+
+        // Project into local box axes (same basis as in containsPoint/getNormalAt)
+        Vector3D zAxis = normal.normal();
+        Vector3D worldUp = Vector3D::UNIT_Y;
+        if (std::abs(zAxis.dot(worldUp)) > 0.99) {
+            worldUp = Vector3D::UNIT_X;
+        }
+        Vector3D xAxis = worldUp.cross(zAxis);
+        if (xAxis.zero()) {
+            xAxis = Vector3D::UNIT_X.cross(zAxis);
+        }
+        xAxis = xAxis.normal();
+        Vector3D yAxis = zAxis.cross(xAxis).normal();
+
+        Vector3D rel = point - origin;
+        double cx = rel.dot(xAxis);
+        double cy = rel.dot(yAxis);
+        double cz = rel.dot(zAxis);
+
+        // Check bounds with tolerance
+        if (cx < -tol || cx > w + tol || cy < -tol || cy > h + tol || cz < -tol || cz > p + tol) {
             return false;
         }
-        
-        // Check if point is on any face
-        bool onXFace = (std::abs(relativePoint.x()) <= tolerance || std::abs(relativePoint.x() - w) <= tolerance);
-        bool onYFace = (std::abs(relativePoint.y()) <= tolerance || std::abs(relativePoint.y() - h) <= tolerance);
-        bool onZFace = (std::abs(relativePoint.z()) <= tolerance || std::abs(relativePoint.z() - p) <= tolerance);
+
+        // Check if point lies on any local face within tolerance
+        bool onXFace = (std::abs(cx) <= tol || std::abs(cx - w) <= tol);
+        bool onYFace = (std::abs(cy) <= tol || std::abs(cy - h) <= tol);
+        bool onZFace = (std::abs(cz) <= tol || std::abs(cz - p) <= tol);
 
         return onXFace || onYFace || onZFace;
     }
@@ -125,6 +157,64 @@ namespace geometry {
 
     bool Box::isValid() const {
         return w > 0 && h > 0 && p > 0 && normal.length() > 0;
+    }
+
+    Vector3D Box::getNormalAt(const Vector3D& point) const {
+        if (!isPointOnSurface(point)) {
+            throw std::runtime_error("Point is not on the surface of the box");
+        }
+        // Build a local orthonormal basis for the box using the stored normal as the local Z axis.
+        // This lets us support boxes that are oriented in world space.
+        Vector3D zAxis = normal.normal();
+
+        // Choose a stable "up" reference that is not parallel to zAxis
+        Vector3D worldUp = Vector3D::UNIT_Y;
+        if (std::abs(zAxis.dot(worldUp)) > 0.99) {
+            worldUp = Vector3D::UNIT_X;
+        }
+
+        Vector3D xAxis = worldUp.cross(zAxis);
+        if (xAxis.zero()) {
+            // fallback
+            xAxis = Vector3D::UNIT_X.cross(zAxis);
+        }
+        xAxis = xAxis.normal();
+        Vector3D yAxis = zAxis.cross(xAxis).normal();
+
+        // Express the point in local box coordinates
+        Vector3D rel = point - origin;
+        double cx = rel.dot(xAxis);
+        double cy = rel.dot(yAxis);
+        double cz = rel.dot(zAxis);
+
+        // Distances to each local face
+        double d_min_x = std::abs(cx);
+        double d_max_x = std::abs(cx - w);
+        double d_min_y = std::abs(cy);
+        double d_max_y = std::abs(cy - h);
+        double d_min_z = std::abs(cz);
+        double d_max_z = std::abs(cz - p);
+
+        // Determine nearest face
+        enum Face { MIN_X, MAX_X, MIN_Y, MAX_Y, MIN_Z, MAX_Z } chosen = MIN_X;
+        double minDist = d_min_x;
+        if (d_max_x < minDist) { minDist = d_max_x; chosen = MAX_X; }
+        if (d_min_y < minDist) { minDist = d_min_y; chosen = MIN_Y; }
+        if (d_max_y < minDist) { minDist = d_max_y; chosen = MAX_Y; }
+        if (d_min_z < minDist) { minDist = d_min_z; chosen = MIN_Z; }
+        if (d_max_z < minDist) { minDist = d_max_z; chosen = MAX_Z; }
+
+        // Map local face to world-space normal
+        switch (chosen) {
+            case MIN_X: return xAxis * -1.0;
+            case MAX_X: return xAxis;
+            case MIN_Y: return yAxis * -1.0;
+            case MAX_Y: return yAxis;
+            case MIN_Z: return zAxis * -1.0;
+            case MAX_Z: return zAxis;
+        }
+
+        throw std::runtime_error("Unreachable code in Box::getNormalAt");
     }
 
     bool Box::rayIntersect(const Ray& ray) const {

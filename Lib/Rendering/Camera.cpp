@@ -570,6 +570,11 @@ namespace rendering {
                             // Calculate light intensity at the hit point
                             Vector3D hitPoint = ray.getPointAt(*distance);
                             lightIntensity = 0.0;
+
+                            // Calculate normal at hit point if possible
+                            Vector3D normal = shape.getNormalAt(hitPoint);
+
+                            // Calculate light intensity from each light source
                             for (const Light* light : lights) {
                                 Vector3D hitToLight = (light->getPosition() - hitPoint);
                                 double distanceToLight = hitToLight.length();
@@ -599,6 +604,8 @@ namespace rendering {
                                     lightIntensity += light->getIntensity();
                                 }
                             }
+                            // Natural attenuation based on normal and light direction
+                            lightIntensity *= std::max(0.0, normal.dot((lights[0]->getPosition() - hitPoint).normal()));
 
                             lightIntensity = std::max(0.2, std::min(lightIntensity, 1.0)); // Clamp between 0.2 and 1
 

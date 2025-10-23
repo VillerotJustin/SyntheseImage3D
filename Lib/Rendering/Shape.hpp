@@ -7,6 +7,7 @@
 #include "../Geometry/Plane.h"
 #include "../Geometry/Rectangle.h"
 #include "../Geometry/Sphere.h"
+#include "../Geometry/Vector3D.h"
 
 // Rendering Imports
 #include "./RGBA_Color.h"
@@ -231,6 +232,14 @@ namespace rendering {
          */
         void clearColor() {
             color.reset();
+        }
+
+        geometry::Vector3D getNormalAt(const geometry::Vector3D& point) const {
+            if (!geometry) {
+                throw std::runtime_error("Shape has no geometry");
+            }
+            
+            return geometry->getNormalAt(point);
         }
 
         #pragma endregion

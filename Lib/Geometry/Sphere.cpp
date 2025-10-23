@@ -109,6 +109,13 @@ namespace geometry {
         return Circle(circleCenter, circleRadius, circleNormal); // Radius will be set later
     }
 
+    Vector3D Sphere::getNormalAt(const Vector3D& point) const {
+        if (!surfacePoint(point)) {
+            throw std::runtime_error("Point is not on the surface of the sphere");
+        }
+        return Vector3D(point - center).normal();
+    }
+
     bool Sphere::rayMarch(const Ray& ray, double t) const {
         // Vector from ray origin to sphere center
         Vector3D oc = ray.getOrigin() - center;
@@ -158,23 +165,23 @@ namespace geometry {
     }
 
     bool Sphere::rayIntersect(const Ray& ray) const {
-        float t0, t1; // solutions for t if the ray intersects
+        double t0, t1; // solutions for t if the ray intersects
 
         // Geometric solution
         Vector3D L = this->center - ray.getOrigin();
-        float tca = L.dot(ray.getDirection());
+        double tca = L.dot(ray.getDirection());
         if (tca < 0) return false;
-        float d2 = L.dot(L) - tca * tca;
+        double d2 = L.dot(L) - tca * tca;
         if (d2 > radius * radius) return false;
-        float thc = std::sqrt(radius * radius - d2);
+        double thc = std::sqrt(radius * radius - d2);
         t0 = tca - thc;
         t1 = tca + thc;
 
         // Analitic solution
         Vector3D oc = ray.getOrigin() - center;
-        float a = ray.getDirection().dot(ray.getDirection());
-        float b = 2.0f * oc.dot(ray.getDirection());
-        float c = oc.dot(oc) - radius * radius;
+        double a = ray.getDirection().dot(ray.getDirection());
+        double b = 2.0 * oc.dot(ray.getDirection());
+        double c = oc.dot(oc) - radius * radius;
         if (!math::solveQuadratic(a, b, c, t0, t1)) return false;
 
         if (t0 > t1) std::swap(t0, t1);
@@ -188,23 +195,23 @@ namespace geometry {
     }
 
     std::optional<double> Sphere::rayIntersectDepth(const Ray& ray) const {
-        float t0, t1; // solutions for t if the ray intersects
+        double t0, t1; // solutions for t if the ray intersects
 
         // Geometric solution
         Vector3D L = this->center - ray.getOrigin();
-        float tca = L.dot(ray.getDirection());
+        double tca = L.dot(ray.getDirection());
         if (tca < 0) return std::nullopt;
-        float d2 = L.dot(L) - tca * tca;
+        double d2 = L.dot(L) - tca * tca;
         if (d2 > radius * radius) return std::nullopt;
-        float thc = std::sqrt(radius * radius - d2);
+        double thc = std::sqrt(radius * radius - d2);
         t0 = tca - thc;
         t1 = tca + thc;
 
         // Analitic solution
         Vector3D oc = ray.getOrigin() - center;
-        float a = ray.getDirection().dot(ray.getDirection());
-        float b = 2.0f * oc.dot(ray.getDirection());
-        float c = oc.dot(oc) - radius * radius;
+        double a = ray.getDirection().dot(ray.getDirection());
+        double b = 2.0f * oc.dot(ray.getDirection());
+        double c = oc.dot(oc) - radius * radius;
         if (!math::solveQuadratic(a, b, c, t0, t1)) return std::nullopt;
 
         if (t0 > t1) std::swap(t0, t1);
@@ -214,27 +221,32 @@ namespace geometry {
             if (t0 < 0) return std::nullopt; // both t0 and t1 are negative
         }
 
-        return t0;
+        // Compute exact hit point and then project it onto the sphere surface to avoid
+        // small numerical errors causing downstream "point not on surface" checks.
+        Vector3D rawHit = ray.getPointAt(t0);
+        Vector3D projected = center + (rawHit - center).normal() * radius;
+        double distanceAlongRay = (projected - ray.getOrigin()).length();
+        return distanceAlongRay;
     }
 
     std::optional<Vector3D> Sphere::rayIntersectionHit(const Ray& ray) const {
-        float t0, t1; // solutions for t if the ray intersects
+        double t0, t1; // solutions for t if the ray intersects
 
         // Geometric solution
         Vector3D L = this->center - ray.getOrigin();
-        float tca = L.dot(ray.getDirection());
+        double tca = L.dot(ray.getDirection());
         if (tca < 0) return std::nullopt;
-        float d2 = L.dot(L) - tca * tca;
+        double d2 = L.dot(L) - tca * tca;
         if (d2 > radius * radius) return std::nullopt;
-        float thc = std::sqrt(radius * radius - d2);
+        double thc = std::sqrt(radius * radius - d2);
         t0 = tca - thc;
         t1 = tca + thc;
 
         // Analitic solution
         Vector3D oc = ray.getOrigin() - center;
-        float a = ray.getDirection().dot(ray.getDirection());
-        float b = 2.0f * oc.dot(ray.getDirection());
-        float c = oc.dot(oc) - radius * radius;
+        double a = ray.getDirection().dot(ray.getDirection());
+        double b = 2.0f * oc.dot(ray.getDirection());
+        double c = oc.dot(oc) - radius * radius;
         if (!math::solveQuadratic(a, b, c, t0, t1)) return std::nullopt;
 
         if (t0 > t1) std::swap(t0, t1);
@@ -244,7 +256,11 @@ namespace geometry {
             if (t0 < 0) return std::nullopt; // both t0 and t1 are negative
         }
 
-        return ray.getPointAt(t0);;
+        // Compute raw hit point then project onto sphere surface to ensure the returned
+        // point lies exactly on the surface (fixes downstream normal computations).
+        Vector3D rawHit = ray.getPointAt(t0);
+        Vector3D projected = center + (rawHit - center).normal() * radius;
+        return projected;
     }
 
     bool Sphere::lineIntersects(const Vector3D& linePoint, const Vector3D& lineDirection) const {

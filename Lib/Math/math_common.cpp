@@ -3,14 +3,15 @@
 #include <cmath>
 
 namespace math {
-    bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float &x1) {
-        float discr = b * b - 4 * a * c;
+
+    bool solveQuadratic(const double &a, const double &b, const double &c, double &x0, double &x1) {
+        double discr = b * b - 4 * a * c;
         if (discr < 0) return false;
-        else if (discr == 0) x0 = x1 = - 0.5f * b / a;
+        else if (discr == 0) x0 = x1 = - 0.5 * b / a;
         else {
-            float q = (b > 0) ?
-                -0.5f * (b + sqrt(discr)) :
-                -0.5f * (b - sqrt(discr));
+            double q = (b > 0) ?
+                -0.5 * (b + std::sqrt(discr)) :
+                -0.5 * (b - std::sqrt(discr));
             x0 = q / a;
             x1 = c / q;
         }

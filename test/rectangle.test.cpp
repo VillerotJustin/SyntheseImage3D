@@ -179,11 +179,14 @@ void testRectanglePointOperations() {
     // All corners should be contained
     for (int i = 0; i < 4; i++) {
         assert(rect.containsPoint(corners[i]));
+        assert(isEqual(rect.getNormalAt(corners[i]), rect.getNormal()));
     }
 
     // Test center point should be inside
     Vector3D center = rect.getCenter();
     assert(rect.containsPoint(center));
+    assert(isEqual(rect.getNormalAt(center), rect.getNormal()));
+    
 
     // Test point off the plane should not be contained
     Vector3D pointOffPlane = center + Vector3D(0, 0, 1);

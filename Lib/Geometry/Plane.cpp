@@ -76,6 +76,14 @@ namespace geometry {
         d = -normal.dot(origin);
     }
 
+    Vector3D Plane::getNormalAt(const Vector3D& point) const {
+        if (!containsPoint(point)) {
+            throw std::runtime_error("Point is not on the plane");
+        }
+        // For a plane, the normal is constant everywhere
+        return normal;
+    }
+
     bool Plane::rayIntersect(const Ray& ray) const {
         // Get ray properties
         Vector3D rayDir = ray.getDirection();

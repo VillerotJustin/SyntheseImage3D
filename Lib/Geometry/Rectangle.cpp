@@ -186,6 +186,13 @@ namespace geometry {
         return l > 0 && w > 0 && normal.length() > 0;
     }
 
+    Vector3D Rectangle::getNormalAt(const Vector3D& point) const {
+        if (!containsPoint(point)) {
+            throw std::runtime_error("Point is not on the surface of the rectangle");
+        }
+        return normal;
+    }
+
     bool Rectangle::rayIntersect(const Ray& ray) const {
         // First, check if ray intersects the plane containing the rectangle
         Vector3D rayDir = ray.getDirection();
