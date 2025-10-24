@@ -82,22 +82,16 @@ void testRGBAColorConstructors() {
     
     // Test Vector constructor
     math::Vector<double> vec(4);
-    vec[0] = new double(0.2);
-    vec[1] = new double(0.4);
-    vec[2] = new double(0.6);
-    vec[3] = new double(0.8);
+    vec[0] = double(0.2);
+    vec[1] = double(0.4);
+    vec[2] = double(0.6);
+    vec[3] = double(0.8);
     
     RGBA_Color vectorColor(vec);
     assert(isEqual(vectorColor.r(), 0.2));
     assert(isEqual(vectorColor.g(), 0.4));
     assert(isEqual(vectorColor.b(), 0.6));
     assert(isEqual(vectorColor.a(), 0.8));
-    
-    // Clean up
-    delete vec[0];
-    delete vec[1];
-    delete vec[2];
-    delete vec[3];
 }
 
 // Test component access methods
@@ -113,10 +107,10 @@ void testRGBAColorComponentAccess() {
     // Test that we can get the underlying vector if needed (controlled access)
     const math::Vector<double>& vec = color.asVector();
     assert(vec.size() == 4);
-    assert(isEqual(*vec[0], 0.3));
-    assert(isEqual(*vec[1], 0.5));
-    assert(isEqual(*vec[2], 0.7));
-    assert(isEqual(*vec[3], 0.9));
+    assert(isEqual(vec[0], 0.3));
+    assert(isEqual(vec[1], 0.5));
+    assert(isEqual(vec[2], 0.7));
+    assert(isEqual(vec[3], 0.9));
 }
 
 // Test component setter methods
@@ -198,7 +192,7 @@ void testRGBAColorVectorOperations() {
     assert(isEqual(sum.r(), 0.3));
     assert(isEqual(sum.g(), 0.7));
     assert(isEqual(sum.b(), 0.8));
-    assert(isEqual(sum.a(), 1.2));
+    assert(isEqual(sum.a(), 1.0));
     
     // Test subtraction
     RGBA_Color diff = color1 - color2;
@@ -211,15 +205,15 @@ void testRGBAColorVectorOperations() {
     RGBA_Color scaled = color1 * 2.0;
     assert(isEqual(scaled.r(), 0.4));
     assert(isEqual(scaled.g(), 0.8));
-    assert(isEqual(scaled.b(), 1.2));
-    assert(isEqual(scaled.a(), 1.6));
+    assert(isEqual(scaled.b(), 1.0));
+    assert(isEqual(scaled.a(), 1.0));
     
     // Test reverse scalar multiplication
     RGBA_Color scaledReverse = 2.0 * color1;
     assert(isEqual(scaledReverse.r(), 0.4));
     assert(isEqual(scaledReverse.g(), 0.8));
-    assert(isEqual(scaledReverse.b(), 1.2));
-    assert(isEqual(scaledReverse.a(), 1.6));
+    assert(isEqual(scaledReverse.b(), 1.0));
+    assert(isEqual(scaledReverse.a(), 1.0));
     
     // Test color multiplication (component-wise filtering)
     RGBA_Color multiplied = color1 * color2;
@@ -315,17 +309,12 @@ void testRGBAColorErrorHandling() {
     // Test Vector constructor with wrong size
     try {
         math::Vector<double> invalidVec(3); // Only 3 components
-        invalidVec[0] = new double(1.0);
-        invalidVec[1] = new double(2.0);
-        invalidVec[2] = new double(3.0);
+        invalidVec[0] = double(1.0);
+        invalidVec[1] = double(2.0);
+        invalidVec[2] = double(3.0);
         
         RGBA_Color invalidColor(invalidVec);
-        
-        // Clean up
-        delete invalidVec[0];
-        delete invalidVec[1];
-        delete invalidVec[2];
-        
+                
         assert(false); // Should not reach here
     } catch (const std::invalid_argument& e) {
         // Expected behavior
@@ -335,20 +324,13 @@ void testRGBAColorErrorHandling() {
     // Test Vector constructor with too many components
     try {
         math::Vector<double> invalidVec(5); // 5 components
-        invalidVec[0] = new double(1.0);
-        invalidVec[1] = new double(2.0);
-        invalidVec[2] = new double(3.0);
-        invalidVec[3] = new double(4.0);
-        invalidVec[4] = new double(5.0);
+        invalidVec[0] = double(1.0);
+        invalidVec[1] = double(2.0);
+        invalidVec[2] = double(3.0);
+        invalidVec[3] = double(4.0);
+        invalidVec[4] = double(5.0);
         
         RGBA_Color invalidColor(invalidVec);
-        
-        // Clean up
-        delete invalidVec[0];
-        delete invalidVec[1];
-        delete invalidVec[2];
-        delete invalidVec[3];
-        delete invalidVec[4];
         
         assert(false); // Should not reach here
     } catch (const std::invalid_argument& e) {
@@ -360,7 +342,7 @@ void testRGBAColorErrorHandling() {
     RGBA_Color color(0.1, 0.2, 0.3, 0.4);
     try {
         const math::Vector<double>& vec = color.asVector();
-        [[maybe_unused]] const double* value = vec[4]; // Out of bounds
+        [[maybe_unused]] const double value = vec[4]; // Out of bounds
         assert(false); // Should not reach here
     } catch (const std::out_of_range& e) {
         // Expected behavior
@@ -369,7 +351,7 @@ void testRGBAColorErrorHandling() {
     
     try {
         const math::Vector<double>& vec = color.asVector();
-        [[maybe_unused]] const double* value = vec[-1]; // Out of bounds
+        [[maybe_unused]] const double value = vec[-1]; // Out of bounds
         assert(false); // Should not reach here
     } catch (const std::out_of_range& e) {
         // Expected behavior

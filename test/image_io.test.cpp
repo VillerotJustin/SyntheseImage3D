@@ -49,12 +49,11 @@ void testImageCreation() {
     assertEqual(img.isValid(), "Basic constructor validity");
     
     // Test that pixels are initialized to black
-    const RGBA_Color* pixel = img.getPixel(0, 0);
-    assertEqual(pixel != nullptr, "Pixel retrieval non-null");
-    assertEqual(pixel->r() == 0.0, "Initial red component");
-    assertEqual(pixel->g() == 0.0, "Initial green component");
-    assertEqual(pixel->b() == 0.0, "Initial blue component");
-    assertEqual(pixel->a() == 1.0, "Initial alpha component");
+    const RGBA_Color pixel = img.getPixel(0, 0);
+    assertEqual(pixel.r() == 0.0, "Initial red component");
+    assertEqual(pixel.g() == 0.0, "Initial green component");
+    assertEqual(pixel.b() == 0.0, "Initial blue component");
+    assertEqual(pixel.a() == 1.0, "Initial alpha component");
 }
 
 // Test pixel manipulation
@@ -67,12 +66,12 @@ void testPixelManipulation() {
     RGBA_Color red(1.0, 0.0, 0.0, 1.0);
     img.setPixel(5, 5, red);
     
-    const RGBA_Color* retrievedPixel = img.getPixel(5, 5);
-    assertEqual(retrievedPixel->r() == 1.0, "Red component correct");
-    assertEqual(retrievedPixel->g() == 0.0, "Green component correct");
-    assertEqual(retrievedPixel->b() == 0.0, "Blue component correct");
-    assertEqual(retrievedPixel->a() == 1.0, "Alpha component correct");
-    
+    const RGBA_Color retrievedPixel = img.getPixel(5, 5);
+    assertEqual(retrievedPixel.r() == 1.0, "Red component correct");
+    assertEqual(retrievedPixel.g() == 0.0, "Green component correct");
+    assertEqual(retrievedPixel.b() == 0.0, "Blue component correct");
+    assertEqual(retrievedPixel.a() == 1.0, "Alpha component correct");
+
     // Test bounds checking
     try {
         img.getPixel(-1, 0);
@@ -102,21 +101,21 @@ void testImageTransformations() {
     // Check that all pixels are blue
     for (int y = 0; y < 5; ++y) {
         for (int x = 0; x < 5; ++x) {
-            const RGBA_Color* pixel = img.getPixel(x, y);
-            assertEqual(pixel->r() == 0.0, "Fill red component");
-            assertEqual(pixel->g() == 0.0, "Fill green component");
-            assertEqual(pixel->b() == 1.0, "Fill blue component");
-            assertEqual(pixel->a() == 1.0, "Fill alpha component");
+            const RGBA_Color pixel = img.getPixel(x, y);
+            assertEqual(pixel.r() == 0.0, "Fill red component");
+            assertEqual(pixel.g() == 0.0, "Fill green component");
+            assertEqual(pixel.b() == 1.0, "Fill blue component");
+            assertEqual(pixel.a() == 1.0, "Fill alpha component");
         }
     }
     
     // Test clear (should set to black)
     img.clear();
-    const RGBA_Color* pixel = img.getPixel(2, 2);
-    assertEqual(pixel->r() == 0.0, "Clear red component");
-    assertEqual(pixel->g() == 0.0, "Clear green component");
-    assertEqual(pixel->b() == 0.0, "Clear blue component");
-    assertEqual(pixel->a() == 1.0, "Clear alpha component");
+    const RGBA_Color pixel = img.getPixel(2, 2);
+    assertEqual(pixel.r() == 0.0, "Clear red component");
+    assertEqual(pixel.g() == 0.0, "Clear green component");
+    assertEqual(pixel.b() == 0.0, "Clear blue component");
+    assertEqual(pixel.a() == 1.0, "Clear alpha component");
 }
 
 // Test BMP file I/O
@@ -174,11 +173,11 @@ void testBmpFileIO() {
         assertEqual(loadedImg.getHeight() == 4, "BMP loaded height");
         
         // Check a few key pixels (with some tolerance for compression artifacts)
-        const RGBA_Color* pixel00 = loadedImg.getPixel(0, 0);
-        assertEqual(pixel00->r() > 0.9, "BMP loaded red pixel");
-        assertEqual(pixel00->g() < 0.1, "BMP loaded red pixel green component");
-        assertEqual(pixel00->b() < 0.1, "BMP loaded red pixel blue component");
-        
+        const RGBA_Color pixel00 = loadedImg.getPixel(0, 0);
+        assertEqual(pixel00.r() > 0.9, "BMP loaded red pixel");
+        assertEqual(pixel00.g() < 0.1, "BMP loaded red pixel green component");
+        assertEqual(pixel00.b() < 0.1, "BMP loaded red pixel blue component");
+
     } catch (const std::exception& e) {
         std::cout << "⚠ BMP load test skipped (ImageMagick required): " << e.what() << std::endl;
     }
@@ -293,11 +292,11 @@ void testCopyOperations() {
     assertEqual(copied.getWidth() == original.getWidth(), "Copy constructor width");
     assertEqual(copied.getHeight() == original.getHeight(), "Copy constructor height");
     
-    const RGBA_Color* copiedPixel = copied.getPixel(1, 1);
-    assertEqual(copiedPixel->r() == testColor.r(), "Copy constructor pixel red");
-    assertEqual(copiedPixel->g() == testColor.g(), "Copy constructor pixel green");
-    assertEqual(copiedPixel->b() == testColor.b(), "Copy constructor pixel blue");
-    assertEqual(copiedPixel->a() == testColor.a(), "Copy constructor pixel alpha");
+    const RGBA_Color copiedPixel = copied.getPixel(1, 1);
+    assertEqual(copiedPixel.r() == testColor.r(), "Copy constructor pixel red");
+    assertEqual(copiedPixel.g() == testColor.g(), "Copy constructor pixel green");
+    assertEqual(copiedPixel.b() == testColor.b(), "Copy constructor pixel blue");
+    assertEqual(copiedPixel.a() == testColor.a(), "Copy constructor pixel alpha");
     
     // Test assignment operator
     Image assigned(10, 10); // Different size initially
@@ -305,11 +304,11 @@ void testCopyOperations() {
     assertEqual(assigned.getWidth() == original.getWidth(), "Assignment operator width");
     assertEqual(assigned.getHeight() == original.getHeight(), "Assignment operator height");
     
-    const RGBA_Color* assignedPixel = assigned.getPixel(1, 1);
-    assertEqual(assignedPixel->r() == testColor.r(), "Assignment operator pixel red");
-    assertEqual(assignedPixel->g() == testColor.g(), "Assignment operator pixel green");
-    assertEqual(assignedPixel->b() == testColor.b(), "Assignment operator pixel blue");
-    assertEqual(assignedPixel->a() == testColor.a(), "Assignment operator pixel alpha");
+    const RGBA_Color assignedPixel = assigned.getPixel(1, 1);
+    assertEqual(assignedPixel.r() == testColor.r(), "Assignment operator pixel red");
+    assertEqual(assignedPixel.g() == testColor.g(), "Assignment operator pixel green");
+    assertEqual(assignedPixel.b() == testColor.b(), "Assignment operator pixel blue");
+    assertEqual(assignedPixel.a() == testColor.a(), "Assignment operator pixel alpha");
     
     // Test copy method
     Image copied2 = original.copy();

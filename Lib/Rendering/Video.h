@@ -84,7 +84,7 @@ namespace rendering {
          * @return Image& Reference to the frame at the specified index
          * @throws std::out_of_range if index is invalid
          */
-        Image& getFrame(size_t index) { return *frames[index]; }
+        Image& getFrame(size_t index) { return frames[index]; }
         
         /**
          * @brief Get the total number of frames in the video
@@ -136,21 +136,16 @@ namespace rendering {
          * @brief Add a frame to the end of the video
          * @param img Image to add as a new frame
          */
-        void addFrame(const Image& img) { 
-            Image* framePtr = new Image(img);
-            frames.append(framePtr); 
+        void addFrame(const Image& img) {
+            frames.append(img); 
         }
         
         /**
          * @brief Remove all frames from the video
          */
-        void clearFrames() { 
-            // Delete all frame objects
-            for (size_t i = 0; i < frames.size(); ++i) {
-                delete frames[i];
-            }
+        void clearFrames() {
             // Reset the vector completely
-            frames = math::Vector<Image>();
+            frames.clear();
         }
 
         /**
@@ -181,7 +176,7 @@ namespace rendering {
                 return false;
             }
             for (const auto& frame : frames) {
-                if (frame->getWidth() != width || frame->getHeight() != height || !frame->isValid()) {
+                if (frame.getWidth() != width || frame.getHeight() != height || !frame.isValid()) {
                     return false;
                 }
             }

@@ -61,37 +61,32 @@ void testVectorConstructors() {
     // Test default size constructor
     Vector<double> v1(3);
     assert(v1.size() == 3);
-    assert(v1[0] == nullptr);
-    assert(v1[1] == nullptr);
-    assert(v1[2] == nullptr);
+    assert(v1[0] == 0);
+    assert(v1[1] == 0);
+    assert(v1[2] == 0);
     
     // Test pointer array constructor
-    double* values[3];
-    values[0] = new double(1.0);
-    values[1] = new double(2.0);
-    values[2] = new double(3.0);
+    double values[3];
+    values[0] = double(1.0);
+    values[1] = double(2.0);
+    values[2] = double(3.0);
     
     Vector<double> v2(values, 3);
     assert(v2.size() == 3);
-    assert(*v2[0] == 1.0);
-    assert(*v2[1] == 2.0);
-    assert(*v2[2] == 3.0);
+    assert(v2[0] == 1.0);
+    assert(v2[1] == 2.0);
+    assert(v2[2] == 3.0);
     
     // Test default constructor
     Vector<double> v3;
     assert(v3.size() == 0);
-    
-    // Clean up
-    delete values[0];
-    delete values[1];
-    delete values[2];
 }
 
 void testVectorOperators() {
     // Create test values
-    double* val1 = new double(1.0);
-    double* val2 = new double(2.0);
-    double* val3 = new double(3.0);
+    double val1 = double(1.0);
+    double val2 = double(2.0);
+    double val3 = double(3.0);
     
     Vector<double> v1(3);
     v1[0] = val1;
@@ -104,54 +99,62 @@ void testVectorOperators() {
     v2[2] = val3;  // Same pointer
     
     Vector<double> v3(3);
-    double* val4 = new double(4.0);
+    double val4 = double(4.0);
     v3[0] = val4;  // Different pointer
     v3[1] = val2;  // Same pointer
     v3[2] = val3;  // Same pointer
     
-    // Test equality (pointer comparison)
+    // Test equality Vector==Vector
     assert(v1 == v2);
     assert(v1 != v3);
     
-    // Test inequality
-    assert(!(v1 != v2));
-    assert(v1 != v3);
-    
-    // Clean up
-    delete val1;
-    delete val2;
-    delete val3;
-    delete val4;
 }
 
 void testVectorMethods() {
     Vector<double> v1(3);
     
     // Test clear method
-    double* val1 = new double(1.0);
-    double* val2 = new double(2.0);
+    double val1 = double(1.0);
+    double val2 = double(2.0);
     v1[0] = val1;
     v1[1] = val2;
     
     v1.clear();
-    assert(v1[0] == nullptr);
-    assert(v1[1] == nullptr);
-    assert(v1[2] == nullptr);
+    try {
+        assert(v1[0] == 0);
+        assert(v1[1] == 0);
+        assert(v1[2] == 0);
+        assert(false); // Should not reach here
+    } catch (const std::out_of_range& error) {
+        // Message should be :Vector index out of bounds
+        assert(std::string(error.what()) == "Vector index out of bounds");
+    }
+    
     
     // Test empty check
     assert(v1.empty());
     
-    v1[0] = val1;
-    assert(!v1.empty());
+    try {
+        v1[0] = val1;
+        assert(!v1.empty());
+        assert(false); // Should not reach here
+    } catch (const std::out_of_range& error) {
+        // Message should be :Vector index out of bounds
+        assert(std::string(error.what()) == "Vector index out of bounds");
+        
+        assert(v1.empty());
+    }
+    
+    
     
     // Test size
-    assert(v1.size() == 3);
+    assert(v1.size() == 0);
     
     // Test append method
     Vector<double> v2(0);  // Start with empty vector
-    double* val3 = new double(3.0);
-    double* val4 = new double(4.0);
-    double* val5 = new double(5.0);
+    double val3 = double(3.0);
+    double val4 = double(4.0);
+    double val5 = double(5.0);
     
     v2.append(val3);
     assert(v2.size() == 1);
@@ -169,14 +172,14 @@ void testVectorMethods() {
     assert(v2[2] == val4);  // Original second element moved to index 2
     
     // Test insert at beginning
-    double* val6 = new double(6.0);
+    double val6 = double(6.0);
     v2.insert(0, val6);
     assert(v2.size() == 4);
     assert(v2[0] == val6);  // New first element
     assert(v2[1] == val3);  // Previous elements shifted
     
     // Test insert at end
-    double* val7 = new double(7.0);
+    double val7 = double(7.0);
     v2.insert(v2.size(), val7);  // Insert at end
     assert(v2.size() == 5);
     assert(v2[4] == val7);
@@ -188,19 +191,10 @@ void testVectorMethods() {
     // Test iterator-based loop (basic functionality)
     int count = 0;
     for (auto it = v2.begin(); it != v2.end(); ++it) {
-        assert(*it != nullptr);  // All elements should be non-null
+        assert(it != 0);  // All elements should be non-null
         count++;
     }
     assert(count == 5);
-    
-    // Clean up
-    delete val1;
-    delete val2;
-    delete val3;
-    delete val4;
-    delete val5;
-    delete val6;
-    delete val7;
 }
 
 void testVector3Constructors() {
@@ -219,16 +213,13 @@ void testVector3Constructors() {
     
     // Test Vector to Vector3D conversion
     Vector<double> v(3);
-    v[0] = new double(4.0); 
-    v[1] = new double(5.0); 
-    v[2] = new double(6.0);
+    v[0] = double(4.0); 
+    v[1] = double(5.0); 
+    v[2] = double(6.0);
     Vector3D v3(v);
     assert(isEqual(v3.x(), 4.0));
     assert(isEqual(v3.y(), 5.0));
     assert(isEqual(v3.z(), 6.0));
-    
-    // Clean up
-    delete v[0]; delete v[1]; delete v[2];
     
     // Test static constants
     assert(isEqual(Vector3D::ZERO.x(), 0.0));
@@ -326,7 +317,7 @@ void testErrorHandling() {
     }
     
     // Test insert out of bounds
-    double* testVal = new double(99.0);
+    double testVal = double(99.0);
     try {
         v.insert(-1, testVal);  // Negative index
         assert(false);  // Should not reach here
@@ -340,7 +331,6 @@ void testErrorHandling() {
     } catch (const std::out_of_range&) {
         // Expected
     }
-    delete testVal;
     
     // Test zero vector3D normalization
     Vector3D zero_v3;

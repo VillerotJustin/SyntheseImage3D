@@ -196,8 +196,8 @@ void testFrameReversal() {
     
     // Get references to frames before reversal
     const Vector<Image>& framesBefore = video.getFrames();
-    Image firstFrameBefore = *framesBefore[0];
-    Image lastFrameBefore = *framesBefore[2];
+    Image firstFrameBefore = framesBefore[0];
+    Image lastFrameBefore = framesBefore[2];
     
     // Reverse frames
     video.reverseFrames();

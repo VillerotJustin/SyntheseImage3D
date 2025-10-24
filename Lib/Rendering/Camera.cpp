@@ -201,7 +201,7 @@ namespace rendering {
                             }
                         }
 
-                    }, *shapes[i]);
+                    }, shapes[i]);
                 }
 
                 if (hitFound) {
@@ -234,7 +234,7 @@ namespace rendering {
         // Initialize depth buffer with pointers to infinity values
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
-                depthBuffer(x, y) = new double(std::numeric_limits<double>::infinity());
+                depthBuffer(x, y) = double(std::numeric_limits<double>::infinity());
             }
         }
 
@@ -281,12 +281,12 @@ namespace rendering {
                             }
                         }
 
-                    }, *shapes[i]);
+                    }, shapes[i]);
                 }
 
                 if (hitFound) {
                     // Store depth
-                    *depthBuffer(x, y) = closestDistance;
+                    depthBuffer(x, y) = closestDistance;
                     // Store color
                     image.setPixel(x, y, pixelColor);
                 }
@@ -298,7 +298,7 @@ namespace rendering {
 
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
-                double depth = *depthBuffer(x, y);
+                double depth = depthBuffer(x, y);
                 if (depth > max_depth && depth < std::numeric_limits<double>::infinity()) {
                     max_depth = depth;
                 }
@@ -307,22 +307,15 @@ namespace rendering {
 
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
-                double depth = *depthBuffer(x, y);
+                double depth = depthBuffer(x, y);
                 if (depth < std::numeric_limits<double>::infinity()) {
-                    RGBA_Color pixelColor = *image.getPixel(x, y);
+                    RGBA_Color pixelColor = image.getPixel(x, y);
                     double intensity = std::max(0.0, 1.2 - (depth / max_depth));
                     pixelColor.setR(pixelColor.r() * intensity);
                     pixelColor.setG(pixelColor.g() * intensity);
                     pixelColor.setB(pixelColor.b() * intensity);
                     image.setPixel(x, y, pixelColor);
                 }
-            }
-        }
-
-        // Clean up depth buffer
-        for (size_t y = 0; y < imageHeight; ++y) {
-            for (size_t x = 0; x < imageWidth; ++x) {
-                delete depthBuffer(x, y);
             }
         }
 
@@ -395,7 +388,7 @@ namespace rendering {
                             }
                         }
 
-                    }, *shapes[i]);
+                    }, shapes[i]);
                 }
                 
                 // Store the depth and color for this pixel
@@ -437,7 +430,7 @@ namespace rendering {
         // Initialize depth buffer with pointers to infinity values
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
-                depthBuffer(x, y) = new double(std::numeric_limits<double>::infinity());
+                depthBuffer(x, y) = double(std::numeric_limits<double>::infinity());
             }
         }
 
@@ -484,12 +477,12 @@ namespace rendering {
                             }
                         }
 
-                    }, *shapes[i]);
+                    }, shapes[i]);
                 }
                 
                 // Store the depth and color for this pixel
                 if (hitFound) {
-                    *depthBuffer(x, y) = closestDistance;
+                    depthBuffer(x, y) = closestDistance;
                     Image3D.setPixel(x, y, pixelColor);
                 }
             }
@@ -500,7 +493,7 @@ namespace rendering {
 
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
-                double depth = *depthBuffer(x, y);
+                double depth = depthBuffer(x, y);
                 if (depth > max_depth && depth < std::numeric_limits<double>::infinity()) {
                     max_depth = depth;
                 }
@@ -509,22 +502,15 @@ namespace rendering {
 
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
-                double depth = *depthBuffer(x, y);
+                double depth = depthBuffer(x, y);
                 if (depth < std::numeric_limits<double>::infinity()) {
-                    RGBA_Color pixelColor = *Image3D.getPixel(x, y);
+                    RGBA_Color pixelColor = Image3D.getPixel(x, y);
                     double intensity = std::max(0.0, 1.2 - (depth / max_depth));
                     pixelColor.setR(pixelColor.r() * intensity);
                     pixelColor.setG(pixelColor.g() * intensity);
                     pixelColor.setB(pixelColor.b() * intensity);
                     Image3D.setPixel(x, y, pixelColor);
                 }
-            }
-        }
-
-        // Clean up depth buffer
-        for (size_t y = 0; y < imageHeight; ++y) {
-            for (size_t x = 0; x < imageWidth; ++x) {
-                delete depthBuffer(x, y);
             }
         }
 
@@ -566,15 +552,15 @@ namespace rendering {
                             if (auto d = shape.getGeometry()->rayIntersectDepth(ray)) {
                                 // only accept hits in front of the origin
                                 if (*d > 1e-9) {
-                                    hits.append(new Hit{*d, i});
+                                    hits.append(Hit{*d, i});
                                 }
                             }
                         }
-                    }, *shapes[i]);
+                    }, shapes[i]);
                 }
 
                 if (!hits.empty()) {
-                    std::sort(hits.begin(), hits.end(), [](const Hit *a, const Hit *b){ return a->t < b->t; });
+                    std::sort(hits.begin(), hits.end(), [](const Hit a, const Hit b){ return a.t < b.t; });
 
                     // Front-to-back compositing using remaining transmittance
                     double remaining = 1.0;
@@ -583,22 +569,22 @@ namespace rendering {
                     double accR = 0.0, accG = 0.0, accB = 0.0;
                     double accA = 0.0;
 
-                    for (const Hit *h : hits) {
+                    for (const Hit h : hits) {
                         if (remaining <= epsRemaining) break; // fully opaque already
 
                         // Access the shape
-                        size_t i = h->idx;
+                        size_t i = h.idx;
                         std::visit([&](auto&& shape) {
                             using T = std::decay_t<decltype(shape)>;
 
                             // Compute lighting at this hit
-                            Vector3D hitPoint = ray.getPointAt(h->t);
+                            Vector3D hitPoint = ray.getPointAt(h.t);
                             Vector3D normal = shape.getNormalAt(hitPoint);
 
                             RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
 
-                            for (const Light* light : lights) {
-                                Vector3D hitToLight = (light->getPosition() - hitPoint);
+                            for (const Light &light : lights) {
+                                Vector3D hitToLight = (light.getPosition() - hitPoint);
                                 double distanceToLight = hitToLight.length();
                                 Vector3D lightDir = hitToLight.normal();
 
@@ -622,14 +608,14 @@ namespace rendering {
                                                 }
                                             }
                                         }
-                                    }, *shapes[j]);
+                                    }, shapes[j]);
 
                                     if (transmission <= 1e-12) break;
                                 }
 
                                 if (transmission > 1e-12) {
                                     double nDotL = std::max(0.0, normal.dot(lightDir));
-                                    RGBA_Color lightCol = light->getColor() * light->getIntensity();
+                                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
                                     double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
                                     RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
                                     accumulatedLight = accumulatedLight + contrib;
@@ -670,7 +656,7 @@ namespace rendering {
                             accA += srcA * remaining;
 
                             remaining *= (1.0 - srcA);
-                        }, *shapes[i]);
+                        }, shapes[i]);
                     }
 
                     // Build final color
@@ -709,9 +695,9 @@ namespace rendering {
 
         Image Image3D_antiAliased(antiAlias_imageWidth, antiAlias_imageHeight);
 
-        #pragma omp parallel_for dynamic
+        
         for (size_t y = 0; y < antiAlias_imageHeight; ++y) {
-            #pragma omp parallel_for dynamic
+            
             for (size_t x = 0; x < antiAlias_imageWidth; ++x) {
                 double u = (static_cast<double>(x)) / static_cast<double>(antiAlias_imageWidth);
                 double v = (static_cast<double>(y)) / static_cast<double>(antiAlias_imageHeight);
@@ -730,15 +716,15 @@ namespace rendering {
                             if (auto d = shape.getGeometry()->rayIntersectDepth(ray)) {
                                 // only accept hits in front of the origin
                                 if (*d > 1e-9) {
-                                    hits.append(new Hit{*d, i});
+                                    hits.append(Hit{*d, i});
                                 }
                             }
                         }
-                    }, *shapes[i]);
+                    }, shapes[i]);
                 }
 
                 if (!hits.empty()) {
-                    std::sort(hits.begin(), hits.end(), [](const Hit *a, const Hit *b){ return a->t < b->t; });
+                    std::sort(hits.begin(), hits.end(), [](const Hit a, const Hit b){ return a.t < b.t; });
 
                     // Front-to-back compositing using remaining transmittance
                     double remaining = 1.0;
@@ -747,22 +733,22 @@ namespace rendering {
                     double accR = 0.0, accG = 0.0, accB = 0.0;
                     double accA = 0.0;
 
-                    for (const Hit *h : hits) {
+                    for (const Hit h : hits) {
                         if (remaining <= epsRemaining) break; // fully opaque already
 
                         // Access the shape
-                        size_t i = h->idx;
+                        size_t i = h.idx;
                         std::visit([&](auto&& shape) {
                             using T = std::decay_t<decltype(shape)>;
 
                             // Compute lighting at this hit
-                            Vector3D hitPoint = ray.getPointAt(h->t);
+                            Vector3D hitPoint = ray.getPointAt(h.t);
                             Vector3D normal = shape.getNormalAt(hitPoint);
 
                             RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
 
-                            for (const Light* light : lights) {
-                                Vector3D hitToLight = (light->getPosition() - hitPoint);
+                            for (const Light &light : lights) {
+                                Vector3D hitToLight = (light.getPosition() - hitPoint);
                                 double distanceToLight = hitToLight.length();
                                 Vector3D lightDir = hitToLight.normal();
 
@@ -786,14 +772,14 @@ namespace rendering {
                                                 }
                                             }
                                         }
-                                    }, *shapes[j]);
+                                    }, shapes[j]);
 
                                     if (transmission <= 1e-12) break;
                                 }
 
                                 if (transmission > 1e-12) {
                                     double nDotL = std::max(0.0, normal.dot(lightDir));
-                                    RGBA_Color lightCol = light->getColor() * light->getIntensity();
+                                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
                                     double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
                                     RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
                                     accumulatedLight = accumulatedLight + contrib;
@@ -834,7 +820,7 @@ namespace rendering {
                             accA += srcA * remaining;
 
                             remaining *= (1.0 - srcA);
-                        }, *shapes[i]);
+                        }, shapes[i]);
                     }
 
                     // Build final color
@@ -846,9 +832,9 @@ namespace rendering {
         }
 
         // Downsample anti-aliased image to final image
-        #pragma omp parallel_for dynamic
+        
         for (size_t y = 0; y < imageHeight; ++y) {
-            #pragma omp parallel_for dynamic
+            
             for (size_t x = 0; x < imageWidth; ++x) {
                 double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
                 
@@ -856,7 +842,7 @@ namespace rendering {
                     for (size_t ax = 0; ax < samplesPerPixel / 2; ++ax) {
                         size_t sampleX = x * (samplesPerPixel / 2) + ax;
                         size_t sampleY = y * (samplesPerPixel / 2) + ay;
-                        RGBA_Color sampleColor = *Image3D_antiAliased.getPixel(sampleX, sampleY);
+                        RGBA_Color sampleColor = Image3D_antiAliased.getPixel(sampleX, sampleY);
                         accR += sampleColor.r();
                         accG += sampleColor.g();
                         accB += sampleColor.b();

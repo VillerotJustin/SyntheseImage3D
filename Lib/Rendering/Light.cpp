@@ -6,6 +6,12 @@
 
 namespace rendering {
 
+    Light::Light() {
+        position = Vector3D(0.0, 0.0, 0.0);
+        color = RGBA_Color(1.0, 1.0, 1.0, 1.0);
+        intensity = 1.0;
+    }
+
     Light::Light(const Vector3D& position, const RGBA_Color& color, double intensity) {
         this->position = position;
         this->color = color;

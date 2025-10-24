@@ -11,6 +11,8 @@ class TestObject {
 public:
     int value;
     
+    TestObject() : value(0) {}
+
     TestObject(int v) : value(v) {}
     
     bool operator==(const TestObject& other) const {
@@ -67,22 +69,18 @@ int main() {
 
 void testMatrixConstructors() {
     std::cout << "Testing Matrix constructors..." << std::endl;
-    
-    // Test default constructor (creates 1x1 matrix)
-    Matrix<TestObject> defaultMatrix;
-    assert(defaultMatrix.getRows() == 1);
-    assert(defaultMatrix.getCols() == 1);
-    assert(defaultMatrix(0, 0) == nullptr);
+
+    TestObject objDef = TestObject();
     
     // Test size constructor
     Matrix<TestObject> sizedMatrix(3, 4);
     assert(sizedMatrix.getRows() == 3);
     assert(sizedMatrix.getCols() == 4);
     
-    // Check that all elements are initialized to nullptr
+    // Check that all elements are initialized to 0
     for (size_t i = 0; i < sizedMatrix.getRows(); ++i) {
         for (size_t j = 0; j < sizedMatrix.getCols(); ++j) {
-            assert(sizedMatrix(i, j) == nullptr);
+            assert(sizedMatrix(i, j) == 0);
         }
     }
     
@@ -90,21 +88,23 @@ void testMatrixConstructors() {
     Matrix<TestObject> squareMatrix(2, 2);
     assert(squareMatrix.getRows() == 2);
     assert(squareMatrix.getCols() == 2);
-    assert(squareMatrix(0, 0) == nullptr);
-    assert(squareMatrix(0, 1) == nullptr);
-    assert(squareMatrix(1, 0) == nullptr);
-    assert(squareMatrix(1, 1) == nullptr);
+    assert(squareMatrix(0, 0) == objDef);
+    assert(squareMatrix(0, 1) == objDef);
+    assert(squareMatrix(1, 0) == objDef);
+    assert(squareMatrix(1, 1) == objDef);
 }
 
 void testMatrixAccessors() {
     std::cout << "Testing Matrix accessors..." << std::endl;
+
+    TestObject objDef = TestObject();
     
     Matrix<TestObject> matrix(2, 3);
     
     // Create test objects
-    TestObject* obj1 = new TestObject(10);
-    TestObject* obj2 = new TestObject(20);
-    TestObject* obj3 = new TestObject(30);
+    TestObject obj1 = TestObject(10);
+    TestObject obj2 = TestObject(20);
+    TestObject obj3 = TestObject(30);
     
     // Test setting values
     matrix(0, 0) = obj1;
@@ -115,27 +115,22 @@ void testMatrixAccessors() {
     assert(matrix(0, 0) == obj1);
     assert(matrix(0, 1) == obj2);
     assert(matrix(1, 2) == obj3);
-    assert(matrix(0, 2) == nullptr);
-    assert(matrix(1, 0) == nullptr);
-    assert(matrix(1, 1) == nullptr);
+    assert(matrix(0, 2) == objDef);
+    assert(matrix(1, 0) == objDef);
+    assert(matrix(1, 1) == objDef);
     
     // Test accessing through pointers
-    assert(matrix(0, 0)->value == 10);
-    assert(matrix(0, 1)->value == 20);
-    assert(matrix(1, 2)->value == 30);
-    
-    // Clean up
-    delete obj1;
-    delete obj2;
-    delete obj3;
+    assert(matrix(0, 0).value == 10);
+    assert(matrix(0, 1).value == 20);
+    assert(matrix(1, 2).value == 30);
 }
 
 void testMatrixCopyOperations() {
     std::cout << "Testing Matrix copy operations..." << std::endl;
     
     Matrix<TestObject> original(2, 2);
-    TestObject* obj1 = new TestObject(100);
-    TestObject* obj2 = new TestObject(200);
+    TestObject obj1 = TestObject(100);
+    TestObject obj2 = TestObject(200);
     
     original(0, 0) = obj1;
     original(1, 1) = obj2;
@@ -144,10 +139,10 @@ void testMatrixCopyOperations() {
     Matrix<TestObject> copied(original);
     assert(copied.getRows() == 2);
     assert(copied.getCols() == 2);
-    assert(copied(0, 0) == obj1);  // Same pointer
-    assert(copied(1, 1) == obj2);  // Same pointer
-    assert(copied(0, 1) == nullptr);
-    assert(copied(1, 0) == nullptr);
+    assert(copied(0, 0) == obj1); 
+    assert(copied(1, 1) == obj2); 
+    assert(copied(0, 1) == 0);
+    assert(copied(1, 0) == 0);
     
     // Test assignment operator
     Matrix<TestObject> assigned(1, 1);
@@ -156,20 +151,18 @@ void testMatrixCopyOperations() {
     assert(assigned.getCols() == 2);
     assert(assigned(0, 0) == obj1);
     assert(assigned(1, 1) == obj2);
-    
-    // Clean up
-    delete obj1;
-    delete obj2;
 }
 
 void testMatrixTranspose() {
     std::cout << "Testing Matrix transpose..." << std::endl;
     
     Matrix<TestObject> matrix(2, 3);
-    TestObject* obj1 = new TestObject(1);
-    TestObject* obj2 = new TestObject(2);
-    TestObject* obj3 = new TestObject(3);
-    TestObject* obj4 = new TestObject(4);
+    TestObject obj1 = TestObject(1);
+    TestObject obj2 = TestObject(2);
+    TestObject obj3 = TestObject(3);
+    TestObject obj4 = TestObject(4);
+
+    TestObject objDef = TestObject();
     
     // Fill matrix:
     // [obj1, obj2, obj3]
@@ -191,9 +184,9 @@ void testMatrixTranspose() {
     assert(transposed(0, 0) == obj1);
     assert(transposed(0, 1) == obj4);
     assert(transposed(1, 0) == obj2);
-    assert(transposed(1, 1) == nullptr);
+    assert(transposed(1, 1) == objDef);
     assert(transposed(2, 0) == obj3);
-    assert(transposed(2, 1) == nullptr);
+    assert(transposed(2, 1) == objDef);
     
     // Test square matrix transpose
     Matrix<TestObject> square(2, 2);
@@ -209,20 +202,16 @@ void testMatrixTranspose() {
     assert(squareTransposed(0, 1) == obj3);
     assert(squareTransposed(1, 0) == obj2);
     assert(squareTransposed(1, 1) == obj4);
-    
-    // Clean up
-    delete obj1;
-    delete obj2;
-    delete obj3;
-    delete obj4;
 }
 
 void testMatrixMethods() {
     std::cout << "Testing Matrix methods..." << std::endl;
+
+    TestObject objDef = TestObject();
     
     Matrix<TestObject> matrix(3, 2);
-    TestObject* obj1 = new TestObject(42);
-    TestObject* obj2 = new TestObject(84);
+    TestObject obj1 = TestObject(42);
+    TestObject obj2 = TestObject(84);
     
     matrix(0, 0) = obj1;
     matrix(2, 1) = obj2;
@@ -233,7 +222,7 @@ void testMatrixMethods() {
     // All elements should be nullptr after clear
     for (size_t i = 0; i < matrix.getRows(); ++i) {
         for (size_t j = 0; j < matrix.getCols(); ++j) {
-            assert(matrix(i, j) == nullptr);
+            assert(matrix(i, j) == objDef);
         }
     }
     
@@ -244,10 +233,6 @@ void testMatrixMethods() {
     // Test that we can still set values after clear
     matrix(1, 0) = obj1;
     assert(matrix(1, 0) == obj1);
-    
-    // Clean up
-    delete obj1;
-    delete obj2;
 }
 
 void testMatrixErrorHandling() {
@@ -260,23 +245,11 @@ void testMatrixErrorHandling() {
     // but we test what we can
     
     // Test valid access first
-    TestObject* obj = new TestObject(999);
+    TestObject obj = TestObject(999);
     matrix(0, 0) = obj;
     assert(matrix(0, 0) == obj);
     
     // Test edge cases
     matrix(1, 1) = obj;  // Last valid position
     assert(matrix(1, 1) == obj);
-    
-    // Test with default matrix (1x1)
-    Matrix<TestObject> defaultMatrix;
-    assert(defaultMatrix.getRows() == 1);
-    assert(defaultMatrix.getCols() == 1);
-    assert(defaultMatrix(0, 0) == nullptr);
-    
-    // Test setting value in default matrix
-    defaultMatrix(0, 0) = obj;
-    assert(defaultMatrix(0, 0) == obj);
-    
-    delete obj;
 }

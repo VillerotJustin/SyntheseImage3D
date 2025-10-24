@@ -11,154 +11,108 @@
 
 namespace math {
     /**
-     * Template class representing a matrix of pointers to objects of type T.
-     * Provides basic matrix operations for pointer management.
+     * Template class representing a matrix of objects of type T.
+     * Provides basic matrix operations.
      */
     template<typename T>
     class Matrix {
     public:
 
-        // Constructors & destructors
-
-        /**
-         * Constructor that initializes a matrix with the specified number of rows and columns.
-         * All pointers are initialized to nullptr.
-         *
-         * @param rows The number of rows in the matrix.
-         * @param cols The number of columns in the matrix.
-         */
-    Matrix(size_t rows, size_t cols);
-
-        /**
-         * Constructor that initializes a matrix using a given 2D array of pointers.
-         *
-         * @param a The 2D array containing matrix element pointers.
-         * @param rows The number of rows in the matrix.
-         * @param cols The number of columns in the matrix.
-         */
-    Matrix(T*** a, size_t rows, size_t cols);
-
-        /**
-         * Default constructor that initializes a 1x1 matrix with a nullptr.
-         */
-        Matrix();
-
-        /**
-         * Destructor that deallocates the memory used by the matrix.
-         * Note: This does NOT delete the objects pointed to by the pointers.
-         * That responsibility lies with the user.
-         */
+        #pragma region Constructors_Destructors
+        
+        Matrix(size_t rows, size_t cols);
+        Matrix(const T* const* a, size_t rows, size_t cols);
         ~Matrix();
 
-        /**
-         * Copy constructor that creates a new matrix by copying the pointer values from another matrix.
-         * This performs a shallow copy - the actual objects are not duplicated.
-         *
-         * @param other The matrix to copy.
-         */
+        #pragma endregion
+
+        #pragma region Copy_Move
+
         Matrix(const Matrix& other);
-
-        // Operators
-
-        /**
-         * Overloaded operator for element access.
-         * Provides access to matrix element pointers.
-         *
-         * @param x Row index.
-         * @param y Column index.
-         * @return Reference to the pointer at (x, y).
-         */
-    inline T*& operator()(const size_t x, const size_t y) { return p[x][y]; }
-
-        /**
-         * Overloaded operator for element access (const version).
-         * Provides access to matrix element pointers for read-only purposes.
-         *
-         * @param x Row index.
-         * @param y Column index.
-         * @return Const reference to the pointer at (x, y).
-         */
-    inline const T* operator()(const size_t x, const size_t y) const { return p[x][y]; }
-
-        /**
-         * Overloaded assignment operator that copies pointer values from another matrix.
-         * This performs a shallow copy - the actual objects are not duplicated.
-         *
-         * @param other The matrix to copy.
-         * @return The current matrix after the assignment.
-         */
+        Matrix(Matrix&& other) noexcept;
         Matrix& operator=(const Matrix& other);
+        Matrix& operator=(Matrix&& other) noexcept;
 
-        /**
-         * Swaps two rows of the matrix.
-         *
-         * @param r1 The index of the first row.
-         * @param r2 The index of the second row.
-         */
-    void swapRows(size_t r1, size_t r2);
+        #pragma endregion
 
-        /**
-         * Returns the transpose of the matrix.
-         *
-         * @return The transposed matrix.
-         */
+        #pragma region Element_Access
+
+        inline T& operator()(const size_t x, const size_t y) { return p[x][y]; }
+        inline const T& operator()(const size_t x, const size_t y) const { return p[x][y]; }
+
+        #pragma endregion
+
+        #pragma region Utility_Methods
+
+        void swapRows(size_t r1, size_t r2);
         Matrix transpose();
-
-        /**
-         * Sets all pointers in the matrix to nullptr.
-         */
         void clear();
-
-        /**
-         * Gets the number of rows in the matrix.
-         *
-         * @return The number of rows.
-         */
-    size_t getRows() const;
-
-        /**
-         * Gets the number of columns in the matrix.
-         *
-         * @return The number of columns.
-         */
-    size_t getCols() const;
-
-        /**
-         * Overloaded output stream operator to print the matrix addresses.
-         *
-         * @param os The output stream.
-         * @param m The matrix to print.
-         * @return The output stream with the matrix printed.
-         */
+        size_t getRows() const;
+        size_t getCols() const;
+        
         template<typename U>
         friend std::ostream& operator<<(std::ostream& os, const Matrix<U>& m);
 
-    private:
-    size_t rows_, cols_;
-        T ***p{}; /// Pointer to the 2D array holding the matrix pointers
+        #pragma endregion
 
-        /**
-        * Allocates memory for the matrix pointers.
-        */
+    private:
+        size_t rows_{0}, cols_{0}; ///< Number of rows and columns
+        T **p{nullptr}; /// Pointer to the 2D array holding the matrix
+
         void allocSpace();
+        void freeSpace();
     };
 
     /* TEMPLATE IMPLEMENTATION */
 
+    /**
+     * @brief Allocates memory for the matrix.
+     */
     template<typename T>
-    Matrix<T>::Matrix(const size_t rows, const size_t cols) : rows_(rows), cols_(cols)
-    {
+    void Matrix<T>::allocSpace() {
+        if (rows_ == 0 || cols_ == 0) {
+            p = nullptr;
+            return;
+        }
+
+        p = new T*[rows_];
+        for (size_t i = 0; i < rows_; ++i) {
+            p[i] = new T[cols_];
+        }
+    }
+
+    /**
+     * @brief Frees the allocated memory for the matrix.
+     */
+    template<typename T>
+    void Matrix<T>::freeSpace() {
+        if (p != nullptr) {
+            for (size_t i = 0; i < rows_; ++i) {
+                delete[] p[i];
+            }
+            delete[] p;
+            p = nullptr;
+        }
+    }
+
+    /**
+     * @brief Constructor to create a matrix with given rows and columns.
+     */
+    template<typename T>
+    Matrix<T>::Matrix(size_t rows, size_t cols) : rows_(rows), cols_(cols) {
         allocSpace();
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
-                p[i][j] = nullptr;
+                p[i][j] = T{};
             }
         }
     }
 
+    /**
+     * @brief Constructor to create a matrix from a 2D array.
+     */
     template<typename T>
-    Matrix<T>::Matrix(T*** a, const size_t rows, const size_t cols) : rows_(rows), cols_(cols)
-    {
+    Matrix<T>::Matrix(const T* const* a, size_t rows, size_t cols) : rows_(rows), cols_(cols) {
         allocSpace();
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
@@ -167,131 +121,149 @@ namespace math {
         }
     }
 
+    /**
+     * @brief Destructor to free allocated memory.
+     */
     template<typename T>
-    Matrix<T>::Matrix() : rows_(1), cols_(1)
-    {
-        allocSpace();
-        p[0][0] = nullptr;
+    Matrix<T>::~Matrix() {
+        freeSpace();
     }
 
+    /**
+     * @brief Copy constructor.
+     */
     template<typename T>
-    Matrix<T>::~Matrix()
-    {
-        for (size_t i = 0; i < rows_; ++i) {
-            delete[] p[i];
-        }
-        delete[] p;
-    }
-
-    template<typename T>
-    Matrix<T>::Matrix(const Matrix& m) : rows_(m.rows_), cols_(m.cols_)
-    {
+    Matrix<T>::Matrix(const Matrix& other) : rows_(other.rows_), cols_(other.cols_) {
         allocSpace();
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
-                p[i][j] = m.p[i][j];
+                p[i][j] = other.p[i][j];
             }
         }
     }
 
+    /**
+     * @brief Move constructor.
+     */
     template<typename T>
-    Matrix<T>& Matrix<T>::operator=(const Matrix& m)
-    {
-        if (this == &m) {
+    Matrix<T>::Matrix(Matrix&& other) noexcept : rows_(other.rows_), cols_(other.cols_), p(other.p) {
+        other.rows_ = 0;
+        other.cols_ = 0;
+        other.p = nullptr;
+    }
+
+    /**
+     * @brief Copy assignment operator.
+     */
+    template<typename T>
+    Matrix<T>& Matrix<T>::operator=(const Matrix& other) {
+        if (this == &other) {
             return *this;
         }
 
-        if (rows_ != m.rows_ || cols_ != m.cols_) {
-            for (size_t i = 0; i < rows_; ++i) {
-                delete[] p[i];
-            }
-            delete[] p;
-
-            rows_ = m.rows_;
-            cols_ = m.cols_;
-            allocSpace();
-        }
-
+        freeSpace();
+        rows_ = other.rows_;
+        cols_ = other.cols_;
+        allocSpace();
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
-                p[i][j] = m.p[i][j];
+                p[i][j] = other.p[i][j];
             }
         }
         return *this;
     }
 
+    /**
+     * @brief Move assignment operator.
+     */
     template<typename T>
-    void Matrix<T>::swapRows(size_t r1, size_t r2)
-    {
-        T** temp = p[r1];
+    Matrix<T>& Matrix<T>::operator=(Matrix&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+
+        freeSpace();
+        rows_ = other.rows_;
+        cols_ = other.cols_;
+        p = other.p;
+
+        other.rows_ = 0;
+        other.cols_ = 0;
+        other.p = nullptr;
+
+        return *this;
+    }
+
+    /**
+     * @brief Swaps two rows in the matrix.
+     */
+    template<typename T>
+    void Matrix<T>::swapRows(size_t r1, size_t r2) {
+        if (r1 >= rows_ || r2 >= rows_) {
+            throw std::out_of_range("Row index out of bounds");
+        }
+        T* temp = p[r1];
         p[r1] = p[r2];
         p[r2] = temp;
     }
 
+    /**
+     * @brief Transposes the matrix.
+     */
     template<typename T>
-    Matrix<T> Matrix<T>::transpose()
-    {
-        Matrix ret(cols_, rows_);
+    Matrix<T> Matrix<T>::transpose() {
+        Matrix<T> transposed(cols_, rows_);
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
-                ret.p[j][i] = p[i][j];
+                transposed.p[j][i] = p[i][j];
             }
         }
-        return ret;
+        return transposed;
     }
 
+    /**
+     * @brief Clears the matrix by setting all elements to default value.
+     */
     template<typename T>
-    void Matrix<T>::clear()
-    {
+    void Matrix<T>::clear() {
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
-                p[i][j] = nullptr;
+                p[i][j] = T{};
             }
         }
     }
 
+    /**
+     * @brief Returns the number of rows in the matrix.
+     */
     template<typename T>
-    size_t Matrix<T>::getRows() const 
-    { 
-        return rows_; 
+    size_t Matrix<T>::getRows() const {
+        return rows_;
     }
 
+    /**
+     * @brief Returns the number of columns in the matrix.
+     */
     template<typename T>
-    size_t Matrix<T>::getCols() const 
-    { 
-        return cols_; 
+    size_t Matrix<T>::getCols() const {
+        return cols_;
     }
 
+    /**
+     * @brief Output stream operator for debugging purposes.
+     */
     template<typename T>
-    void Matrix<T>::allocSpace()
-    {
-        p = new T**[rows_];
-        for (size_t i = 0; i < rows_; ++i) {
-            p[i] = new T*[cols_];
-        }
-    }
-
-    template<typename T>
-    std::ostream& operator<<(std::ostream& os, const Matrix<T>& m)
-    {
+    std::ostream& operator<<(std::ostream& os, const Matrix<T>& m) {
         for (size_t i = 0; i < m.rows_; ++i) {
-            if (m.p[i][0] == nullptr) {
-                os << "nullptr";
-            } else {
-                os << m.p[i][0];
-            }
-            for (size_t j = 1; j < m.cols_; ++j) {
-                if (m.p[i][j] == nullptr) {
-                    os << " nullptr";
-                } else {
-                    os << " " << m.p[i][j];
-                }
+            for (size_t j = 0; j < m.cols_; ++j) {
+                os << m.p[i][j] << " ";
             }
             os << std::endl;
         }
         return os;
     }
-}
 
+// Barrier barrier don't touch the } on the next line for the omnissiah sake
+}
 #endif //MATRIX_H
 

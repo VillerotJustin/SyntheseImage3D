@@ -29,9 +29,9 @@ namespace geometry {
         if (data.size() != 3) {
             throw std::invalid_argument("Vector must be of size 3 to convert to Vector3D");
         }
-        components[0] = *data[0];
-        components[1] = *data[1];
-        components[2] = *data[2];
+        components[0] = data[0];
+        components[1] = data[1];
+        components[2] = data[2];
     }
 
     // Getter methods
@@ -200,9 +200,9 @@ namespace geometry {
 
     math::Vector<double> Vector3D::toVector() const {
         math::Vector<double> result(3);
-        result[0] = new double(components[0]);
-        result[1] = new double(components[1]);
-        result[2] = new double(components[2]);
+        result[0] = components[0];
+        result[1] = components[1];
+        result[2] = components[2];
         return result;
     }
 

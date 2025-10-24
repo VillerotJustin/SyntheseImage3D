@@ -20,6 +20,12 @@ namespace rendering {
      */
     class Light {
     public:
+
+        /**
+         * @brief Default constructor for Light at origin with white color and intensity 1.0
+         */
+        Light();
+
         /**
          * @brief Constructor for Light
          * @param position The position of the light in 3D space

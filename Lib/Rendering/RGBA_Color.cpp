@@ -13,105 +13,85 @@ namespace rendering {
     // Constructors
     RGBA_Color::RGBA_Color() : components(4) {
         // Creates a transparent black color (0, 0, 0, 0)
-        components[0] = new double(0.0);
-        components[1] = new double(0.0);
-        components[2] = new double(0.0);
-        components[3] = new double(0.0);
+        components[0] = double(0.0);
+        components[1] = double(0.0);
+        components[2] = double(0.0);
+        components[3] = double(0.0);
     }
 
     RGBA_Color::RGBA_Color(double r, double g, double b, double a) : components(4) {
-        components[0] = new double(std::clamp(r, 0.0, 1.0));
-        components[1] = new double(std::clamp(g, 0.0, 1.0));
-        components[2] = new double(std::clamp(b, 0.0, 1.0));
-        components[3] = new double(std::clamp(a, 0.0, 1.0));
+        components[0] = double(std::clamp(r, 0.0, 1.0));
+        components[1] = double(std::clamp(g, 0.0, 1.0));
+        components[2] = double(std::clamp(b, 0.0, 1.0));
+        components[3] = double(std::clamp(a, 0.0, 1.0));
     }
 
     RGBA_Color::RGBA_Color(const math::Vector<double>& v) : components(4) {
         if (v.size() != 4) {
             throw std::invalid_argument("Vector must have exactly 4 components to create an RGBA Color");
         }
-        components[0] = new double(std::clamp(*v[0], 0.0, 1.0));
-        components[1] = new double(std::clamp(*v[1], 0.0, 1.0));
-        components[2] = new double(std::clamp(*v[2], 0.0, 1.0));
-        components[3] = new double(std::clamp(*v[3], 0.0, 1.0));
-    }
-
-    RGBA_Color::~RGBA_Color() {
-        delete components[0];
-        delete components[1];
-        delete components[2];
-        delete components[3];
+        components[0] = double(std::clamp(v[0], 0.0, 1.0));
+        components[1] = double(std::clamp(v[1], 0.0, 1.0));
+        components[2] = double(std::clamp(v[2], 0.0, 1.0));
+        components[3] = double(std::clamp(v[3], 0.0, 1.0));
     }
 
     RGBA_Color::RGBA_Color(const RGBA_Color& other) : components(4) {
-        components[0] = new double(*other.components[0]);
-        components[1] = new double(*other.components[1]);
-        components[2] = new double(*other.components[2]);
-        components[3] = new double(*other.components[3]);
+        components[0] = double(other.components[0]);
+        components[1] = double(other.components[1]);
+        components[2] = double(other.components[2]);
+        components[3] = double(other.components[3]);
     }
 
     RGBA_Color& RGBA_Color::operator=(const RGBA_Color& other) {
         if (this != &other) {
-            delete components[0];
-            delete components[1];
-            delete components[2];
-            delete components[3];
-            
-            components[0] = new double(*other.components[0]);
-            components[1] = new double(*other.components[1]);
-            components[2] = new double(*other.components[2]);
-            components[3] = new double(*other.components[3]);
+            components[0] = double(other.components[0]);
+            components[1] = double(other.components[1]);
+            components[2] = double(other.components[2]);
+            components[3] = double(other.components[3]);
         }
         return *this;
     }
 
     // Component accessors
     double RGBA_Color::r() const {
-        return *components[0];
+        return components[0];
     }
 
     double RGBA_Color::g() const {
-        return *components[1];
+        return components[1];
     }
 
     double RGBA_Color::b() const {
-        return *components[2];
+        return components[2];
     }
 
     double RGBA_Color::a() const {
-        return *components[3];
+        return components[3];
     }
 
     // Component setters
     void RGBA_Color::setR(double red) {
-        delete components[0];
-        components[0] = new double(std::clamp(red, 0.0, 1.0));
+        components[0] = double(std::clamp(red, 0.0, 1.0));
     }
 
     void RGBA_Color::setG(double green) {
-        delete components[1];
-        components[1] = new double(std::clamp(green, 0.0, 1.0));
+        components[1] = double(std::clamp(green, 0.0, 1.0));
     }
 
     void RGBA_Color::setB(double blue) {
-        delete components[2];
-        components[2] = new double(std::clamp(blue, 0.0, 1.0));
+        components[2] = double(std::clamp(blue, 0.0, 1.0));
     }
 
     void RGBA_Color::setA(double alpha) {
-        delete components[3];
-        components[3] = new double(std::clamp(alpha, 0.0, 1.0));
+        components[3] = double(std::clamp(alpha, 0.0, 1.0));
     }
 
     void RGBA_Color::setRGBA(double red, double green, double blue, double alpha) {
-        delete components[0];
-        delete components[1];
-        delete components[2];
-        delete components[3];
-        components[0] = new double(std::clamp(red, 0.0, 1.0));
-        components[1] = new double(std::clamp(green, 0.0, 1.0));
-        components[2] = new double(std::clamp(blue, 0.0, 1.0));
-        components[3] = new double(std::clamp(alpha, 0.0, 1.0));
+        components[0] = double(std::clamp(red, 0.0, 1.0));
+        components[1] = double(std::clamp(green, 0.0, 1.0));
+        components[2] = double(std::clamp(blue, 0.0, 1.0));
+        components[3] = double(std::clamp(alpha, 0.0, 1.0));
     }
 
     void RGBA_Color::invert() {
@@ -121,28 +101,28 @@ namespace rendering {
     // Color-specific operations
     RGBA_Color RGBA_Color::operator+(const RGBA_Color& other) const {
         return RGBA_Color(
-            *components[0] + *other.components[0],
-            *components[1] + *other.components[1],
-            *components[2] + *other.components[2],
-            *components[3] + *other.components[3]
+            components[0] + other.components[0],
+            components[1] + other.components[1],
+            components[2] + other.components[2],
+            components[3] + other.components[3]
         );
     }
 
     RGBA_Color RGBA_Color::operator-(const RGBA_Color& other) const {
         return RGBA_Color(
-            *components[0] - *other.components[0],
-            *components[1] - *other.components[1],
-            *components[2] - *other.components[2],
-            *components[3] - *other.components[3]
+            components[0] - other.components[0],
+            components[1] - other.components[1],
+            components[2] - other.components[2],
+            components[3] - other.components[3]
         );
     }
 
     RGBA_Color RGBA_Color::operator*(double scalar) const {
         return RGBA_Color(
-            *components[0] * scalar,
-            *components[1] * scalar,
-            *components[2] * scalar,
-            *components[3] * scalar
+            components[0] * scalar,
+            components[1] * scalar,
+            components[2] * scalar,
+            components[3] * scalar
         );
     }
 

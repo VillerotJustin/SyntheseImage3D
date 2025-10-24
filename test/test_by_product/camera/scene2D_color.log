@@ -1,5 +1,5 @@
 === Render Test: scene2D_color ===
-Start time: 2025-10-24 09:31:05
+Start time: 2025-10-24 12:54:35
 
 Camera Configuration:
 --------------------
@@ -29,7 +29,7 @@ Shapes (2 total):
 
 Lights (0 total):
 
-Render Time: 135 ms
+Render Time: 57 ms
 
 -------------
 

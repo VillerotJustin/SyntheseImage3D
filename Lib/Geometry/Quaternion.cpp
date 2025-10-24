@@ -58,10 +58,10 @@ namespace geometry {
         if (comp.size() != 4) {
             throw std::invalid_argument("Vector must be 4D to convert to Quaternion");
         }
-        components[0] = *comp[0];
-        components[1] = *comp[1];
-        components[2] = *comp[2];
-        components[3] = *comp[3];
+        components[0] = comp[0];
+        components[1] = comp[1];
+        components[2] = comp[2];
+        components[3] = comp[3];
     }
 
     // Component accessor
@@ -302,15 +302,15 @@ namespace geometry {
         math::Matrix<double> rotMatrix(3, 3);
 
         // Allocate and set matrix elements
-        double* elem00 = new double(1.0 - 2.0 * y * y - 2.0 * z * z);
-        double* elem01 = new double(2.0 * x * y - 2.0 * z * w);
-        double* elem02 = new double(2.0 * x * z + 2.0 * y * w);
-        double* elem10 = new double(2.0 * x * y + 2.0 * z * w);
-        double* elem11 = new double(1.0 - 2.0 * x * x - 2.0 * z * z);
-        double* elem12 = new double(2.0 * y * z - 2.0 * x * w);
-        double* elem20 = new double(2.0 * x * z - 2.0 * y * w);
-        double* elem21 = new double(2.0 * y * z + 2.0 * x * w);
-        double* elem22 = new double(1.0 - 2.0 * x * x - 2.0 * y * y);
+        double elem00 = double(1.0 - 2.0 * y * y - 2.0 * z * z);
+        double elem01 = double(2.0 * x * y - 2.0 * z * w);
+        double elem02 = double(2.0 * x * z + 2.0 * y * w);
+        double elem10 = double(2.0 * x * y + 2.0 * z * w);
+        double elem11 = double(1.0 - 2.0 * x * x - 2.0 * z * z);
+        double elem12 = double(2.0 * y * z - 2.0 * x * w);
+        double elem20 = double(2.0 * x * z - 2.0 * y * w);
+        double elem21 = double(2.0 * y * z + 2.0 * x * w);
+        double elem22 = double(1.0 - 2.0 * x * x - 2.0 * y * y);
 
         rotMatrix(0, 0) = elem00;
         rotMatrix(0, 1) = elem01;
@@ -338,25 +338,25 @@ namespace geometry {
         math::Matrix<double> rotMatrix(4, 4);
 
         // Allocate and set matrix elements for 4x4 matrix
-        rotMatrix(0, 0) = new double(1.0 - 2.0 * y * y - 2.0 * z * z);
-        rotMatrix(0, 1) = new double(2.0 * x * y - 2.0 * z * w);
-        rotMatrix(0, 2) = new double(2.0 * x * z + 2.0 * y * w);
-        rotMatrix(0, 3) = new double(0.0);
+        rotMatrix(0, 0) = double(1.0 - 2.0 * y * y - 2.0 * z * z);
+        rotMatrix(0, 1) = double(2.0 * x * y - 2.0 * z * w);
+        rotMatrix(0, 2) = double(2.0 * x * z + 2.0 * y * w);
+        rotMatrix(0, 3) = double(0.0);
 
-        rotMatrix(1, 0) = new double(2.0 * x * y + 2.0 * z * w);
-        rotMatrix(1, 1) = new double(1.0 - 2.0 * x * x - 2.0 * z * z);
-        rotMatrix(1, 2) = new double(2.0 * y * z - 2.0 * x * w);
-        rotMatrix(1, 3) = new double(0.0);
+        rotMatrix(1, 0) = double(2.0 * x * y + 2.0 * z * w);
+        rotMatrix(1, 1) = double(1.0 - 2.0 * x * x - 2.0 * z * z);
+        rotMatrix(1, 2) = double(2.0 * y * z - 2.0 * x * w);
+        rotMatrix(1, 3) = double(0.0);
 
-        rotMatrix(2, 0) = new double(2.0 * x * z - 2.0 * y * w);
-        rotMatrix(2, 1) = new double(2.0 * y * z + 2.0 * x * w);
-        rotMatrix(2, 2) = new double(1.0 - 2.0 * x * x - 2.0 * y * y);
-        rotMatrix(2, 3) = new double(0.0);
+        rotMatrix(2, 0) = double(2.0 * x * z - 2.0 * y * w);
+        rotMatrix(2, 1) = double(2.0 * y * z + 2.0 * x * w);
+        rotMatrix(2, 2) = double(1.0 - 2.0 * x * x - 2.0 * y * y);
+        rotMatrix(2, 3) = double(0.0);
 
-        rotMatrix(3, 0) = new double(0.0);
-        rotMatrix(3, 1) = new double(0.0);
-        rotMatrix(3, 2) = new double(0.0);
-        rotMatrix(3, 3) = new double(1.0);
+        rotMatrix(3, 0) = double(0.0);
+        rotMatrix(3, 1) = double(0.0);
+        rotMatrix(3, 2) = double(0.0);
+        rotMatrix(3, 3) = double(1.0);
 
         return rotMatrix;
     }
@@ -401,9 +401,9 @@ namespace geometry {
             throw std::invalid_argument("Rotation matrix must be 3x3");
         }
 
-        double m00 = *(rotationMatrix(0, 0));
-        double m11 = *(rotationMatrix(1, 1));
-        double m22 = *(rotationMatrix(2, 2));
+        double m00 = (rotationMatrix(0, 0));
+        double m11 = (rotationMatrix(1, 1));
+        double m22 = (rotationMatrix(2, 2));
         double trace = m00 + m11 + m22;
 
         double w, x, y, z;
@@ -411,26 +411,26 @@ namespace geometry {
         if (trace > 0) {
             double s = std::sqrt(trace + 1.0) * 2.0; // S=4*qw
             w = 0.25 * s;
-            x = (*(rotationMatrix(2, 1)) - *(rotationMatrix(1, 2))) / s;
-            y = (*(rotationMatrix(0, 2)) - *(rotationMatrix(2, 0))) / s;
-            z = (*(rotationMatrix(1, 0)) - *(rotationMatrix(0, 1))) / s;
+            x = ((rotationMatrix(2, 1)) - (rotationMatrix(1, 2))) / s;
+            y = ((rotationMatrix(0, 2)) - (rotationMatrix(2, 0))) / s;
+            z = ((rotationMatrix(1, 0)) - (rotationMatrix(0, 1))) / s;
         } else if ((m00 > m11) && (m00 > m22)) {
             double s = std::sqrt(1.0 + m00 - m11 - m22) * 2.0; // S=4*qx
-            w = (*(rotationMatrix(2, 1)) - *(rotationMatrix(1, 2))) / s;
+            w = ((rotationMatrix(2, 1)) - (rotationMatrix(1, 2))) / s;
             x = 0.25 * s;
-            y = (*(rotationMatrix(0, 1)) + *(rotationMatrix(1, 0))) / s;
-            z = (*(rotationMatrix(0, 2)) + *(rotationMatrix(2, 0))) / s;
+            y = ((rotationMatrix(0, 1)) + (rotationMatrix(1, 0))) / s;
+            z = ((rotationMatrix(0, 2)) + (rotationMatrix(2, 0))) / s;
         } else if (m11 > m22) {
             double s = std::sqrt(1.0 + m11 - m00 - m22) * 2.0; // S=4*qy
-            w = (*(rotationMatrix(0, 2)) - *(rotationMatrix(2, 0))) / s;
-            x = (*(rotationMatrix(0, 1)) + *(rotationMatrix(1, 0))) / s;
+            w = ((rotationMatrix(0, 2)) - (rotationMatrix(2, 0))) / s;
+            x = ((rotationMatrix(0, 1)) + (rotationMatrix(1, 0))) / s;
             y = 0.25 * s;
-            z = (*(rotationMatrix(1, 2)) + *(rotationMatrix(2, 1))) / s;
+            z = ((rotationMatrix(1, 2)) + (rotationMatrix(2, 1))) / s;
         } else {
             double s = std::sqrt(1.0 + m22 - m00 - m11) * 2.0; // S=4*qz
-            w = (*(rotationMatrix(1, 0)) - *(rotationMatrix(0, 1))) / s;
-            x = (*(rotationMatrix(0, 2)) + *(rotationMatrix(2, 0))) / s;
-            y = (*(rotationMatrix(1, 2)) + *(rotationMatrix(2, 1))) / s;
+            w = ((rotationMatrix(1, 0)) - (rotationMatrix(0, 1))) / s;
+            x = ((rotationMatrix(0, 2)) + (rotationMatrix(2, 0))) / s;
+            y = ((rotationMatrix(1, 2)) + (rotationMatrix(2, 1))) / s;
             z = 0.25 * s;
         }
 

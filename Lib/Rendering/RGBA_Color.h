@@ -45,11 +45,6 @@ namespace rendering {
         explicit RGBA_Color(const math::Vector<double>& v);
 
         /**
-         * @brief Destructor that cleans up allocated memory for the Vector components.
-         */
-        ~RGBA_Color();
-
-        /**
          * @brief Copy constructor that creates a deep copy of another RGBA_Color.
          * @param other The RGBA_Color to copy.
          */

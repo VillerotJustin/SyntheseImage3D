@@ -16,370 +16,326 @@ namespace math {
 
     /**
      * @class Vector
-     * @brief Template class representing a vector of pointers to objects of type T.
+     * @brief Template class representing a vector of objects of type T.
      * 
-     * This class provides basic pointer management functionality for vector-like
-     * containers, similar to the Matrix template class. It stores pointers to
-     * objects rather than the objects themselves.
+     * This class provides basic functionality for vector-like containers, similar to the Matrix template class. It stores objects rather than pointers to objects.
      */
     template<typename T>
     class Vector {
     public:
-        /**
-         * @brief Constructor that creates a vector of size 'size' with all pointers initialized to nullptr.
-         * @param size The size of the vector.
-         */
+        #pragma region Constructors_Destructors
+        
         explicit Vector(size_t size);
-
-        /**
-         * @brief Constructor that creates a vector from an array of pointers.
-         * @param data Array of pointers to initialize the vector.
-         * @param size The size of the vector.
-         */
-        Vector(T** data, size_t size);
-
-        /**
-         * @brief Default constructor that creates an empty vector.
-         */
+        Vector(const T* data, size_t size);
         Vector();
-
-        /**
-         * @brief Destructor that deallocates the memory used by the vector.
-         * Note: This does NOT delete the objects pointed to by the pointers.
-         */
         ~Vector();
 
-        /**
-         * @brief Copy constructor that creates a new vector by copying pointer values.
-         * This performs a shallow copy - the actual objects are not duplicated.
-         * @param other The vector to copy.
-         */
+        #pragma endregion
+
+        #pragma region Copy_Move
+        
         Vector(const Vector& other);
-
-        /**
-         * @brief Assignment operator that copies pointer values from another vector.
-         * This performs a shallow copy - the actual objects are not duplicated.
-         * @param other The vector to copy.
-         * @return Reference to this vector after assignment.
-         */
+        Vector(Vector&& other) noexcept;
         Vector& operator=(const Vector& other);
+        Vector& operator=(Vector&& other) noexcept;
 
-        /**
-         * @brief Equality operator that compares pointer values.
-         * @param other The vector to compare with.
-         * @return True if all pointers are equal, false otherwise.
-         */
-        bool operator==(const Vector& other) const;
+        #pragma endregion
 
-        /**
-         * @brief Inequality operator that compares pointer values.
-         * @param other The vector to compare with.
-         * @return True if any pointers are different, false otherwise.
-         */
-        bool operator!=(const Vector& other) const;
+        #pragma region Element_Access
 
-        /**
-         * @brief Accessor method to get the pointer at a specific index.
-         * @param index The index of the element to access.
-         * @return Reference to the pointer at the specified index.
-         * @throws std::out_of_range if index is out of bounds.
-         */
-        T*& operator[](size_t index);
+        T& operator[](size_t index);
+        const T& operator[](size_t index) const;
 
-        /**
-         * @brief Accessor method to get the pointer at a specific index (const version).
-         * @param index The index of the element to access.
-         * @return Const reference to the pointer at the specified index.
-         * @throws std::out_of_range if index is out of bounds.
-         */
-        const T* operator[](size_t index) const;
-
-        /**
-         * @brief Method to get the size of the vector.
-         * @return The number of elements in the vector.
-         */
         [[nodiscard]] size_t size() const { return m_size; }
 
-        /**
-         * @brief Sets all pointers in the vector to nullptr.
-         */
-        void clear();
+        #pragma endregion
 
-        /**
-         * @brief Check if all pointers in the vector are nullptr.
-         * @return True if all pointers are nullptr, false otherwise.
-         */
-        bool empty() const;
+        #pragma region Utility_Methods
 
-        void append(T* element);
+        void clear();          // set size to 0 and free storage
+        bool empty() const;    // true if size == 0
 
-        /**
-         * @brief Insert an element at a specific position.
-         * @param index The position where to insert the element.
-         * @param element The element to insert.
-         * @throws std::out_of_range if index is out of bounds.
-         */
-        void insert(size_t index, T* element);
-
-        /**
-         * @brief Remove an element at a specific position.
-         * @param index The position of the element to remove.
-         * @throws std::out_of_range if index is out of bounds.
-         */
+        void append(const T& element);
+        void insert(size_t index, const T& element);
         void erase(size_t index);
 
-        /**
-         * @brief Returns a pointer to the first element (iterator begin).
-         * @return Pointer to the first element.
-         */
-        T** begin() { return elements; }
+        T* begin() { return elements; }
+        const T* begin() const { return elements; }
+        T* end() { return elements + m_size; }
+        const T* end() const { return elements + m_size; }
 
-        /**
-         * @brief Returns a const pointer to the first element (iterator begin).
-         * @return Const pointer to the first element.
-         */
-        const T* const* begin() const { return elements; }
+    bool operator==(const Vector& other) const noexcept;
+    bool operator!=(const Vector& other) const noexcept;
+        bool operator!=(const Vector&& other) noexcept;
 
-        /**
-         * @brief Returns a pointer to past-the-end element (iterator end).
-         * @return Pointer to past-the-end element.
-         */
-        T** end() { return elements + m_size; }
-
-        /**
-         * @brief Returns a const pointer to past-the-end element (iterator end).
-         * @return Const pointer to past-the-end element.
-         */
-        const T* const* end() const { return elements + m_size; }
-
-        /**
-         * @brief Output stream operator for debugging purposes.
-         * @param os The output stream.
-         * @param v The vector to output.
-         * @return The output stream.
-         */
         template<typename U>
         friend std::ostream& operator<<(std::ostream& os, const Vector<U>& v);
 
-    private:
-        size_t m_size;     ///< The number of elements in the vector.
-        T** elements;   ///< Array of pointers to objects of type T.
+        #pragma endregion
 
-        /**
-         * @brief Allocates memory for the pointer array.
-         */
-        void allocateSpace();
+    private:
+        size_t m_size{0};     ///< The number of elements in the vector.
+        T *elements{nullptr};   ///< Array of pointers to objects of type T.
+
+        void allocateSpace(size_t n);
+        void freeSpace();
     };
 
     /* TEMPLATE IMPLEMENTATION */
 
+    /**
+     * @brief Utility function that initializes the vector with a specified size.
+     * @param size The initial size of the vector.
+     */
+    template<typename T>
+    void Vector<T>::allocateSpace(size_t n) {
+        if (n == 0) {
+            elements = nullptr;
+            return;
+        }
+        elements = new T[n];
+    }
+
+    /**
+     * @brief Utility function to free allocated memory.
+     */
+    template<typename T>
+    void Vector<T>::freeSpace() {
+        delete[] elements;
+        elements = nullptr;
+    }
+
+    /**
+     * @brief Constructor that initializes the vector with a specified size.
+     * @param size The initial size of the vector.
+     */
     template<typename T>
     Vector<T>::Vector(size_t size) : m_size(size) {
         if (m_size > 0) {
-            allocateSpace();
-            for (size_t i = 0; i < m_size; ++i) {
-                elements[i] = nullptr;
-            }
-        } else {
-            elements = nullptr;
+            allocateSpace(m_size);
+            for (size_t i = 0; i < m_size; ++i) elements[i] = T{};
         }
     }
 
+    /**
+     * @brief Constructor that initializes the vector from a given array.
+     * @param data Pointer to the array of objects to copy from.
+     * @param size The number of elements to copy.
+     */
     template<typename T>
-    Vector<T>::Vector(T** data, size_t size) : m_size(size) {
+    Vector<T>::Vector(const T* data, size_t size) : m_size(size) {
         if (m_size > 0) {
-            allocateSpace();
-            for (size_t i = 0; i < m_size; ++i) {
-                elements[i] = data[i];
-            }
-        } else {
-            elements = nullptr;
+            allocateSpace(m_size);
+            for (size_t i = 0; i < m_size; ++i) elements[i] = data[i];
         }
     }
 
+    
+    /**
+     * @brief Default constructor creating an empty vector.
+     */
     template<typename T>
-    Vector<T>::Vector() : m_size(0), elements(nullptr) {
-    }
+    Vector<T>::Vector() : m_size(0), elements(nullptr) {}
 
+    /**
+     * @brief Destructor to free allocated memory.
+     */
     template<typename T>
     Vector<T>::~Vector() {
-        delete[] elements;
+        freeSpace();
     }
 
+    /**
+     * @brief Copy constructor.
+     * @param other The vector to copy from.
+     */
     template<typename T>
     Vector<T>::Vector(const Vector& other) : m_size(other.m_size) {
         if (m_size > 0) {
-            allocateSpace();
-            for (size_t i = 0; i < m_size; ++i) {
-                elements[i] = other.elements[i];
-            }
-        } else {
-            elements = nullptr;
+            allocateSpace(m_size);
+            for (size_t i = 0; i < m_size; ++i) elements[i] = other.elements[i];
         }
     }
 
+    /**
+     * @brief Move constructor.
+     * @param other The vector to move from.
+     */
+    template<typename T>
+    Vector<T>::Vector(Vector&& other) noexcept : m_size(other.m_size), elements(other.elements) {
+        other.m_size = 0;
+        other.elements = nullptr;
+    }
+
+    /**
+     * @brief Copy assignment operator.
+     * @param other The vector to copy from.
+     * @return Reference to this vector.
+     */
     template<typename T>
     Vector<T>& Vector<T>::operator=(const Vector& other) {
-        if (this == &other) {
-            return *this;
-        }
-
+        if (this == &other) return *this;
         if (m_size != other.m_size) {
-            delete[] elements;
+            freeSpace();
             m_size = other.m_size;
-            if (m_size > 0) {
-                allocateSpace();
-            } else {
-                elements = nullptr;
-            }
+            if (m_size > 0) allocateSpace(m_size);
         }
-
-        for (size_t i = 0; i < m_size; ++i) {
-            elements[i] = other.elements[i];
-        }
+        for (size_t i = 0; i < m_size; ++i) elements[i] = other.elements[i];
         return *this;
     }
 
+    /**
+     * @brief Move assignment operator.
+     * @param other The vector to move from.
+     * @return Reference to this vector.
+     */
     template<typename T>
-    bool Vector<T>::operator==(const Vector& other) const {
-        if (m_size != other.m_size) {
-            return false;
-        }
+    Vector<T>& Vector<T>::operator=(Vector&& other) noexcept {
+        if (this == &other) return *this;
+        freeSpace();
+        m_size = other.m_size;
+        elements = other.elements;
+        other.m_size = 0;
+        other.elements = nullptr;
+        return *this;
+    }
+
+    /**
+     * @brief Equiality comparaison operator
+     */
+    template<typename T>
+    bool Vector<T>::operator==(const Vector<T>& other) const noexcept {
+        if (m_size != other.m_size) return false;
         for (size_t i = 0; i < m_size; ++i) {
-            if (elements[i] != other.elements[i]) {
-                return false;
-            }
+            if (elements[i] != other.elements[i]) return false;
         }
         return true;
     }
 
+    /**
+     * @brief Inequality comparaison operator
+     */
     template<typename T>
-    bool Vector<T>::operator!=(const Vector& other) const {
-        return !(*this == other);
+    bool Vector<T>::operator!=(const Vector<T>& other) const noexcept {
+        return !(this == &other);
     }
 
+    /**
+     * @brief Subscript operator for element access.
+     * @param index The index of the element to access.
+     * @return Reference to the element at the specified index.
+     */
     template<typename T>
-    T*& Vector<T>::operator[](size_t index) {
-        if (index >= m_size) {
-            throw std::out_of_range("Vector index out of bounds");
-        }
+    T& Vector<T>::operator[](size_t index) {
+        if (index >= m_size) throw std::out_of_range("Vector index out of bounds");
         return elements[index];
     }
 
+    /**
+     * @brief Subscript operator for const element access.
+     * @param index The index of the element to access.
+     * @return Const reference to the element at the specified index.
+     */
     template<typename T>
-    const T* Vector<T>::operator[](size_t index) const {
-        if (index >= m_size) {
-            throw std::out_of_range("Vector index out of bounds");
-        }
+    const T& Vector<T>::operator[](size_t index) const {
+        if (index >= m_size) throw std::out_of_range("Vector index out of bounds");
         return elements[index];
     }
 
+    /**
+     * @brief Clears the vector by setting its size to zero and freeing storage.
+     */
     template<typename T>
     void Vector<T>::clear() {
-        delete[] elements;
-        elements = nullptr;
+        freeSpace();
         m_size = 0;
     }
 
+    /**
+     * @brief Checks if the vector is empty.
+     * @return True if the vector is empty, false otherwise.
+     */
     template<typename T>
     bool Vector<T>::empty() const {
-        for (size_t i = 0; i < m_size; ++i) {
-            if (elements[i] != nullptr) {
-                return false;
-            }
-        }
-        return true;
+        return m_size == 0;
     }
 
+    /**
+     * @brief Appends an element to the end of the vector.
+     * @param element The element to append.
+     */
     template<typename T>
-    void Vector<T>::allocateSpace() {
-        elements = new T*[m_size];
-    }
-
-    template<typename T>
-    void Vector<T>::append(T* element) {
-        T** newElements = new T*[m_size + 1];
+    void Vector<T>::append(const T& element) {
+        T* newElements = new T[m_size + 1];
         for (size_t i = 0; i < m_size; ++i) {
             newElements[i] = elements[i];
         }
         newElements[m_size] = element;
-        delete[] elements;
+        freeSpace();
         elements = newElements;
         ++m_size;
     }
 
+    /**
+     * @brief Inserts an element at the specified index.
+     * @param index The index to insert the element at.
+     * @param element The element to insert.
+     */
     template<typename T>
-    void Vector<T>::insert(size_t index, T* element) {
-        if (index > m_size) {
-            throw std::out_of_range("Vector index out of bounds");
-        }
-        
-        T** newElements = new T*[m_size + 1];
-        
-        // Copy elements before the insertion point
+    void Vector<T>::insert(size_t index, const T& element) {
+        if (index > m_size) throw std::out_of_range("Vector index out of bounds");
+        T* newElements = new T[m_size + 1];
         for (size_t i = 0; i < index; ++i) {
             newElements[i] = elements[i];
         }
-        
-        // Insert the new element
         newElements[index] = element;
-        
-        // Copy elements after the insertion point
         for (size_t i = index; i < m_size; ++i) {
             newElements[i + 1] = elements[i];
         }
-        
-        delete[] elements;
+        freeSpace();
         elements = newElements;
         ++m_size;
     }
 
+    /**
+     * @brief Erases the element at the specified index.
+     * @param index The index of the element to erase.
+     */
     template<typename T>
     void Vector<T>::erase(size_t index) {
-        if (index >= m_size) {
-            throw std::out_of_range("Vector index out of bounds");
-        }
-        
-        if (m_size == 1) {
-            delete[] elements;
-            elements = nullptr;
-            m_size = 0;
-            return;
-        }
-        
-        T** newElements = new T*[m_size - 1];
-        
-        // Copy elements before the removal point
+        if (index >= m_size) throw std::out_of_range("Vector index out of bounds");
+        T* newElements = new T[m_size - 1];
         for (size_t i = 0; i < index; ++i) {
             newElements[i] = elements[i];
         }
-        
-        // Copy elements after the removal point
         for (size_t i = index + 1; i < m_size; ++i) {
             newElements[i - 1] = elements[i];
         }
-        
-        delete[] elements;
+        freeSpace();
         elements = newElements;
         --m_size;
     }
 
+    /**
+     * @brief Output stream operator for debugging purposes.
+     * @param os The output stream.
+     * @param v The vector to output.
+     * @return Reference to the output stream.
+     */
     template<typename T>
     std::ostream& operator<<(std::ostream& os, const Vector<T>& v) {
-        os << "[";
+        os << "Vector(size=" << v.m_size << ", elements=[";
         for (size_t i = 0; i < v.m_size; ++i) {
-            if (i > 0) os << ", ";
-            if (v.elements[i] == nullptr) {
-                os << "nullptr";
-            } else {
-                os << v.elements[i];
-            }
+            os << v.elements[i];
+            if (i < v.m_size - 1) os << ", ";
         }
-        os << "]";
+        os << "])";
         return os;
     }
 
-} // namespace geometry
+
+// Barrier barrier don't touch the } on the next line for the omnissiah sake
+} // namespace math
 
 
 

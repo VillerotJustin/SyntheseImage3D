@@ -18,19 +18,16 @@ namespace rendering {
         if (index >= objects.size()) {
             throw std::out_of_range("Object index out of bounds");
         }
-        delete objects[index];
         objects.erase(index);
     }
 
     void World::addLight(const Light& light) {
-        Light* newLight = new Light(light);
-        lights.append(newLight);
+        lights.append(light);
     }
 
     void World::removeLight(const Light& light) {
         for (size_t i = 0; i < lights.size(); ++i) {
-            if (*lights[i] == light) {
-                delete lights[i];
+            if (lights[i] == light) {
                 lights.erase(i);
                 return;
             }
@@ -41,7 +38,6 @@ namespace rendering {
         if (index >= lights.size()) {
             throw std::out_of_range("Light index out of bounds");
         }
-        delete lights[index];
         lights.erase(index);
     }
 
@@ -58,12 +54,6 @@ namespace rendering {
     }
 
     void World::clearObjects() {
-        // Delete all objects and clear the vector
-        for (size_t i = 0; i < objects.size(); ++i) {
-            if (objects[i] != nullptr) {
-                delete objects[i];
-            }
-        }
         objects.clear();
     }
 

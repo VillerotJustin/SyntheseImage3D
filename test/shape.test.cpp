@@ -79,8 +79,8 @@ void testShapeConstructors() {
     // Create test objects for construction
     ::geometry::Vector3D origin(0.0, 0.0, 0.0);
     ::geometry::Vector3D normal(0.0, 0.0, 1.0);
-    ::geometry::Vector3D topRight = origin + ::geometry::Vector3D(2.0, 0.0, 0.0);
-    ::geometry::Vector3D bottomLeft = origin + ::geometry::Vector3D(0.0, 3.0, 0.0);
+    // ::geometry::Vector3D topRight = origin + ::geometry::Vector3D(2.0, 0.0, 0.0);
+    // ::geometry::Vector3D bottomLeft = origin + ::geometry::Vector3D(0.0, 3.0, 0.0);
     ::geometry::Box testBox(origin, 2.0, 3.0, 4.0, normal);
     RGBA_Color red(1.0f, 0.0f, 0.0f, 1.0f);
 

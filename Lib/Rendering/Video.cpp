@@ -21,7 +21,7 @@ void Video::insertFrame(size_t index, const Image& img) {
     if (index > frames.size()) {
         throw std::out_of_range("Frame index out of range");
     }
-    frames.insert(index, new Image(img));
+    frames.insert(index, Image(img));
 }
 
 void Video::exportToFile(const std::string& filename, const std::string& filepath, VideoFormat format) const {
@@ -63,8 +63,8 @@ void Video::resizeVideo(size_t newWidth, size_t newHeight) {
         throw std::invalid_argument("New dimensions must be positive");
     }
     
-    for (auto& frame : frames) {
-        frame->resize(newWidth, newHeight);
+    for (Image& frame : frames) {
+        frame.resize(newWidth, newHeight);
     }
     
     width = newWidth;
@@ -79,7 +79,7 @@ Video Video::extractFrameRange(size_t startFrame, size_t endFrame) const {
     Video result(width, height, framesPerSecond);
     
     for (size_t i = startFrame; i < endFrame; ++i) {
-        result.addFrame(*frames[i]);
+        result.addFrame(frames[i]);
     }
     
     return result;
@@ -98,7 +98,7 @@ Image Video::createThumbnail(size_t frameIndex, size_t thumbnailWidth, size_t th
         throw std::invalid_argument("Thumbnail dimensions must be positive");
     }
 
-    Image thumbnail = *frames[frameIndex];
+    Image thumbnail = frames[frameIndex];
     thumbnail.resize(thumbnailWidth, thumbnailHeight);
 
     return thumbnail;
@@ -112,7 +112,7 @@ void Video::exportFrameSequence(const std::string& basePath, const std::string& 
         std::string frameFilename = baseFilename + "_frame_" + std::to_string(i);
         
         try {
-            frames[i]->toBitmapFile(frameFilename, basePath);
+            frames[i].toBitmapFile(frameFilename, basePath);
         } catch (const std::exception& e) {
             throw std::runtime_error("Failed to export frame " + std::to_string(i) + ": " + e.what());
         }
@@ -154,7 +154,7 @@ void Video::exportMKV(const std::string& filename, const std::string& filepath) 
             std::string frameFile = "frame_" + frameNumber;
             
             // Export frame to temp directory
-            frames[i]->toBitmapFile(frameFile, tempDir);
+            frames[i].toBitmapFile(frameFile, tempDir);
             
             // Debug: print the actual file path being created
             std::cout << "Created frame: " << tempDir << "/" << frameFile << ".bmp" << std::endl;
@@ -204,7 +204,7 @@ void Video::exportMP4(const std::string& filename, const std::string& filepath) 
         // Export frames as temporary PNG files
         for (size_t i = 0; i < frames.size(); ++i) {
             std::string frameFile = "frame_" + std::string(6 - std::to_string(i).length(), '0') + std::to_string(i);
-            frames[i]->toBitmapFile(frameFile, tempDir);
+            frames[i].toBitmapFile(frameFile, tempDir);
         }
         
         // Use FFmpeg to create MP4 video
@@ -239,7 +239,7 @@ void Video::exportAsGif(const std::string& filename, const std::string& filepath
         // Export frames as temporary PNG files
         for (size_t i = 0; i < frames.size(); ++i) {
             std::string frameFile = "frame_" + std::string(6 - std::to_string(i).length(), '0') + std::to_string(i);
-            frames[i]->toBitmapFile(frameFile, tempDir);
+            frames[i].toBitmapFile(frameFile, tempDir);
         }
         
         // Calculate delay between frames (in centiseconds for GIF)
@@ -269,7 +269,7 @@ void Video::exportAsGif(const std::string& filename, const std::string& filepath
 // Utility method to validate frame dimensions
 bool Video::validateFrameDimensions() const {
     for (const auto& frame : frames) {
-        if (frame->getWidth() != width || frame->getHeight() != height) {
+        if (frame.getWidth() != width || frame.getHeight() != height) {
             return false;
         }
     }

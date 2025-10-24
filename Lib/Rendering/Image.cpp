@@ -6,18 +6,23 @@
 #include <stdexcept>
 #include <cstdlib> // For system() command
 #include <algorithm>
+#include <cstdio>
+#include <cstring>
 
 namespace rendering
 {
+    Image::Image() : width(0), height(0), pixels(0,0) {}
+
 
     // Constructor with width and height - initializes all colors to black
-    Image::Image(int w, int h) : width(static_cast<size_t>(w)), height(static_cast<size_t>(h)), pixels(1, 1) { // Initialize with safe dimensions first
+    Image::Image(int w, int h) : width(0), height(0), pixels(1, 1) {
         if (w <= 0 || h <= 0)
         {
             throw std::invalid_argument("Image dimensions must be positive");
         }
 
-        // Now safely construct the matrix with validated dimensions
+        width = static_cast<size_t>(w);
+        height = static_cast<size_t>(h);
         pixels = math::Matrix<RGBA_Color>(height, width);
 
         // Initialize all colors to black (0, 0, 0, 1)
@@ -25,7 +30,7 @@ namespace rendering
         {
             for (size_t x = 0; x < width; ++x)
             {
-                pixels(y, x) = new RGBA_Color(0.0, 0.0, 0.0, 1.0);
+                pixels(y, x) = RGBA_Color(0.0, 0.0, 0.0, 1.0);
             }
         }
     }
@@ -41,37 +46,13 @@ namespace rendering
         }
     }
 
-    // Destructor - clean up allocated colors
-    Image::~Image() {
-        for (size_t y = 0; y < height; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                delete pixels(y, x);
-            }
-        }
-    }
-
-    // Copy constructor
-    Image::Image(const Image &other) : width(other.width), height(other.height), pixels(other.height, other.width) {
-        for (size_t y = 0; y < height; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                if (other.pixels(y, x) != nullptr)
-                {
-                    pixels(y, x) = new RGBA_Color(*other.pixels(y, x));
-                }
-                else
-                {
-                    pixels(y, x) = nullptr;
-                }
-            }
-        }
-    }
+    // Copy constructor (Matrix has its own copy semantics)
+    Image::Image(const Image &other) : width(other.width), height(other.height), pixels(other.pixels) {}
 
     // Constructor from file
-    Image::Image(const std::string &filename, const std::string &filePath) {
+    Image::Image(const std::string &filename, const std::string &filePath)
+        : width(0), height(0), pixels(1, 1) // initialize pixels to avoid requiring a default ctor
+    {
         std::string fullPath = filePath + filename;
         
         // Get image dimensions using ImageMagick identify command
@@ -93,9 +74,9 @@ namespace rendering
             throw std::runtime_error("Invalid image dimensions in file: " + fullPath);
         }
         
-        // Initialize image with detected dimensions
-        width = w;
-        height = h;
+        // Initialize image with detected dimensions (assign because pixels was already constructed)
+        width = static_cast<size_t>(w);
+        height = static_cast<size_t>(h);
         pixels = math::Matrix<RGBA_Color>(height, width);
         
         // Read pixel data using ImageMagick convert command
@@ -130,14 +111,14 @@ namespace rendering
                     double blue = b / 255.0;
                     double alpha = a / 255.0;
                     
-                    pixels(y, x) = new RGBA_Color(red, green, blue, alpha);
+                    pixels(y, x) = RGBA_Color(red, green, blue, alpha);
                 } else if (sscanf(line, "%d,%d: (%d,%d,%d)", &px, &py, &r, &g, &b) == 5) {
                     // RGB format without alpha
                     double red = r / 255.0;
                     double green = g / 255.0;
                     double blue = b / 255.0;
                     
-                    pixels(y, x) = new RGBA_Color(red, green, blue, 1.0);
+                    pixels(y, x) = RGBA_Color(red, green, blue, 1.0);
                 } else {
                     pclose(convertPipe);
                     throw std::runtime_error("Failed to parse pixel data at position (" + 
@@ -156,34 +137,9 @@ namespace rendering
             return *this;
         }
 
-        // Clean up existing colors
-        for (size_t y = 0; y < height; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                delete pixels(y, x);
-            }
-        }
-
         width = other.width;
         height = other.height;
-        pixels = math::Matrix<RGBA_Color>(height, width);
-
-        // Copy colors
-        for (size_t y = 0; y < height; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                if (other.pixels(y, x) != nullptr)
-                {
-                    pixels(y, x) = new RGBA_Color(*other.pixels(y, x));
-                }
-                else
-                {
-                    pixels(y, x) = nullptr;
-                }
-            }
-        }
+        pixels = other.pixels; // Matrix copy assignment
 
         return *this;
     }
@@ -201,25 +157,13 @@ namespace rendering
     }
 
     bool Image::isValid() const {
-        if (width == 0 || height == 0)
-        {
-            return false;
-        }
-
-        for (size_t y = 0; y < height; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                if (pixels(y, x) == nullptr)
-                {
-                    return false;
-                }
-            }
-        }
+        // Valid if dimensions are positive and the internal matrix matches
+        if (width == 0 || height == 0) return false;
+        if (pixels.getRows() != height || pixels.getCols() != width) return false;
         return true;
     }
 
-    const RGBA_Color *Image::getPixel(size_t x, size_t y) const {
+    const RGBA_Color Image::getPixel(size_t x, size_t y) const {
         if (x >= width || y >= height)
         {
             throw std::out_of_range("Color coordinates out of bounds");
@@ -234,8 +178,7 @@ namespace rendering
             throw std::out_of_range("Color coordinates out of bounds");
         }
 
-        delete pixels(y, x);
-        pixels(y, x) = new RGBA_Color(color);
+        pixels(y, x) = color;
     }
 
     void Image::fill(const RGBA_Color &fillColor) {
@@ -243,8 +186,7 @@ namespace rendering
         {
             for (size_t x = 0; x < width; ++x)
             {
-                delete pixels(y, x);
-                pixels(y, x) = new RGBA_Color(fillColor);
+                pixels(y, x) = fillColor;
             }
         }
     }
@@ -256,39 +198,25 @@ namespace rendering
     void Image::resize(size_t newWidth, size_t newHeight) {
         if (newWidth == 0 || newHeight == 0)
         {
-            throw std::invalid_argument("New dimensions must be positive");
+            throw std::invalid_argument("dimensions must be positive");
         }
-
-        // Determine the region to keep
+        // Determine region to keep
         size_t minWidth = std::min(width, newWidth);
         size_t minHeight = std::min(height, newHeight);
 
-        // Delete pixels outside the new bounds
-        for (size_t y = 0; y < height; ++y) {
-            for (size_t x = 0; x < width; ++x) {
-                if (y >= minHeight || x >= minWidth)
-                {
-                    delete pixels(y, x);
-                    pixels(y, x) = nullptr;
-                }
-            }
-        }
-
-        // Preserve old matrix shallow copy for values to copy
+        // Preserve old matrix
         math::Matrix<RGBA_Color> old = pixels;
 
-        // Allocate new pixel matrix
+        // Allocate new matrix
         pixels = math::Matrix<RGBA_Color>(newHeight, newWidth);
 
-        // Copy preserved pixels and initialize new ones
+        // Copy preserved pixels and initialize new ones to black
         for (size_t y = 0; y < newHeight; ++y) {
             for (size_t x = 0; x < newWidth; ++x) {
-                if (y < minHeight && x < minWidth && old(y, x) != nullptr) {
-                    pixels(y, x) = new RGBA_Color(*old(y, x));
-                    // Delete original to avoid double ownership
-                    delete old(y, x);
+                if (y < minHeight && x < minWidth) {
+                    pixels(y, x) = old(y, x);
                 } else {
-                    pixels(y, x) = new RGBA_Color(0.0, 0.0, 0.0, 1.0);
+                    pixels(y, x) = RGBA_Color(0.0, 0.0, 0.0, 1.0);
                 }
             }
         }
@@ -302,14 +230,7 @@ namespace rendering
         {
             for (size_t x = 0; x < width; ++x)
             {
-                if (pixels(y, x) != nullptr)
-                {
-                    RGBA_Color grayscale = pixels(y, x)->toGrayscale();
-                    delete pixels(y, x);
-                    pixels(y, x) = new RGBA_Color(grayscale);
-                }
-                else
-                    throw std::runtime_error("Cannot convert to grayscale: null color found");
+                pixels(y, x) = pixels(y, x).toGrayscale();
             }
         }
     }
@@ -319,17 +240,10 @@ namespace rendering
         {
             for (size_t x = 0; x < this->getWidth(); ++x)
             {
-                const RGBA_Color *color = this->getPixel(x, y);
-                if (color != nullptr)
-                {
-                    double gray = 0.299 * color->r() + 0.587 * color->g() + 0.114 * color->b();
-                    RGBA_Color bwColor = (gray >= threshold) ? RGBA_Color(1.0, 1.0, 1.0, color->a()) : RGBA_Color(0.0, 0.0, 0.0, color->a());
-                    this->setPixel(x, y, bwColor);
-                }
-                else
-                {
-                    throw std::runtime_error("Cannot convert to black and white: null color found");
-                }
+                const RGBA_Color color = getPixel(x, y);
+                double gray = 0.299 * color.r() + 0.587 * color.g() + 0.114 * color.b();
+                RGBA_Color bwColor = (gray >= threshold) ? RGBA_Color(1.0, 1.0, 1.0, color.a()) : RGBA_Color(0.0, 0.0, 0.0, color.a());
+                this->setPixel(x, y, bwColor);
             }
         }
     }
@@ -339,25 +253,20 @@ namespace rendering
         {
             for (size_t x = 0; x < width; ++x)
             {
-                if (pixels(y, x) != nullptr)
-                {
-                    pixels(y, x)->invert();
-                }
-                else
-                    throw std::runtime_error("Cannot invert colors: null color found");
+                pixels(y, x).invert();
             }
         }
     }
 
     void Image::toBitmapFile(const std::string &filename, const std::string &filePath) const {
         // BMP file format specifications
-    const int headerSize = 54;                              // BMP header size
-    const int bytesPerPixel = 4;                            // RGBA
-    int w_i = static_cast<int>(width);
-    int h_i = static_cast<int>(height);
-    const int rowSize = (w_i * bytesPerPixel + 3) & (~3); // Row size must be a multiple of 4
-    const int dataSize = rowSize * h_i;
-    const int fileSize = headerSize + dataSize;
+        const int headerSize = 54;                              // BMP header size
+        const int bytesPerPixel = 4;                            // RGBA (we'll write 32bpp)
+        int w_i = static_cast<int>(width);
+        int h_i = static_cast<int>(height);
+        const int rowSize = (w_i * bytesPerPixel + 3) & (~3); // Row size must be a multiple of 4
+        const int dataSize = rowSize * h_i;
+        const int fileSize = headerSize + dataSize;
 
         unsigned char header[headerSize] = {
             'B', 'M',             // Signature
@@ -378,21 +287,21 @@ namespace rendering
             0, 0, 0, 0            // Important colors (all)
         };
 
-        // Fill in file size
-        header[2] = (unsigned char)(fileSize);
-        header[3] = (unsigned char)(fileSize >> 8);
-        header[4] = (unsigned char)(fileSize >> 16);
-        header[5] = (unsigned char)(fileSize >> 24);
+        // Fill in file size (little endian)
+        header[2] = (unsigned char)(fileSize & 0xFF);
+        header[3] = (unsigned char)((fileSize >> 8) & 0xFF);
+        header[4] = (unsigned char)((fileSize >> 16) & 0xFF);
+        header[5] = (unsigned char)((fileSize >> 24) & 0xFF);
 
-    // Fill in width and height
-    header[18] = (unsigned char)(w_i);
-    header[19] = (unsigned char)(w_i >> 8);
-    header[20] = (unsigned char)(w_i >> 16);
-    header[21] = (unsigned char)(w_i >> 24);
-    header[22] = (unsigned char)(h_i);
-    header[23] = (unsigned char)(h_i >> 8);
-    header[24] = (unsigned char)(h_i >> 16);
-    header[25] = (unsigned char)(h_i >> 24);
+        // Fill in width and height (little endian)
+        header[18] = (unsigned char)(w_i & 0xFF);
+        header[19] = (unsigned char)((w_i >> 8) & 0xFF);
+        header[20] = (unsigned char)((w_i >> 16) & 0xFF);
+        header[21] = (unsigned char)((w_i >> 24) & 0xFF);
+        header[22] = (unsigned char)(h_i & 0xFF);
+        header[23] = (unsigned char)((h_i >> 8) & 0xFF);
+        header[24] = (unsigned char)((h_i >> 16) & 0xFF);
+        header[25] = (unsigned char)((h_i >> 24) & 0xFF);
 
         // Normalize filePath to ensure it ends with a directory separator
         std::string dirPathPrefix = filePath;
@@ -440,21 +349,11 @@ namespace rendering
             // Fill row data
             for (int x = 0; x < w_i; ++x)
             {
-                const RGBA_Color *color = pixels(static_cast<size_t>(y), static_cast<size_t>(x));
-                if (color != nullptr)
-                {
-                    rowData[x * 4 + 0] = (unsigned char)(color->b() * 255); // Blue
-                    rowData[x * 4 + 1] = (unsigned char)(color->g() * 255); // Green
-                    rowData[x * 4 + 2] = (unsigned char)(color->r() * 255); // Red
-                    rowData[x * 4 + 3] = (unsigned char)(color->a() * 255); // Alpha
-                }
-                else
-                {
-                    rowData[x * 4 + 0] = 0;   // Blue
-                    rowData[x * 4 + 1] = 0;   // Green
-                    rowData[x * 4 + 2] = 0;   // Red
-                    rowData[x * 4 + 3] = 255; // Alpha
-                }
+                const RGBA_Color color = pixels(static_cast<size_t>(y), static_cast<size_t>(x));
+                rowData[x * 4 + 0] = static_cast<unsigned char>(std::clamp(color.b() * 255.0, 0.0, 255.0)); // Blue
+                rowData[x * 4 + 1] = static_cast<unsigned char>(std::clamp(color.g() * 255.0, 0.0, 255.0)); // Green
+                rowData[x * 4 + 2] = static_cast<unsigned char>(std::clamp(color.r() * 255.0, 0.0, 255.0)); // Red
+                rowData[x * 4 + 3] = static_cast<unsigned char>(std::clamp(color.a() * 255.0, 0.0, 255.0)); // Alpha
             }
             // Pad row with zeros if necessary
             for (int p = w_i * 4; p < rowSize; ++p)

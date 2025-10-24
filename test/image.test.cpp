@@ -49,13 +49,12 @@ void testPixelOperations() {
     RGBA_Color red(1.0, 0.0, 0.0, 1.0);
     img.setPixel(5, 5, red);
     
-    const RGBA_Color* pixel = img.getPixel(5, 5);
-    assertEqual(pixel != nullptr, "Pixel retrieval non-null");
-    assertEqual(pixel->r() == 1.0, "Red component correct");
-    assertEqual(pixel->g() == 0.0, "Green component correct");
-    assertEqual(pixel->b() == 0.0, "Blue component correct");
-    assertEqual(pixel->a() == 1.0, "Alpha component correct");
-    
+    const RGBA_Color pixel = img.getPixel(5, 5);
+    assertEqual(pixel.r() == 1.0, "Red component correct");
+    assertEqual(pixel.g() == 0.0, "Green component correct");
+    assertEqual(pixel.b() == 0.0, "Blue component correct");
+    assertEqual(pixel.a() == 1.0, "Alpha component correct");
+
     // Test out of bounds
     try {
         img.setPixel(15, 15, red);
@@ -75,17 +74,17 @@ void testImageOperations() {
     RGBA_Color blue(0.0, 0.0, 1.0, 0.8);
     img.fill(blue);
     
-    const RGBA_Color* corner = img.getPixel(0, 0);
-    const RGBA_Color* center = img.getPixel(10, 10);
-    assertEqual(corner->b() == 1.0, "Fill operation corner");
-    assertEqual(center->b() == 1.0, "Fill operation center");
-    assertEqual(center->a() == 0.8, "Fill operation alpha");
+    const RGBA_Color corner = img.getPixel(0, 0);
+    const RGBA_Color center = img.getPixel(10, 10);
+    assertEqual(corner.b() == 1.0, "Fill operation corner");
+    assertEqual(center.b() == 1.0, "Fill operation center");
+    assertEqual(center.a() == 0.8, "Fill operation alpha");
     
     // Test clear
     img.clear();
-    const RGBA_Color* clearedPixel = img.getPixel(5, 5);
-    assertEqual(clearedPixel->r() == 0.0 && clearedPixel->g() == 0.0 && 
-                clearedPixel->b() == 0.0 && clearedPixel->a() == 1.0, "Clear operation");
+    const RGBA_Color clearedPixel = img.getPixel(5, 5);
+    assertEqual(clearedPixel.r() == 0.0 && clearedPixel.g() == 0.0 && 
+                clearedPixel.b() == 0.0 && clearedPixel.a() == 1.0, "Clear operation");
 }
 
 // Create test pattern for bitmap output
@@ -240,14 +239,14 @@ void testCopyOperations() {
     assertEqual(copied.getHeight() == original.getHeight(), "Copy height");
     
     // Verify pixels are the same
-    const RGBA_Color* origPixel = original.getPixel(10, 10);
-    const RGBA_Color* copyPixel = copied.getPixel(10, 10);
-    assertEqual(origPixel->r() == copyPixel->r(), "Copy pixel data");
-    
+    const RGBA_Color origPixel = original.getPixel(10, 10);
+    const RGBA_Color copyPixel = copied.getPixel(10, 10);
+    assertEqual(origPixel.r() == copyPixel.r(), "Copy pixel data");
+
     // Test that modifying copy doesn't affect original
     copied.setPixel(10, 10, RGBA_Color(1.0, 0.0, 1.0, 1.0));
-    const RGBA_Color* newOrigPixel = original.getPixel(10, 10);
-    assertEqual(origPixel->r() == newOrigPixel->r(), "Copy independence");
+    const RGBA_Color newOrigPixel = original.getPixel(10, 10);
+    assertEqual(origPixel.r() == newOrigPixel.r(), "Copy independence");
 }
 
 int main() {

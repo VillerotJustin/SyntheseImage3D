@@ -137,8 +137,7 @@ namespace rendering {
 
     template<typename T>
     void World::addObject(const Shape<T>& shape) {
-        ShapeVariant* shapeVariant = new ShapeVariant{shape};
-        objects.append(shapeVariant);
+        objects.append(ShapeVariant{shape});
     }
 
 }

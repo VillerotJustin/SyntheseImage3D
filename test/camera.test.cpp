@@ -120,19 +120,19 @@ public:
                 } else {
                     logFile << "    Color: None" << std::endl;
                 }
-            }, *shapes[i]);
+            }, shapes[i]);
         }
         logFile << std::endl;
 
         // Log lights
         logFile << "Lights (" << lights.size() << " total):" << std::endl;
         for (size_t i = 0; i < lights.size(); ++i) {
-            const Light* light = lights[i];
+            const Light light = lights[i];
             logFile << "  Light " << i + 1 << ":" << std::endl;
             logFile << "    Type: Point Light" << std::endl;
-            logFile << "    Position: " << light->getPosition() << std::endl;
-            logFile << "    Intensity: " << light->getIntensity() << std::endl;
-            logFile << "    Color: " << light->getColor() << std::endl;
+            logFile << "    Position: " << light.getPosition() << std::endl;
+            logFile << "    Intensity: " << light.getIntensity() << std::endl;
+            logFile << "    Color: " << light.getColor() << std::endl;
         }
         logFile << std::endl;
     }
@@ -231,6 +231,18 @@ int main() {
         std::cerr << "Test failed with unknown exception" << std::endl;
         return 1;
     }
+}
+
+bool has_non_black_pixel(Image image) {
+    for (size_t y = 0; y < image.getHeight(); ++y) {
+        for (size_t x = 0; x < image.getWidth(); ++x) {
+            const RGBA_Color pixel = image.getPixel(x, y);
+            if ((pixel.r() > 0 || pixel.g() > 0 || pixel.b() > 0)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void testCameraConstructor() {
@@ -380,15 +392,15 @@ void testCameraRenderScene2DColor() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(4, 4, 0), 2.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
-    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
-    std::visit([](auto& shape) { shape.setColor(RGBA_Color(1, 0, 0, 1)); }, *sphereVariant); // Red color
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
+    std::visit([](auto& shape) { shape.setColor(RGBA_Color(1, 0, 0, 1)); }, sphereVariant); // Red color
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 5, 10), 2.0, 2.0, 2.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
-    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
-    std::visit([](auto& shape) { shape.setColor(RGBA_Color(0, 1, 0, 1)); }, *boxVariant); // Green color
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
+    std::visit([](auto& shape) { shape.setColor(RGBA_Color(0, 1, 0, 1)); }, boxVariant); // Green color
     shapes.append(boxVariant);
     
     logger.logImageInfo(720, 720);
@@ -404,16 +416,7 @@ void testCameraRenderScene2DColor() {
     assert(colorImage2D.getWidth() == 720);
     assert(colorImage2D.getHeight() == 720);
 
-    // Check that some pixels have been rendered (not all default/black)
-    bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < colorImage2D.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < colorImage2D.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = colorImage2D.getPixel(x, y);
-            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
-                hasNonBlackPixels = true;
-            }
-        }
-    }
+    assert(has_non_black_pixel(colorImage2D));
 
     colorImage2D.toBitmapFile("test_render_output", "./test/test_by_product/camera/");
     
@@ -443,13 +446,13 @@ void testCameraRenderScene2DDepth() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(4, 4, 0), 3.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
-    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 5, 10), 2.0, 2.0, 2.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
-    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
     
     logger.logImageInfo(720, 720);
@@ -466,15 +469,7 @@ void testCameraRenderScene2DDepth() {
     assert(depthImage2D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < depthImage2D.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < depthImage2D.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = depthImage2D.getPixel(x, y);
-            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
-                hasNonBlackPixels = true;
-            }
-        }
-    }
+    assert(has_non_black_pixel(depthImage2D));
 
     depthImage2D.toBitmapFile("test_depth_output", "./test/test_by_product/camera/");
     
@@ -503,39 +498,39 @@ void testCameraRenderScene3DColor() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
-    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
-    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 
     // Add walls (Back top bottom right & left)
     Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
     Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
-    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    Camera::ShapeVariant backWallVariant = Camera::ShapeVariant{backWallShape};
     shapes.append(backWallVariant);
 
     Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
     Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
-    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    Camera::ShapeVariant leftWallVariant = Camera::ShapeVariant{leftWallShape};
     shapes.append(leftWallVariant);
 
     Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
     Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
-    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    Camera::ShapeVariant rightWallVariant = Camera::ShapeVariant{rightWallShape};
     shapes.append(rightWallVariant);
 
     Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
     Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
-    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    Camera::ShapeVariant topWallVariant = Camera::ShapeVariant{topWallShape};
     shapes.append(topWallVariant);
 
     Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
     Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
-    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    Camera::ShapeVariant bottomWallVariant = Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
     logger.logImageInfo(720, 720);
@@ -552,17 +547,7 @@ void testCameraRenderScene3DColor() {
     assert(colorImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < colorImage3D.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < colorImage3D.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = colorImage3D.getPixel(x, y);
-            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
-                hasNonBlackPixels = true;
-            }
-        }
-    }
-
-    assert(hasNonBlackPixels);
+    assert(has_non_black_pixel(colorImage3D));
 
     colorImage3D.toBitmapFile("test_3d_color_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render test completed - check output manually if needed" << std::endl;
@@ -605,39 +590,39 @@ void testCameraRenderScene3DDepth() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
-    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
-    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 
     // Add walls (Back top bottom right & left)
     Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
     Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
-    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    Camera::ShapeVariant backWallVariant = Camera::ShapeVariant{backWallShape};
     shapes.append(backWallVariant);
 
     Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
     Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
-    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    Camera::ShapeVariant leftWallVariant = Camera::ShapeVariant{leftWallShape};
     shapes.append(leftWallVariant);
 
     Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
     Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
-    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    Camera::ShapeVariant rightWallVariant = Camera::ShapeVariant{rightWallShape};
     shapes.append(rightWallVariant);
 
     Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
     Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
-    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    Camera::ShapeVariant topWallVariant = Camera::ShapeVariant{topWallShape};
     shapes.append(topWallVariant);
 
     Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
     Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
-    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    Camera::ShapeVariant bottomWallVariant = Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
     logger.logImageInfo(720, 720);
@@ -654,17 +639,7 @@ void testCameraRenderScene3DDepth() {
     assert(depthImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < depthImage3D.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < depthImage3D.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = depthImage3D.getPixel(x, y);
-            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
-                hasNonBlackPixels = true;
-            }
-        }
-    }
-
-    assert(hasNonBlackPixels);
+    assert(has_non_black_pixel(depthImage3D));
 
     depthImage3D.toBitmapFile("test_3d_depth_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render test completed - check output manually if needed" << std::endl;
@@ -708,11 +683,11 @@ void testCameraRenderScene3DLight() {
     Light light4(Vector3D(5, 5, 2), RGBA_Color(0.0, 1.0, 0.0, 1.0), 1.0);
     Light light5(Vector3D(5, -5, -2), RGBA_Color(0.0, 0.0, 1.0, 1.0), 1.0);
     math::Vector<Light> lights;
-    lights.append(&light1);
-    lights.append(&light2);
-    lights.append(&light3);
-    lights.append(&light4);
-    lights.append(&light5);
+    lights.append(light1);
+    lights.append(light2);
+    lights.append(light3);
+    lights.append(light4);
+    lights.append(light5);
 
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -720,46 +695,46 @@ void testCameraRenderScene3DLight() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
-    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
-    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 
     // Add transparent rectangle
     Vector3D rectTopLeft(-7, -7, -3);
     Rectangle transparentRect(rectTopLeft, rectTopLeft + Vector3D(5.0, 0, 0), rectTopLeft + Vector3D(0.0, 5.0, 0.0));
     Shape<::geometry::Rectangle> transparentRectShape(transparentRect, RGBA_Color(0.0, 0.0, 0.8, 0.3)); // Semi-transparent blue
-    Camera::ShapeVariant* transparentRectVariant = new Camera::ShapeVariant{transparentRectShape};
+    Camera::ShapeVariant transparentRectVariant = Camera::ShapeVariant{transparentRectShape};
     shapes.append(transparentRectVariant);
 
     // Add walls (Back top bottom right & left)
     Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
     Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
-    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    Camera::ShapeVariant backWallVariant = Camera::ShapeVariant{backWallShape};
     shapes.append(backWallVariant);
 
     Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
     Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
-    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    Camera::ShapeVariant leftWallVariant = Camera::ShapeVariant{leftWallShape};
     shapes.append(leftWallVariant);
 
     Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
     Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
-    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    Camera::ShapeVariant rightWallVariant = Camera::ShapeVariant{rightWallShape};
     shapes.append(rightWallVariant);
 
     Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
     Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
-    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    Camera::ShapeVariant topWallVariant = Camera::ShapeVariant{topWallShape};
     shapes.append(topWallVariant);
 
     Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
     Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
-    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    Camera::ShapeVariant bottomWallVariant = Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
     // Log scene configuration
@@ -767,43 +742,33 @@ void testCameraRenderScene3DLight() {
     
     logger.logImageInfo(720, 720);
     // Render with default FOV
-    Image depthImage = camera.renderScene3DLight(720, 720, shapes, lights);
+    Image lightImage3D = camera.renderScene3DLight(720, 720, shapes, lights);
     logger.logRenderTime();
     
     // Basic checks on the rendered image
-    assert(depthImage.getWidth() == 720);
-    assert(depthImage.getHeight() == 720);
+    assert(lightImage3D.getWidth() == 720);
+    assert(lightImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < depthImage.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < depthImage.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = depthImage.getPixel(x, y);
-            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
-                hasNonBlackPixels = true;
-            }
-        }
-    }
+    assert(has_non_black_pixel(lightImage3D));
 
-    assert(hasNonBlackPixels);
-
-    depthImage.toBitmapFile("test_3d_light_output", "./test/test_by_product/camera/");
+    lightImage3D.toBitmapFile("test_3d_light_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
     camera.setFOVAngle(120.0f);
     logger.logCameraSettings(camera, origin); // Wider FOV
-    depthImage = camera.renderScene3DLight(720, 720, shapes, lights);
+    lightImage3D = camera.renderScene3DLight(720, 720, shapes, lights);
     logger.logRenderTime();
-    depthImage.toBitmapFile("test_3d_light_wide_fov_output", "./test/test_by_product/camera/");
+    lightImage3D.toBitmapFile("test_3d_light_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
     camera.setFOVAngle(30.0f);
     logger.logCameraSettings(camera, origin); // Narrower FOV
-    depthImage = camera.renderScene3DLight(720, 720, shapes, lights);
+    lightImage3D = camera.renderScene3DLight(720, 720, shapes, lights);
     logger.logRenderTime();
-    depthImage.toBitmapFile("test_3d_light_narrow_fov_output", "./test/test_by_product/camera/");
+    lightImage3D.toBitmapFile("test_3d_light_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
@@ -829,11 +794,11 @@ void testCameraRenderScene3DLightAntiAliasing() {
     Light light4(Vector3D(5, 5, 2), RGBA_Color(0.0, 1.0, 0.0, 1.0), 1.0);
     Light light5(Vector3D(5, -5, -2), RGBA_Color(0.0, 0.0, 1.0, 1.0), 1.0);
     math::Vector<Light> lights;
-    lights.append(&light1);
-    lights.append(&light2);
-    lights.append(&light3);
-    lights.append(&light4);
-    lights.append(&light5);
+    lights.append(light1);
+    lights.append(light2);
+    lights.append(light3);
+    lights.append(light4);
+    lights.append(light5);
 
     // Create some shapes to render
     math::Vector<Camera::ShapeVariant> shapes;
@@ -841,46 +806,46 @@ void testCameraRenderScene3DLightAntiAliasing() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
-    Camera::ShapeVariant* sphereVariant = new Camera::ShapeVariant{sphereShape};
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
-    Camera::ShapeVariant* boxVariant = new Camera::ShapeVariant{boxShape};
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 
     // Add transparent rectangle
     Vector3D rectTopLeft(-7, -7, -3);
     Rectangle transparentRect(rectTopLeft, rectTopLeft + Vector3D(5.0, 0, 0), rectTopLeft + Vector3D(0.0, 5.0, 0.0));
     Shape<::geometry::Rectangle> transparentRectShape(transparentRect, RGBA_Color(0.0, 0.0, 0.8, 0.3)); // Semi-transparent blue
-    Camera::ShapeVariant* transparentRectVariant = new Camera::ShapeVariant{transparentRectShape};
+    Camera::ShapeVariant transparentRectVariant = Camera::ShapeVariant{transparentRectShape};
     shapes.append(transparentRectVariant);
 
     // Add walls (Back top bottom right & left)
     Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
     Shape<::geometry::Plane> backWallShape(backWall, RGBA_Color(0.8, 0.2, 0.8, 1.0)); // Magenta wall
-    Camera::ShapeVariant* backWallVariant = new Camera::ShapeVariant{backWallShape};
+    Camera::ShapeVariant backWallVariant = Camera::ShapeVariant{backWallShape};
     shapes.append(backWallVariant);
 
     Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
     Shape<::geometry::Plane> leftWallShape(leftWall, RGBA_Color(0.2, 0.8, 0.8, 1.0)); // Cyan wall
-    Camera::ShapeVariant* leftWallVariant = new Camera::ShapeVariant{leftWallShape};
+    Camera::ShapeVariant leftWallVariant = Camera::ShapeVariant{leftWallShape};
     shapes.append(leftWallVariant);
 
     Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
     Shape<::geometry::Plane> rightWallShape(rightWall, RGBA_Color(0.8, 0.8, 0.2, 1.0)); // Yellow wall
-    Camera::ShapeVariant* rightWallVariant = new Camera::ShapeVariant{rightWallShape};
+    Camera::ShapeVariant rightWallVariant = Camera::ShapeVariant{rightWallShape};
     shapes.append(rightWallVariant);
 
     Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
     Shape<::geometry::Plane> topWallShape(topWall, RGBA_Color(0.8, 0.8, 0.8, 1.0)); // Gray wall
-    Camera::ShapeVariant* topWallVariant = new Camera::ShapeVariant{topWallShape};
+    Camera::ShapeVariant topWallVariant = Camera::ShapeVariant{topWallShape};
     shapes.append(topWallVariant);
 
     Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
     Shape<::geometry::Plane> bottomWallShape(bottomWall, RGBA_Color(0.2, 0.2, 0.8, 1.0)); // Blue wall
-    Camera::ShapeVariant* bottomWallVariant = new Camera::ShapeVariant{bottomWallShape};
+    Camera::ShapeVariant bottomWallVariant = Camera::ShapeVariant{bottomWallShape};
     shapes.append(bottomWallVariant);
 
     logger.logImageInfo(720, 720);
@@ -896,17 +861,7 @@ void testCameraRenderScene3DLightAntiAliasing() {
     assert(AntiAliasingImage.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    bool hasNonBlackPixels = false;
-    for (size_t y = 0; y < AntiAliasingImage.getHeight() && !hasNonBlackPixels; ++y) {
-        for (size_t x = 0; x < AntiAliasingImage.getWidth() && !hasNonBlackPixels; ++x) {
-            const RGBA_Color* pixel = AntiAliasingImage.getPixel(x, y);
-            if (pixel && (pixel->r() > 0 || pixel->g() > 0 || pixel->b() > 0)) {
-                hasNonBlackPixels = true;
-            }
-        }
-    }
-
-    assert(hasNonBlackPixels);
+    assert(has_non_black_pixel(AntiAliasingImage));
 
     AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light with anti-aliasing render test completed - check output manually if needed" << std::endl;
