@@ -21,6 +21,7 @@ namespace math {
         #pragma region Constructors_Destructors
         
         Matrix(size_t rows, size_t cols);
+        Matrix(size_t rows, size_t cols, const T& initialValue);
         Matrix(const T* const* a, size_t rows, size_t cols);
         ~Matrix();
 
@@ -104,6 +105,19 @@ namespace math {
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
                 p[i][j] = T{};
+            }
+        }
+    }
+
+    /**
+     * @brief Constructor to create a matrix with given rows, columns, and initial value.
+     */
+    template<typename T>
+    Matrix<T>::Matrix(size_t rows, size_t cols, const T& initialValue) : rows_(rows), cols_(cols) {
+        allocSpace();
+        for (size_t i = 0; i < rows_; ++i) {
+            for (size_t j = 0; j < cols_; ++j) {
+                p[i][j] = initialValue;
             }
         }
     }

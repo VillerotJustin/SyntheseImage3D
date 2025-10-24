@@ -136,6 +136,15 @@ namespace rendering {
         Vector3D getFOVOrigin() const;
 
         /**
+         * Generate a ray using a point on the viewport and the normal vector
+         * @param pointOnViewport A point on the viewport rectangle
+         * @return Ray The generated ray from the camera through the point
+         */
+        Ray generateRay(const Vector3D& pointOnViewport) const;
+
+        Ray generateRayForPixel(size_t pixelX, size_t pixelY, size_t imageWidth, size_t imageHeight, bool is3D) const;
+
+        /**
          * Render the scene from the camera's perspective
          * @tparam T The geometry type of the shapes to render
          * @param imageWidth The width of the output image in pixels
@@ -188,12 +197,6 @@ namespace rendering {
 
         Image renderScene3DLightAntiAliasing(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel = 8) const;
 
-        /**
-         * Generate a ray using a point on the viewport and the normal vector
-         * @param pointOnViewport A point on the viewport rectangle
-         * @return Ray The generated ray from the camera through the point
-         */
-        Ray generateRay(const Vector3D& pointOnViewport) const;
     private:
         Rectangle viewport;
         double FOV_Angle = 65.0f; // Field of View angle degrees

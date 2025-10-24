@@ -418,7 +418,7 @@ void testCameraRenderScene2DColor() {
 
     assert(has_non_black_pixel(colorImage2D));
 
-    colorImage2D.toBitmapFile("test_render_output", "./test/test_by_product/camera/");
+    colorImage2D.toPngFile("test_render_output", "./test/test_by_product/camera/");
     
     // We expect some pixels to be rendered since we have shapes in the scene
     // Note: This test might be flaky depending on the exact rendering logic
@@ -471,7 +471,7 @@ void testCameraRenderScene2DDepth() {
     // Check that some pixels have depth values (not all default/black)
     assert(has_non_black_pixel(depthImage2D));
 
-    depthImage2D.toBitmapFile("test_depth_output", "./test/test_by_product/camera/");
+    depthImage2D.toPngFile("test_depth_output", "./test/test_by_product/camera/");
     
     // We expect some pixels to have depth values since we have shapes in the scene
     std::cout << "Note: Depth render test completed - check output manually if needed" << std::endl;
@@ -549,7 +549,7 @@ void testCameraRenderScene3DColor() {
     // Check that some pixels have depth values (not all default/black)
     assert(has_non_black_pixel(colorImage3D));
 
-    colorImage3D.toBitmapFile("test_3d_color_output", "./test/test_by_product/camera/");
+    colorImage3D.toPngFile("test_3d_color_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
@@ -557,7 +557,7 @@ void testCameraRenderScene3DColor() {
     logger.logCameraSettings(camera, origin); // Wider FOV
     colorImage3D = camera.renderScene3DColor(720, 720, shapes);
     logger.logRenderTime();
-    colorImage3D.toBitmapFile("test_3d_color_wide_fov_output", "./test/test_by_product/camera/");
+    colorImage3D.toPngFile("test_3d_color_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
@@ -565,7 +565,7 @@ void testCameraRenderScene3DColor() {
     logger.logCameraSettings(camera, origin); // Narrower FOV
     colorImage3D = camera.renderScene3DColor(720, 720, shapes);
     logger.logRenderTime();
-    colorImage3D.toBitmapFile("test_3d_color_narrow_fov_output", "./test/test_by_product/camera/");
+    colorImage3D.toPngFile("test_3d_color_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
@@ -641,7 +641,7 @@ void testCameraRenderScene3DDepth() {
     // Check that some pixels have depth values (not all default/black)
     assert(has_non_black_pixel(depthImage3D));
 
-    depthImage3D.toBitmapFile("test_3d_depth_output", "./test/test_by_product/camera/");
+    depthImage3D.toPngFile("test_3d_depth_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
@@ -649,7 +649,7 @@ void testCameraRenderScene3DDepth() {
     logger.logCameraSettings(camera, origin); // Wider FOV
     depthImage3D = camera.renderScene3DDepth(720, 720, shapes);
     logger.logRenderTime();
-    depthImage3D.toBitmapFile("test_3d_depth_wide_fov_output", "./test/test_by_product/camera/");
+    depthImage3D.toPngFile("test_3d_depth_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
@@ -657,7 +657,7 @@ void testCameraRenderScene3DDepth() {
     logger.logCameraSettings(camera, origin); // Narrower FOV
     depthImage3D = camera.renderScene3DDepth(720, 720, shapes);
     logger.logRenderTime();
-    depthImage3D.toBitmapFile("test_3d_depth_narrow_fov_output", "./test/test_by_product/camera/");
+    depthImage3D.toPngFile("test_3d_depth_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
@@ -752,7 +752,7 @@ void testCameraRenderScene3DLight() {
     // Check that some pixels have depth values (not all default/black)
     assert(has_non_black_pixel(lightImage3D));
 
-    lightImage3D.toBitmapFile("test_3d_light_output", "./test/test_by_product/camera/");
+    lightImage3D.toPngFile("test_3d_light_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
@@ -760,7 +760,7 @@ void testCameraRenderScene3DLight() {
     logger.logCameraSettings(camera, origin); // Wider FOV
     lightImage3D = camera.renderScene3DLight(720, 720, shapes, lights);
     logger.logRenderTime();
-    lightImage3D.toBitmapFile("test_3d_light_wide_fov_output", "./test/test_by_product/camera/");
+    lightImage3D.toPngFile("test_3d_light_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
@@ -768,7 +768,7 @@ void testCameraRenderScene3DLight() {
     logger.logCameraSettings(camera, origin); // Narrower FOV
     lightImage3D = camera.renderScene3DLight(720, 720, shapes, lights);
     logger.logRenderTime();
-    lightImage3D.toBitmapFile("test_3d_light_narrow_fov_output", "./test/test_by_product/camera/");
+    lightImage3D.toPngFile("test_3d_light_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
@@ -863,7 +863,7 @@ void testCameraRenderScene3DLightAntiAliasing() {
     // Check that some pixels have depth values (not all default/black)
     assert(has_non_black_pixel(AntiAliasingImage));
 
-    AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_output", "./test/test_by_product/camera/");
+    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light with anti-aliasing render test completed - check output manually if needed" << std::endl;
 
     // Test with bigger FOV
@@ -871,7 +871,7 @@ void testCameraRenderScene3DLightAntiAliasing() {
     logger.logCameraSettings(camera, origin); // Wider FOV
     AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
     logger.logRenderTime();
-    AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_wide_fov_output", "./test/test_by_product/camera/");
+    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_wide_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light with anti-aliasing render with wide FOV test completed - check output manually if needed" << std::endl;
 
     // Test with smaller FOV
@@ -879,6 +879,6 @@ void testCameraRenderScene3DLightAntiAliasing() {
     logger.logCameraSettings(camera, origin); // Narrower FOV
     AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
     logger.logRenderTime();
-    AntiAliasingImage.toBitmapFile("test_3d_light_anti_aliasing_narrow_fov_output", "./test/test_by_product/camera/");
+    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_narrow_fov_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light with anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
