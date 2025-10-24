@@ -1,5 +1,5 @@
 === Render Test: scene2D_depth ===
-Start time: 2025-10-24 00:19:45
+Start time: 2025-10-24 09:31:05
 
 Camera Configuration:
 --------------------
@@ -29,7 +29,7 @@ Shapes (2 total):
 
 Lights (0 total):
 
-Render Time: 363 ms
+Render Time: 191 ms
 
 -------------
 

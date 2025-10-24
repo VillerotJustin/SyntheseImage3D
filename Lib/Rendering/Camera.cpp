@@ -709,7 +709,9 @@ namespace rendering {
 
         Image Image3D_antiAliased(antiAlias_imageWidth, antiAlias_imageHeight);
 
+        #pragma omp parallel_for dynamic
         for (size_t y = 0; y < antiAlias_imageHeight; ++y) {
+            #pragma omp parallel_for dynamic
             for (size_t x = 0; x < antiAlias_imageWidth; ++x) {
                 double u = (static_cast<double>(x)) / static_cast<double>(antiAlias_imageWidth);
                 double v = (static_cast<double>(y)) / static_cast<double>(antiAlias_imageHeight);
@@ -844,9 +846,12 @@ namespace rendering {
         }
 
         // Downsample anti-aliased image to final image
+        #pragma omp parallel_for dynamic
         for (size_t y = 0; y < imageHeight; ++y) {
+            #pragma omp parallel_for dynamic
             for (size_t x = 0; x < imageWidth; ++x) {
                 double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
+                
                 for (size_t ay = 0; ay < samplesPerPixel / 2; ++ay) {
                     for (size_t ax = 0; ax < samplesPerPixel / 2; ++ax) {
                         size_t sampleX = x * (samplesPerPixel / 2) + ax;
