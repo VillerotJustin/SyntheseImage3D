@@ -1,5 +1,5 @@
 === Render Test: scene3D_color ===
-Start time: 2025-10-25 02:01:16
+Start time: 2025-10-25 03:01:32
 
 Camera Configuration:
 --------------------
@@ -54,7 +54,7 @@ Shapes (7 total):
 
 Lights (0 total):
 
-Render Time: 86 ms
+Render Time: 31 ms
 
 -------------
 
@@ -64,7 +64,7 @@ Origin: [-10.000, -10.000, -5.000]
 Direction: [0.000, 0.000, 1.000]
 Field of View: 120.000
 
-Render Time: 253 ms
+Render Time: 139 ms
 
 -------------
 
@@ -74,7 +74,7 @@ Origin: [-10.000, -10.000, -5.000]
 Direction: [0.000, 0.000, 1.000]
 Field of View: 30.000
 
-Render Time: 408 ms
+Render Time: 240 ms
 
 -------------
 

@@ -6,7 +6,7 @@
 set -euo pipefail
 
 CXX=${CXX:-g++}
-CXXFLAGS="-std=c++17 -Wall -Wextra -g -fdiagnostics-color=always"
+CXXFLAGS="-fopenmp -std=c++17 -O3 -Wall -Wextra -g -fdiagnostics-color=always"
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MAIN_SRC="$PROJECT_ROOT/src/main.cpp"
 EXECUTABLE="$PROJECT_ROOT/main"

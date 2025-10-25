@@ -5,6 +5,8 @@
 #include "Camera.h"
 #include "../Math/Matrix.hpp"
 #include "../Math/Vector.hpp"
+
+#include <omp.h>
 #include <limits>
 #include <cmath>
 #include <algorithm>
@@ -190,7 +192,8 @@ namespace rendering {
 
         const double exposure = 0.5;  // Adjustable exposure control
         const double gamma = 2.2;     // Standard gamma correction value
-    
+        
+        #pragma omp parallel for collapse(2) schedule(dynamic)
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
@@ -249,6 +252,7 @@ namespace rendering {
         }
 
         // For each pixel in the image, generate a ray through the corresponding point on the viewport
+        #pragma omp parallel for collapse(2) schedule(dynamic)
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, false);
@@ -280,6 +284,7 @@ namespace rendering {
         // Apply depth-based shading
         double max_depth = -1.0;
 
+        #pragma omp parallel for collapse(2) schedule(dynamic)
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, false);
@@ -320,6 +325,7 @@ namespace rendering {
             return Image3D; // Return empty image if no shapes
         }
 
+        #pragma omp parallel for collapse(2) schedule(dynamic)
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, true);
@@ -360,6 +366,7 @@ namespace rendering {
         // Apply depth-based shading
         double max_depth = -1.0;
 
+        #pragma omp parallel for collapse(2) schedule(dynamic)
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, true);
@@ -394,6 +401,7 @@ namespace rendering {
             return Image3D; // Return empty image if no shapes or lights
         }
 
+        #pragma omp parallel for collapse(2) schedule(dynamic)
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, true);
@@ -402,6 +410,7 @@ namespace rendering {
                 struct Hit { double t; size_t idx; };
                 math::Vector<Hit> hits;
 
+                #pragma omp parallel for schedule(dynamic)
                 for (size_t i = 0; i < shapes.size(); ++i) {
                     std::visit([&](auto&& shape) {
                         if (shape.getGeometry()) {
@@ -439,6 +448,7 @@ namespace rendering {
 
                             RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
 
+                            #pragma omp parallel for schedule(dynamic)
                             for (const Light &light : lights) {
                                 Vector3D hitToLight = (light.getPosition() - hitPoint);
                                 double distanceToLight = hitToLight.length();
@@ -449,24 +459,24 @@ namespace rendering {
 
                                 double transmission = 1.0;
 
+                                #pragma omp parallel for schedule(dynamic)
                                 for (size_t j = 0; j < shapes.size(); ++j) {
-                                    if (i == j) continue;
-                                    std::visit([&](auto&& otherShape) {
-                                        if (otherShape.getGeometry()) {
-                                            auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
-                                            if (shadowDist && *shadowDist < distanceToLight) {
-                                                const RGBA_Color* occColor = otherShape.getColor();
-                                                double occAlpha = occColor ? occColor->a() : 1.0;
-                                                if (occAlpha >= 1.0 - 1e-12) {
-                                                    transmission = 0.0;
-                                                } else {
-                                                    transmission *= (1.0 - occAlpha);
+                                    if (i != j && transmission > 1e-12) {
+                                        std::visit([&](auto&& otherShape) {
+                                            if (otherShape.getGeometry()) {
+                                                auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
+                                                if (shadowDist && *shadowDist < distanceToLight) {
+                                                    const RGBA_Color* occColor = otherShape.getColor();
+                                                    double occAlpha = occColor ? occColor->a() : 1.0;
+                                                    if (occAlpha >= 1.0 - 1e-12) {
+                                                        transmission = 0.0;
+                                                    } else {
+                                                        transmission *= (1.0 - occAlpha);
+                                                    }
                                                 }
                                             }
-                                        }
-                                    }, shapes[j]);
-
-                                    if (transmission <= 1e-12) break;
+                                        }, shapes[j]);
+                                    }
                                 }
 
                                 if (transmission > 1e-12) {

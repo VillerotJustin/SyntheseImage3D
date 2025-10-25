@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 TEST_DIR="test"
 EXECUTABLE_DIR="$TEST_DIR/Executables"
 CXX_COMPILER="g++"
-CXX_FLAGS="-std=c++17 -Wall -Wextra -g -fdiagnostics-color=always -O3"
+CXX_FLAGS="-fopenmp -std=c++17 -Wall -Wextra -g -fdiagnostics-color=always -O3"
 DEBUG_MODE=false
 
 # Check for debug flag
