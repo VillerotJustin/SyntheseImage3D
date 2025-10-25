@@ -863,10 +863,10 @@ void testCameraRenderScene3DLight_AA() {
     assert(has_non_black_pixel(AntiAliasingImage));
 
     AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_control", "./test/test_by_product/camera/");
+    logger.logRenderTime();
     std::cout << "Note: 3D Light with NO anti-aliasing render test completed - check output manually if needed" << std::endl;
 
     // Test with SSAA
-    logger.logCameraSettings(camera, origin);
     AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::SSAA);
     logger.logRenderTime();
     AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_ssaa", "./test/test_by_product/camera/");
@@ -874,7 +874,6 @@ void testCameraRenderScene3DLight_AA() {
 
     try {
         // Test with MSAA
-        logger.logCameraSettings(camera, origin);
         AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::MSAA);
         logger.logRenderTime();
         AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_msaa", "./test/test_by_product/camera/");
@@ -885,7 +884,6 @@ void testCameraRenderScene3DLight_AA() {
 
     try {
         // Test with FXAA
-        logger.logCameraSettings(camera, origin);
         AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::FXAA);
         logger.logRenderTime();
         AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_fxaa", "./test/test_by_product/camera/");
