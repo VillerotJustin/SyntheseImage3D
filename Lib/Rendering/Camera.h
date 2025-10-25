@@ -195,7 +195,15 @@ namespace rendering {
          */
         Image renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
 
-        Image renderScene3DLightAntiAliasing(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel = 8) const;
+        // Enum for anti-aliasing methods
+        enum class AntiAliasingMethod {
+            NONE,
+            SSAA,
+            MSAA,
+            FXAA
+        };
+
+        Image renderScene3DLight_AA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel = 8, AntiAliasingMethod method = AntiAliasingMethod::NONE) const;
 
     private:
         Rectangle viewport;

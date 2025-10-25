@@ -183,11 +183,14 @@ namespace rendering {
         }
     }
 
-    Image AADownScaling(Image& image_in, size_t samplesPerPixel) {
+    Image SSAADownScaling(Image& image_in, size_t samplesPerPixel) {
         size_t imageWidth = image_in.getWidth() / (samplesPerPixel / 2);
         size_t imageHeight = image_in.getHeight() / (samplesPerPixel / 2);
         Image image_out(imageWidth, imageHeight);
 
+        const double exposure = 0.5;  // Adjustable exposure control
+        const double gamma = 2.2;     // Standard gamma correction value
+    
         for (size_t y = 0; y < imageHeight; ++y) {
             for (size_t x = 0; x < imageWidth; ++x) {
                 double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
@@ -197,17 +200,38 @@ namespace rendering {
                         size_t sampleX = x * (samplesPerPixel / 2) + ax;
                         size_t sampleY = y * (samplesPerPixel / 2) + ay;
                         RGBA_Color sampleColor = image_in.getPixel(sampleX, sampleY);
-                        accR += sampleColor.r();
-                        accG += sampleColor.g();
-                        accB += sampleColor.b();
+
+                        // Convert from sRGB to linear space
+                        double r = std::pow(sampleColor.r(), gamma);
+                        double g = std::pow(sampleColor.g(), gamma);
+                        double b = std::pow(sampleColor.b(), gamma);
+
+                        accR += r;
+                        accG += g;
+                        accB += b;
                         accA += sampleColor.a();
                     }
                 }
-
-                // TODO fix light bleeding (overexposure) by using a better tonemapping operator
-
                 double numSamples = static_cast<double>(samplesPerPixel);
-                RGBA_Color finalColor(accR / numSamples, accG / numSamples, accB / numSamples, accA / numSamples);
+
+                // Average in Linear space
+                double avgR = accR / numSamples;
+                double avgG = accG / numSamples;
+                double avgB = accB / numSamples;
+                double avgA = accA / numSamples;
+
+                // Apply exposure adjustment
+                avgR = 1.0 - std::exp(-avgR * exposure);
+                avgG = 1.0 - std::exp(-avgG * exposure);
+                avgB = 1.0 - std::exp(-avgB * exposure);
+
+
+                // Convert back to sRGB space
+                double finalR = std::pow(avgR, 1.0 / gamma);
+                double finalG = std::pow(avgG, 1.0 / gamma);
+                double finalB = std::pow(avgB, 1.0 / gamma);
+
+                RGBA_Color finalColor(finalR, finalG, finalB, avgA);
                 image_out.setPixel(x, y, finalColor.clamp());
             }
         }
@@ -502,7 +526,7 @@ namespace rendering {
         return Image3D;
     }
 
-    Image Camera::renderScene3DLightAntiAliasing(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const {
+    Image Camera::renderScene3DLight_AA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel, AntiAliasingMethod method) const {
         if (samplesPerPixel == 0 || samplesPerPixel % 4 != 0) {
             throw std::invalid_argument("samplesPerPixel must be a multiple of 4 not zero");
         }
@@ -513,13 +537,33 @@ namespace rendering {
             return Image3D; // Return empty image if no shapes or lights
         }
 
-        size_t antiAlias_imageHeight = imageHeight * samplesPerPixel / 2;
-        size_t antiAlias_imageWidth = imageWidth * samplesPerPixel / 2;
+        switch (method)
+        {
+            case AntiAliasingMethod::NONE: {
+                return renderScene3DLight(imageWidth, imageHeight, shapes, lights);
+            }
+            case AntiAliasingMethod::MSAA: {
+                // Multi-Sample Anti-Aliasing
+                throw std::invalid_argument("MSAA not implemented yet");
+            }
+            case AntiAliasingMethod::SSAA: {
+                // Super-Sample Anti-Aliasing
+                size_t antiAlias_imageHeight = imageHeight * samplesPerPixel / 2;
+                size_t antiAlias_imageWidth = imageWidth * samplesPerPixel / 2;
 
-        Image Image3D_antiAliased = renderScene3DLight(antiAlias_imageWidth, antiAlias_imageHeight, shapes, lights);
-        
-        // Downsample anti-aliased image to final image
-        return AADownScaling(Image3D_antiAliased, samplesPerPixel);
+                Image Image3D_antiAliased = renderScene3DLight(antiAlias_imageWidth, antiAlias_imageHeight, shapes, lights);
+                
+                // Downsample anti-aliased image to final image
+                return SSAADownScaling(Image3D_antiAliased, samplesPerPixel);
+            }
+            case AntiAliasingMethod::FXAA: {
+                // Fast Approximate Anti-Aliasing
+                throw std::invalid_argument("FXAA not implemented yet");
+            }
+            default: {
+                throw std::invalid_argument("Unknown AntiAliasingMethod");
+            }
+        }
     }
 
 }

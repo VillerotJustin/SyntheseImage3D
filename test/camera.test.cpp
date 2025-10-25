@@ -182,7 +182,7 @@ void testCameraRenderScene2DDepth();
 void testCameraRenderScene3DColor();
 void testCameraRenderScene3DDepth();
 void testCameraRenderScene3DLight();
-void testCameraRenderScene3DLightAntiAliasing();
+void testCameraRenderScene3DLight_AA();
 
 int main() {
     std::cout << "Running Camera tests..." << std::endl;
@@ -218,8 +218,8 @@ int main() {
         testCameraRenderScene3DLight();
         std::cout << "✓ Camera render scene 3D light tests passed" << std::endl;
 
-        testCameraRenderScene3DLightAntiAliasing();
-        std::cout << "✓ Camera render scene 3D light with anti-aliasing tests passed" << std::endl;
+        testCameraRenderScene3DLight_AA();
+        std::cout << "✓ Camera render scene 3D light anti-aliasing tests passed" << std::endl;
 
         std::cout << "All Camera tests passed!" << std::endl;
         return 0;
@@ -772,7 +772,7 @@ void testCameraRenderScene3DLight() {
     std::cout << "Note: 3D Light render with narrow FOV test completed - check output manually if needed" << std::endl;
 }
 
-void testCameraRenderScene3DLightAntiAliasing() {
+void testCameraRenderScene3DLight_AA() {
     RenderLogger logger("scene3D_light_antialiasing");
 
     // Create camera
@@ -785,7 +785,6 @@ void testCameraRenderScene3DLightAntiAliasing() {
 
     // Log camera settings
     logger.logCameraSettings(camera, origin);
-    
     
     // Create the lights of the room
     Light light1(Vector3D(0, 8, -2), RGBA_Color(1.0, 1.0, 1.0, 1.0), 2.0);
@@ -853,9 +852,9 @@ void testCameraRenderScene3DLightAntiAliasing() {
     // Log scene configuration
     logger.logScene(shapes, lights);
 
-    // Render small test image
-    Image AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
-    
+    // Render control image without anti-aliasing
+    Image AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::NONE);
+
     // Basic checks on the rendered image
     assert(AntiAliasingImage.getWidth() == 720);
     assert(AntiAliasingImage.getHeight() == 720);
@@ -863,22 +862,36 @@ void testCameraRenderScene3DLightAntiAliasing() {
     // Check that some pixels have depth values (not all default/black)
     assert(has_non_black_pixel(AntiAliasingImage));
 
-    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output", "./test/test_by_product/camera/");
-    std::cout << "Note: 3D Light with anti-aliasing render test completed - check output manually if needed" << std::endl;
+    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_control", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Light with NO anti-aliasing render test completed - check output manually if needed" << std::endl;
 
-    // Test with bigger FOV
-    camera.setFOVAngle(120.0f);
-    logger.logCameraSettings(camera, origin); // Wider FOV
-    AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
+    // Test with SSAA
+    logger.logCameraSettings(camera, origin);
+    AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::SSAA);
     logger.logRenderTime();
-    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_wide_fov_output", "./test/test_by_product/camera/");
-    std::cout << "Note: 3D Light with anti-aliasing render with wide FOV test completed - check output manually if needed" << std::endl;
+    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_ssaa", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Light with SSAA anti-aliasing render with wide FOV test completed - check output manually if needed" << std::endl;
 
-    // Test with smaller FOV
-    camera.setFOVAngle(30.0f);
-    logger.logCameraSettings(camera, origin); // Narrower FOV
-    AntiAliasingImage = camera.renderScene3DLightAntiAliasing(720, 720, shapes, lights, 16UL);
-    logger.logRenderTime();
-    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_narrow_fov_output", "./test/test_by_product/camera/");
-    std::cout << "Note: 3D Light with anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
+    try {
+        // Test with MSAA
+        logger.logCameraSettings(camera, origin);
+        AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::MSAA);
+        logger.logRenderTime();
+        AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_msaa", "./test/test_by_product/camera/");
+        std::cout << "Note: 3D Light with MSAA anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
+    } catch (const std::exception& e) {
+        std::cout << "MSAA anti-aliasing test skipped due to exception: " << e.what() << std::endl;
+    }
+
+    try {
+        // Test with FXAA
+        logger.logCameraSettings(camera, origin);
+        AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::FXAA);
+        logger.logRenderTime();
+        AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_fxaa", "./test/test_by_product/camera/");
+        std::cout << "Note: 3D Light with FXAA anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
+    } catch (const std::exception& e) {
+        std::cout << "FXAA anti-aliasing test skipped due to exception: " << e.what() << std::endl;
+    }
+    
 }

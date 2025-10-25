@@ -81,7 +81,7 @@ namespace rendering
         
         // Read pixel data using ImageMagick convert command
         // Convert to RGBA text format for easy parsing
-        std::string convertCmd = "convert \"" + fullPath + "\" -depth 8 txt:- 2> /dev/null";
+        std::string convertCmd = "magick \"" + fullPath + "\" -depth 8 txt:- 2> /dev/null";
         FILE *convertPipe = popen(convertCmd.c_str(), "r");
         if (!convertPipe) {
             throw std::runtime_error("Failed to open pipe for image conversion");
@@ -388,7 +388,7 @@ namespace rendering
         toBitmapFile(filename + ".tmp", filePath);
         
         // Convert BMP to PNG using ImageMagick
-        std::string convertCmd = "convert \"" + tempBmpPath + "\" \"" + fullPath + "\"";
+        std::string convertCmd = "magick \"" + tempBmpPath + "\" \"" + fullPath + "\"";
         int result = system(convertCmd.c_str());
         
         // Check if conversion was successful before cleaning up
@@ -433,7 +433,7 @@ namespace rendering
         toBitmapFile(filename + ".tmp", filePath);
         
         // Convert BMP to JPEG using ImageMagick with quality setting
-        std::string convertCmd = "convert \"" + tempBmpPath + "\" -quality 90 \"" + fullPath + "\"";
+        std::string convertCmd = "magick \"" + tempBmpPath + "\" -quality 90 \"" + fullPath + "\"";
         int result = system(convertCmd.c_str());
         
         // Check if conversion was successful before cleaning up
@@ -478,7 +478,7 @@ namespace rendering
         toBitmapFile(filename + ".tmp", filePath);
         
         // Convert BMP to TIFF using ImageMagick with LZW compression
-        std::string convertCmd = "convert \"" + tempBmpPath + "\" -compress lzw \"" + fullPath + "\"";
+        std::string convertCmd = "magick \"" + tempBmpPath + "\" -compress lzw \"" + fullPath + "\"";
         int result = system(convertCmd.c_str());
         
         // Check if conversion was successful before cleaning up
