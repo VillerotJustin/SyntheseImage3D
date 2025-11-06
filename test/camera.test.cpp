@@ -161,6 +161,10 @@ public:
         logFile << std::endl;
     }
 
+    void logMessage(const std::string& message) {
+        logFile << message << std::endl;
+    }
+
 private:
     std::string getCurrentTime() {
         auto now = std::chrono::system_clock::now();
@@ -233,11 +237,12 @@ int main() {
     }
 }
 
-bool has_non_black_pixel(Image image) {
+bool has_non_debug_pixel(Image image) {
+    const RGBA_Color debugColor(1.0, 0.0, 1.0, 1.0); // Magenta color used for debug pixels
     for (size_t y = 0; y < image.getHeight(); ++y) {
         for (size_t x = 0; x < image.getWidth(); ++x) {
             const RGBA_Color pixel = image.getPixel(x, y);
-            if ((pixel.r() > 0 || pixel.g() > 0 || pixel.b() > 0)) {
+            if (pixel != debugColor) {
                 return true;
             }
         }
@@ -416,7 +421,7 @@ void testCameraRenderScene2DColor() {
     assert(colorImage2D.getWidth() == 720);
     assert(colorImage2D.getHeight() == 720);
 
-    assert(has_non_black_pixel(colorImage2D));
+    assert(has_non_debug_pixel(colorImage2D));
 
     colorImage2D.toPngFile("test_render_output", "./test/test_by_product/camera/");
     
@@ -469,7 +474,7 @@ void testCameraRenderScene2DDepth() {
     assert(depthImage2D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    assert(has_non_black_pixel(depthImage2D));
+    assert(has_non_debug_pixel(depthImage2D));
 
     depthImage2D.toPngFile("test_depth_output", "./test/test_by_product/camera/");
     
@@ -547,7 +552,7 @@ void testCameraRenderScene3DColor() {
     assert(colorImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    assert(has_non_black_pixel(colorImage3D));
+    assert(has_non_debug_pixel(colorImage3D));
 
     colorImage3D.toPngFile("test_3d_color_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Color render test completed - check output manually if needed" << std::endl;
@@ -639,7 +644,7 @@ void testCameraRenderScene3DDepth() {
     assert(depthImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    assert(has_non_black_pixel(depthImage3D));
+    assert(has_non_debug_pixel(depthImage3D));
 
     depthImage3D.toPngFile("test_3d_depth_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Depth render test completed - check output manually if needed" << std::endl;
@@ -750,7 +755,7 @@ void testCameraRenderScene3DLight() {
     assert(lightImage3D.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    assert(has_non_black_pixel(lightImage3D));
+    assert(has_non_debug_pixel(lightImage3D));
 
     lightImage3D.toPngFile("test_3d_light_output", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light render test completed - check output manually if needed" << std::endl;
@@ -860,27 +865,26 @@ void testCameraRenderScene3DLight_AA() {
     assert(AntiAliasingImage.getHeight() == 720);
 
     // Check that some pixels have depth values (not all default/black)
-    assert(has_non_black_pixel(AntiAliasingImage));
+    assert(has_non_debug_pixel(AntiAliasingImage));
 
+    logger.logMessage("Testing Control for anti-aliasing method");
     AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_control", "./test/test_by_product/camera/");
     logger.logRenderTime();
     std::cout << "Note: 3D Light with NO anti-aliasing render test completed - check output manually if needed" << std::endl;
 
     // Test with SSAA
+    logger.logMessage("Testing SSAA anti-aliasing method");
     AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::SSAA);
     logger.logRenderTime();
     AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_ssaa", "./test/test_by_product/camera/");
     std::cout << "Note: 3D Light with SSAA anti-aliasing render with wide FOV test completed - check output manually if needed" << std::endl;
 
-    try {
-        // Test with MSAA
-        AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::MSAA);
-        logger.logRenderTime();
-        AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_msaa", "./test/test_by_product/camera/");
-        std::cout << "Note: 3D Light with MSAA anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
-    } catch (const std::exception& e) {
-        std::cout << "MSAA anti-aliasing test skipped due to exception: " << e.what() << std::endl;
-    }
+    // Test with MSAA
+    logger.logMessage("Testing MSAA anti-aliasing method");
+    AntiAliasingImage = camera.renderScene3DLight_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::MSAA);
+    logger.logRenderTime();
+    AntiAliasingImage.toPngFile("test_3d_light_anti_aliasing_output_msaa", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Light with MSAA anti-aliasing render with narrow FOV test completed - check output manually if needed" << std::endl;
 
     try {
         // Test with FXAA

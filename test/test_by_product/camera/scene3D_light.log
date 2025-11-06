@@ -1,5 +1,5 @@
 === Render Test: scene3D_light ===
-Start time: 2025-10-25 03:04:46
+Start time: 2025-11-06 11:05:34
 
 Camera Configuration:
 --------------------
@@ -85,7 +85,7 @@ Output Image:
 -------------
 Dimensions: 720x720 pixels
 
-Render Time: 395 ms
+Render Time: 1382 ms
 
 -------------
 
@@ -95,7 +95,7 @@ Origin: [-10.000, -10.000, -5.000]
 Direction: [0.000, 0.000, 1.000]
 Field of View: 120.000
 
-Render Time: 902 ms
+Render Time: 3656 ms
 
 -------------
 
@@ -105,7 +105,7 @@ Origin: [-10.000, -10.000, -5.000]
 Direction: [0.000, 0.000, 1.000]
 Field of View: 30.000
 
-Render Time: 1414 ms
+Render Time: 5413 ms
 
 -------------
 

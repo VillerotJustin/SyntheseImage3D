@@ -50,9 +50,9 @@ void testImageCreation() {
     
     // Test that pixels are initialized to black
     const RGBA_Color pixel = img.getPixel(0, 0);
-    assertEqual(pixel.r() == 0.0, "Initial red component");
+    assertEqual(pixel.r() == 1.0, "Initial red component");
     assertEqual(pixel.g() == 0.0, "Initial green component");
-    assertEqual(pixel.b() == 0.0, "Initial blue component");
+    assertEqual(pixel.b() == 1.0, "Initial blue component");
     assertEqual(pixel.a() == 1.0, "Initial alpha component");
 }
 

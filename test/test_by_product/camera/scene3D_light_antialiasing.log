@@ -1,5 +1,5 @@
 === Render Test: scene3D_light_antialiasing ===
-Start time: 2025-10-25 03:04:48
+Start time: 2025-11-06 11:05:40
 
 Camera Configuration:
 --------------------
@@ -85,11 +85,9 @@ Lights (5 total):
     Intensity: 1.000
     Color: RGBA(0.000, 0.000, 1.000, 1.000)
 
-Render Time: 519 ms
+Testing Control for anti-aliasing method
+Render Time: 1474 ms
 
 -------------
 
-Render Time: 26363 ms
-
--------------
-
+Testing SSAA anti-aliasing method

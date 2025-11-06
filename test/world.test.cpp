@@ -88,7 +88,7 @@ int main() {
 }
 
 
-bool has_non_black_pixel(Image image) {
+bool has_non_debug_pixel(Image image) {
     for (size_t y = 0; y < image.getHeight(); ++y) {
         for (size_t x = 0; x < image.getWidth(); ++x) {
             const RGBA_Color pixel = image.getPixel(x, y);
@@ -244,7 +244,7 @@ void testWorldRenderScene2DColor() {
     assert(image.getHeight() == 720);
     
     // Check for rendered pixels
-    assert(has_non_black_pixel(image));
+    assert(has_non_debug_pixel(image));
     
     image.toBitmapFile("test_world_2d_color_output", "./test/test_by_product/world/");
     std::cout << "Note: World 2D color render test completed - check output manually if needed" << std::endl;
@@ -328,7 +328,7 @@ void testWorldRenderScene3DColor() {
     assert(image.getHeight() == 720);
     
     // Check for rendered pixels
-    assert(has_non_black_pixel(image));
+    assert(has_non_debug_pixel(image));
     
     image.toBitmapFile("test_world_3d_color_output", "./test/test_by_product/world/");
     std::cout << "Note: World 3D color render test completed - check output manually if needed" << std::endl;
@@ -382,7 +382,7 @@ void testWorldRenderScene3DDepth() {
     assert(depthImage.getHeight() == 720);
     
     // Check for rendered pixels
-    assert(has_non_black_pixel(depthImage));
+    assert(has_non_debug_pixel(depthImage));
     
     depthImage.toBitmapFile("test_world_3d_depth_output", "./test/test_by_product/world/");
     std::cout << "Note: World 3D depth render test completed - check output manually if needed" << std::endl;
@@ -443,7 +443,7 @@ void testWorldRenderScene3DLight() {
     assert(lightImage.getHeight() == 720);
     
     // Check for rendered pixels
-    assert(has_non_black_pixel(lightImage)); 
+    assert(has_non_debug_pixel(lightImage)); 
        
     lightImage.toBitmapFile("test_world_3d_light_output", "./test/test_by_product/world/");
     std::cout << "Note: World 3D light render test completed - check output manually if needed" << std::endl;

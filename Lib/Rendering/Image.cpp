@@ -30,7 +30,7 @@ namespace rendering
         {
             for (size_t x = 0; x < width; ++x)
             {
-                pixels(y, x) = RGBA_Color(0.0, 0.0, 0.0, 1.0);
+                pixels(y, x) = RGBA_Color(1.0, 0.0, 1.0, 1.0);
             }
         }
     }

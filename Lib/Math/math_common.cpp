@@ -1,6 +1,7 @@
 #include "math_common.h"
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 namespace math {
 
@@ -17,5 +18,12 @@ namespace math {
         }
         if (x0 > x1) std::swap(x0, x1);
         return true;
+    }
+
+    double randomDouble(double min, double max) {
+        if (min > max) std::swap(min, max);
+        static thread_local std::mt19937 rng(std::random_device{}());
+        std::uniform_real_distribution<double> dist(min, max);
+        return dist(rng);
     }
 }

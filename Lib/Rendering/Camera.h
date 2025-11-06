@@ -25,6 +25,8 @@ using namespace geometry;
 
 namespace rendering {
 
+    struct Hit { double t; size_t idx; };
+
     class Camera {
     public:
         // Type alias for shape variants
@@ -142,7 +144,37 @@ namespace rendering {
          */
         Ray generateRay(const Vector3D& pointOnViewport) const;
 
+        /**
+         * Generate a ray for a specific pixel in the image
+         * @param pixelX The x-coordinate of the pixel
+         * @param pixelY The y-coordinate of the pixel
+         * @param imageWidth The width of the image in pixels
+         * @param imageHeight The height of the image in pixels
+         * @param is3D Whether to generate a ray for 3D rendering (perspective) or 2D rendering (orthographic)
+         * @return Ray The generated ray for the specified pixel
+         */
         Ray generateRayForPixel(size_t pixelX, size_t pixelY, size_t imageWidth, size_t imageHeight, bool is3D) const;
+
+        /**
+         * Generate a random ray for a specific pixel in the image (for anti-aliasing)
+         * @param pixelX The x-coordinate of the pixel
+         * @param pixelY The y-coordinate of the pixel
+         * @param imageWidth The width of the image in pixels
+         * @param imageHeight The height of the image in pixels
+         * @param is3D Whether to generate a ray for 3D rendering (perspective) or 2D rendering (orthographic)
+         * @return Ray The generated random ray for the specified pixel
+         */
+        Ray generateRandomRayForPixel(size_t pixelX, size_t pixelY, size_t imageWidth, size_t imageHeight, bool is3D) const;
+
+        /**
+         * Process ray hits to determine the resulting color at the hit point
+         * @param hits The vector of hits detected by the ray
+         * @param hitRay The ray that generated the hits
+         * @param shapes The vector of shapes in the scene
+         * @param lights The vector of lights in the scene
+         * @return RGBA_Color The resulting color at the hit point
+         */
+        RGBA_Color processRayHit(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const;
 
         /**
          * Render the scene from the camera's perspective
@@ -194,6 +226,8 @@ namespace rendering {
          * @return Image The rendered depth map image
          */
         Image renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
+
+        Image renderScene3DLight_MSAA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const;
 
         // Enum for anti-aliasing methods
         enum class AntiAliasingMethod {

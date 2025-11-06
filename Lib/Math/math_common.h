@@ -19,8 +19,10 @@ namespace math {
         return std::sqrt(semi_perimeter * f(a) * f(b) * f(c));
     }
 
-
     bool solveQuadratic(const double &a, const double &b, const double &c, double &x0, double &x1);
+
+    // Random number generation
+    double randomDouble(double min, double max);
 
     // TODO All basic math function to remove cmath need
 }

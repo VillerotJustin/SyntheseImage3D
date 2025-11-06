@@ -119,6 +119,25 @@ namespace rendering {
     Ray Camera::generateRayForPixel(size_t pixelX, size_t pixelY, size_t imageWidth, size_t imageHeight, bool is3D) const {
         double u = (static_cast<double>(pixelX)) / static_cast<double>(imageWidth);
         double v = (static_cast<double>(pixelY)) / static_cast<double>(imageHeight);
+        Vector3D pixelPosition = viewport.getPointAt(u, v);
+
+        if (is3D) {
+            // For 3D, adjust pixel position based on FOV origin
+            Vector3D fovOrigin = getFOVOrigin();
+            Vector3D direction = (pixelPosition - fovOrigin).normal();
+            return Ray(fovOrigin, direction);
+        }
+        return generateRay(pixelPosition);
+    }
+
+    Ray Camera::generateRandomRayForPixel(size_t pixelX, size_t pixelY, size_t imageWidth, size_t imageHeight, bool is3D) const {
+        // Get pixel coordinates with random sub-pixel offset for anti-aliasing        
+        double u = (static_cast<double>(pixelX)) / static_cast<double>(imageWidth);
+        double v = (static_cast<double>(pixelY)) / static_cast<double>(imageHeight);
+        double width_margin = 1.0 / static_cast<double>(imageWidth);
+        double height_margin = 1.0 / static_cast<double>(imageHeight);
+        u = u + (width_margin/2) * math::randomDouble(-1.0, 1.0);
+        v = v + (height_margin/2) * math::randomDouble(-1.0, 1.0);
 
         Vector3D pixelPosition = viewport.getPointAt(u, v);
 
@@ -239,6 +258,115 @@ namespace rendering {
             }
         }
         return image_out;
+    }
+
+    // TODO extract hit processing better (no sort thingy)
+
+    RGBA_Color Camera::processRayHit(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const{
+        std::sort(hits.begin(), hits.end(), [](const Hit a, const Hit b){ return a.t < b.t; });
+
+        // Front-to-back compositing using remaining transmittance
+        double remaining = 1.0;
+        double epsRemaining = 1e-6;
+        // Accumulate premultiplied color
+        double accR = 0.0, accG = 0.0, accB = 0.0;
+        double accA = 0.0;
+
+        for (const Hit h : hits) {
+            if (remaining <= epsRemaining) break; // fully opaque already
+
+            // Access the shape
+            size_t i = h.idx;
+            std::visit([&](auto&& shape) {
+                using T = std::decay_t<decltype(shape)>;
+
+                // Compute lighting at this hit
+                Vector3D hitPoint = hitRay.getPointAt(h.t);
+                Vector3D normal = shape.getNormalAt(hitPoint);
+
+                RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
+
+                #pragma omp parallel for schedule(dynamic)
+                for (const Light &light : lights) {
+                    Vector3D hitToLight = (light.getPosition() - hitPoint);
+                    double distanceToLight = hitToLight.length();
+                    Vector3D lightDir = hitToLight.normal();
+
+                    const double epsilon = 1e-4;
+                    Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
+
+                    double transmission = 1.0;
+
+                    #pragma omp parallel for schedule(dynamic)
+                    for (size_t j = 0; j < shapes.size(); ++j) {
+                        if (i != j && transmission > 1e-12) {
+                            std::visit([&](auto&& otherShape) {
+                                if (otherShape.getGeometry()) {
+                                    auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
+                                    if (shadowDist && *shadowDist < distanceToLight) {
+                                        const RGBA_Color* occColor = otherShape.getColor();
+                                        double occAlpha = occColor ? occColor->a() : 1.0;
+                                        if (occAlpha >= 1.0 - 1e-12) {
+                                            transmission = 0.0;
+                                        } else {
+                                            transmission *= (1.0 - occAlpha);
+                                        }
+                                    }
+                                }
+                            }, shapes[j]);
+                        }
+                    }
+
+                    if (transmission > 1e-12) {
+                        double nDotL = std::max(0.0, normal.dot(lightDir));
+                        RGBA_Color lightCol = light.getColor() * light.getIntensity();
+                        double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
+                        RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
+                        accumulatedLight = accumulatedLight + contrib;
+                    }
+                }
+
+                // Ambient
+                RGBA_Color ambient(0.05, 0.05, 0.05, 1.0);
+                RGBA_Color lightEffect = (accumulatedLight + ambient).clamp();
+
+                RGBA_Color surfColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0,0,0,1);
+                if (surfColor == RGBA_Color(0,0,0,1)) {
+                    if constexpr (std::is_same_v<T, Shape<Box>>) {
+                        surfColor = RGBA_Color(1,0,0,1);
+                    } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                        surfColor = RGBA_Color(0,1,0,1);
+                    } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                        surfColor = RGBA_Color(0.5,0.5,0.5,1);
+                    } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                        surfColor = RGBA_Color(0,0,1,1);
+                    } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                        surfColor = RGBA_Color(1,1,1,1);
+                    }
+                }
+
+                RGBA_Color litSurface = surfColor * lightEffect; // component-wise
+
+                double srcA = surfColor.a();
+                // premultiplied source color
+                double srcR = litSurface.r() * srcA;
+                double srcG = litSurface.g() * srcA;
+                double srcB = litSurface.b() * srcA;
+
+                // accumulate front-to-back
+                accR += srcR * remaining;
+                accG += srcG * remaining;
+                accB += srcB * remaining;
+                accA += srcA * remaining;
+
+                remaining *= (1.0 - srcA);
+            }, shapes[i]);
+        }
+
+        // Build final color
+        double finalA = 1.0 - remaining;
+        RGBA_Color finalColor(accR, accG, accB, finalA);
+        return finalColor.clamp();
     }
 
     // ========== Rendering Methods ==========
@@ -406,8 +534,6 @@ namespace rendering {
             for (size_t x = 0; x < imageWidth; ++x) {
                 Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, true);
 
-                // Collect all hits along the view ray and sort them front-to-back
-                struct Hit { double t; size_t idx; };
                 math::Vector<Hit> hits;
 
                 #pragma omp parallel for schedule(dynamic)
@@ -425,109 +551,73 @@ namespace rendering {
                 }
 
                 if (!hits.empty()) {
-                    std::sort(hits.begin(), hits.end(), [](const Hit a, const Hit b){ return a.t < b.t; });
+                    RGBA_Color finalColor = processRayHit(hits, ray, shapes, lights);
+                    Image3D.setPixel(x, y, finalColor.clamp());
+                }
+            }
+        }
 
-                    // Front-to-back compositing using remaining transmittance
-                    double remaining = 1.0;
-                    double epsRemaining = 1e-6;
-                    // Accumulate premultiplied color
-                    double accR = 0.0, accG = 0.0, accB = 0.0;
-                    double accA = 0.0;
+        return Image3D;
+    }
 
-                    for (const Hit h : hits) {
-                        if (remaining <= epsRemaining) break; // fully opaque already
+    Image Camera::renderScene3DLight_MSAA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const {
+        Image Image3D(imageWidth, imageHeight);
 
-                        // Access the shape
-                        size_t i = h.idx;
+        if (shapes.size() == 0 || lights.size() == 0) {
+            return Image3D; // Return empty image if no shapes or lights
+        }
+
+        #pragma omp parallel for collapse(2) schedule(dynamic)
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                math::Vector<RGBA_Color> sampleColors;
+                #pragma omp parallel for schedule(dynamic)
+                for (size_t sample_number = 0; sample_number < samplesPerPixel; ++sample_number) {
+                    Ray ray = generateRandomRayForPixel(x, y, imageWidth, imageHeight, true);
+
+                    // Collect all hits along the view ray and sort them front-to-back
+                    math::Vector<Hit> hits;
+
+                    #pragma omp parallel for schedule(dynamic)
+                    for (size_t i = 0; i < shapes.size(); ++i) {
                         std::visit([&](auto&& shape) {
-                            using T = std::decay_t<decltype(shape)>;
-
-                            // Compute lighting at this hit
-                            Vector3D hitPoint = ray.getPointAt(h.t);
-                            Vector3D normal = shape.getNormalAt(hitPoint);
-
-                            RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
-
-                            #pragma omp parallel for schedule(dynamic)
-                            for (const Light &light : lights) {
-                                Vector3D hitToLight = (light.getPosition() - hitPoint);
-                                double distanceToLight = hitToLight.length();
-                                Vector3D lightDir = hitToLight.normal();
-
-                                const double epsilon = 1e-4;
-                                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
-
-                                double transmission = 1.0;
-
-                                #pragma omp parallel for schedule(dynamic)
-                                for (size_t j = 0; j < shapes.size(); ++j) {
-                                    if (i != j && transmission > 1e-12) {
-                                        std::visit([&](auto&& otherShape) {
-                                            if (otherShape.getGeometry()) {
-                                                auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
-                                                if (shadowDist && *shadowDist < distanceToLight) {
-                                                    const RGBA_Color* occColor = otherShape.getColor();
-                                                    double occAlpha = occColor ? occColor->a() : 1.0;
-                                                    if (occAlpha >= 1.0 - 1e-12) {
-                                                        transmission = 0.0;
-                                                    } else {
-                                                        transmission *= (1.0 - occAlpha);
-                                                    }
-                                                }
-                                            }
-                                        }, shapes[j]);
+                            if (shape.getGeometry()) {
+                                if (auto d = shape.getGeometry()->rayIntersectDepth(ray)) {
+                                    // only accept hits in front of the origin
+                                    if (*d > 1e-9) {
+                                        hits.append(Hit{*d, i});
                                     }
                                 }
-
-                                if (transmission > 1e-12) {
-                                    double nDotL = std::max(0.0, normal.dot(lightDir));
-                                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
-                                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
-                                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
-                                    accumulatedLight = accumulatedLight + contrib;
-                                }
                             }
-
-                            // Ambient
-                            RGBA_Color ambient(0.05, 0.05, 0.05, 1.0);
-                            RGBA_Color lightEffect = (accumulatedLight + ambient).clamp();
-
-                            RGBA_Color surfColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0,0,0,1);
-                            if (surfColor == RGBA_Color(0,0,0,1)) {
-                                if constexpr (std::is_same_v<T, Shape<Box>>) {
-                                    surfColor = RGBA_Color(1,0,0,1);
-                                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
-                                    surfColor = RGBA_Color(0,1,0,1);
-                                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
-                                    surfColor = RGBA_Color(0.5,0.5,0.5,1);
-                                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
-                                    surfColor = RGBA_Color(0,0,1,1);
-                                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
-                                    surfColor = RGBA_Color(1,1,1,1);
-                                }
-                            }
-
-                            RGBA_Color litSurface = surfColor * lightEffect; // component-wise
-
-                            double srcA = surfColor.a();
-                            // premultiplied source color
-                            double srcR = litSurface.r() * srcA;
-                            double srcG = litSurface.g() * srcA;
-                            double srcB = litSurface.b() * srcA;
-
-                            // accumulate front-to-back
-                            accR += srcR * remaining;
-                            accG += srcG * remaining;
-                            accB += srcB * remaining;
-                            accA += srcA * remaining;
-
-                            remaining *= (1.0 - srcA);
                         }, shapes[i]);
                     }
 
-                    // Build final color
-                    double finalA = 1.0 - remaining;
-                    RGBA_Color finalColor(accR, accG, accB, finalA);
+                    if (!hits.empty()) {
+                        RGBA_Color color = processRayHit(hits, ray, shapes, lights);
+                        sampleColors.append(color);
+                    }                
+                }
+
+                // Average samples for this pixel
+                if (!sampleColors.empty()) {
+                    double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
+                    size_t numColors = sampleColors.size();
+
+                    // Move accumulation outside the parallel region
+                    accR = sampleColors[0].r();
+                    accG = sampleColors[0].g();
+                    accB = sampleColors[0].b();
+                    accA = sampleColors[0].a();
+
+                    for (size_t i = 1; i < numColors; i++) {
+                        accR += sampleColors[i].r();
+                        accG += sampleColors[i].g();
+                        accB += sampleColors[i].b();
+                        accA += sampleColors[i].a();
+                    }
+
+                    double numSamples = static_cast<double>(numColors);
+                    RGBA_Color finalColor(accR / numSamples, accG / numSamples, accB / numSamples, accA / numSamples);
                     Image3D.setPixel(x, y, finalColor.clamp());
                 }
             }
@@ -554,7 +644,7 @@ namespace rendering {
             }
             case AntiAliasingMethod::MSAA: {
                 // Multi-Sample Anti-Aliasing
-                throw std::invalid_argument("MSAA not implemented yet");
+                return renderScene3DLight_MSAA(imageWidth, imageHeight, shapes, lights, samplesPerPixel);
             }
             case AntiAliasingMethod::SSAA: {
                 // Super-Sample Anti-Aliasing
