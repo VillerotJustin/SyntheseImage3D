@@ -215,7 +215,7 @@ namespace geometry {
          * @param ray The ray to check
          * @return std::optional<double> Distance to intersection point, or nullopt if no intersection
          */      
-        std::optional<double> rayIntersectDepth(const Ray& ray) const;
+        std::optional<double> rayIntersectDepth(const Ray& ray, double tmax = std::numeric_limits<double>::max()) const;
 
     private:
         Vector3D origin;  // Origin point (corner)

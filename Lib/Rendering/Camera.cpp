@@ -262,7 +262,153 @@ namespace rendering {
 
     // TODO extract hit processing better (no sort thingy)
 
-    RGBA_Color Camera::processRayHit(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const{
+    std::optional<Hit> findNextHit(const Ray& ray, const math::Vector<rendering::Camera::ShapeVariant>& shapes, const math::Vector<size_t>& index_to_test) {
+        Hit closest_hit;
+        closest_hit.t = std::numeric_limits<double>::infinity();
+        closest_hit.shapeIndex = size_t(-1);
+
+        for (size_t idx : index_to_test) {
+            std::visit([&](auto&& shape) {
+                using T = std::decay_t<decltype(shape)>;
+
+                std::optional<double> distance = std::nullopt;
+                if (shape.getGeometry()) {
+                    distance = shape.getGeometry()->rayIntersectDepth(ray);
+                }
+
+                if (distance && *distance < closest_hit.t) {
+                    closest_hit.t = *distance;
+                    closest_hit.shapeIndex = idx;
+                }
+
+            }, shapes[idx]);
+        }
+        if (closest_hit.t == std::numeric_limits<double>::infinity()) {
+            return std::nullopt;
+        }
+        return closest_hit;
+    }
+
+    RGBA_Color Camera::processRayHit(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining, double accR, double accG, double accB, double accA) const{
+        // std::sort(hits.begin(), hits.end(), [](const Hit a, const Hit b){ return a.t < b.t; });
+        // Front-to-back compositing using remaining transmittance
+        double epsRemaining = 1e-6;
+
+        if (remaining < epsRemaining) {
+            // Build final color
+            double finalA = 1.0 - remaining;
+            RGBA_Color finalColor(accR, accG, accB, finalA);
+            return finalColor.clamp();
+        }
+
+        size_t i = closest_hit.shapeIndex;
+        for (size_t idx = 0; idx < index_to_test.size(); ++idx) {
+            if (index_to_test[idx] == i) {
+                index_to_test.erase(idx);
+                break;
+            }
+        }
+
+        std::visit([&](auto&& shape) {
+            using T = std::decay_t<decltype(shape)>;
+
+            // Compute lighting at this hit
+            Vector3D hitPoint = hitRay.getPointAt(closest_hit.t);
+            Vector3D normal = shape.getNormalAt(hitPoint);
+
+            RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
+
+            #pragma omp parallel for schedule(dynamic)
+            for (const Light &light : lights) {
+                Vector3D hitToLight = (light.getPosition() - hitPoint);
+                double distanceToLight = hitToLight.length();
+                Vector3D lightDir = hitToLight.normal();
+
+                const double epsilon = 1e-4;
+                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
+
+                double transmission = 1.0;
+
+                #pragma omp parallel for schedule(dynamic)
+                for (size_t j = 0; j < shapes.size(); ++j) {
+                    if (i != j && transmission > 1e-12) {
+                        std::visit([&](auto&& otherShape) {
+                            if (otherShape.getGeometry()) {
+                                auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
+                                if (shadowDist && *shadowDist < distanceToLight) {
+                                    const RGBA_Color* occColor = otherShape.getColor();
+                                    double occAlpha = occColor ? occColor->a() : 1.0;
+                                    if (occAlpha >= 1.0 - 1e-12) {
+                                        transmission = 0.0;
+                                    } else {
+                                        transmission *= (1.0 - occAlpha);
+                                    }
+                                }
+                            }
+                        }, shapes[j]);
+                    }
+                }
+
+                if (transmission > 1e-12) {
+                    double nDotL = std::max(0.0, normal.dot(lightDir));
+                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
+                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
+                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
+                    accumulatedLight = accumulatedLight + contrib;
+                }
+            }
+
+            // Ambient
+            RGBA_Color ambient(0.05, 0.05, 0.05, 1.0);
+            RGBA_Color lightEffect = (accumulatedLight + ambient).clamp();
+
+            RGBA_Color surfColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0,0,0,1);
+            if (surfColor == RGBA_Color(0,0,0,1)) {
+                if constexpr (std::is_same_v<T, Shape<Box>>) {
+                    surfColor = RGBA_Color(1,0,0,1);
+                } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
+                    surfColor = RGBA_Color(0,1,0,1);
+                } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
+                    surfColor = RGBA_Color(0.5,0.5,0.5,1);
+                } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
+                    surfColor = RGBA_Color(0,0,1,1);
+                } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
+                    surfColor = RGBA_Color(1,1,1,1);
+                }
+            }
+
+            RGBA_Color litSurface = surfColor * lightEffect; // component-wise
+
+            double srcA = surfColor.a();
+            // premultiplied source color
+            double srcR = litSurface.r() * srcA;
+            double srcG = litSurface.g() * srcA;
+            double srcB = litSurface.b() * srcA;
+
+            // accumulate front-to-back
+            accR += srcR * remaining;
+            accG += srcG * remaining;
+            accB += srcB * remaining;
+            accA += srcA * remaining;
+
+            remaining *= (1.0 - srcA);
+        }, shapes[i]);
+
+        // Get the next hit
+        if (index_to_test.size() == 0) {
+            return RGBA_Color(accR, accG, accB, 1.0 - remaining).clamp();
+        }
+        std::optional<Hit> next_hit = findNextHit(hitRay, shapes, index_to_test);
+        if (next_hit) {
+            return processRayHit(*next_hit, hitRay, shapes, lights, index_to_test, remaining, accR, accG, accB, accA);
+        }
+
+        double finalA = 1.0 - remaining;
+        RGBA_Color finalColor(accR, accG, accB, finalA);
+        return finalColor.clamp();
+    }
+
+    RGBA_Color Camera::processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const{
         std::sort(hits.begin(), hits.end(), [](const Hit a, const Hit b){ return a.t < b.t; });
 
         // Front-to-back compositing using remaining transmittance
@@ -276,7 +422,7 @@ namespace rendering {
             if (remaining <= epsRemaining) break; // fully opaque already
 
             // Access the shape
-            size_t i = h.idx;
+            size_t i = h.shapeIndex;
             std::visit([&](auto&& shape) {
                 using T = std::decay_t<decltype(shape)>;
 
@@ -551,7 +697,7 @@ namespace rendering {
                 }
 
                 if (!hits.empty()) {
-                    RGBA_Color finalColor = processRayHit(hits, ray, shapes, lights);
+                    RGBA_Color finalColor = processRayHitOld(hits, ray, shapes, lights);
                     Image3D.setPixel(x, y, finalColor.clamp());
                 }
             }
@@ -593,7 +739,7 @@ namespace rendering {
                     }
 
                     if (!hits.empty()) {
-                        RGBA_Color color = processRayHit(hits, ray, shapes, lights);
+                        RGBA_Color color = processRayHitOld(hits, ray, shapes, lights);
                         sampleColors.append(color);
                     }                
                 }

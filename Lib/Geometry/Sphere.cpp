@@ -194,7 +194,7 @@ namespace geometry {
         return true;
     }
 
-    std::optional<double> Sphere::rayIntersectDepth(const Ray& ray) const {
+    std::optional<double> Sphere::rayIntersectDepth(const Ray& ray, double tmax) const {
         double t0, t1; // solutions for t if the ray intersects
 
         // Geometric solution
@@ -226,6 +226,9 @@ namespace geometry {
         Vector3D rawHit = ray.getPointAt(t0);
         Vector3D projected = center + (rawHit - center).normal() * radius;
         double distanceAlongRay = (projected - ray.getOrigin()).length();
+        if (distanceAlongRay > tmax) {
+            return std::nullopt;
+        }
         return distanceAlongRay;
     }
 

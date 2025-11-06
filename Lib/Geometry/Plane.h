@@ -119,7 +119,7 @@ namespace geometry {
          */
         bool rayIntersect(const Ray& ray) const;
 
-        std::optional<double> rayIntersectDepth(const Ray& ray) const;
+        std::optional<double> rayIntersectDepth(const Ray& ray, double tmax = std::numeric_limits<double>::max()) const;
 
 
     private:

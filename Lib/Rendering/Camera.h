@@ -25,7 +25,10 @@ using namespace geometry;
 
 namespace rendering {
 
-    struct Hit { double t; size_t idx; };
+    struct Hit {
+        double t; // Distance along the ray to the hit point
+        size_t shapeIndex; // Index of the shape that was hit
+    };
 
     class Camera {
     public:
@@ -174,7 +177,9 @@ namespace rendering {
          * @param lights The vector of lights in the scene
          * @return RGBA_Color The resulting color at the hit point
          */
-        RGBA_Color processRayHit(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const;
+        RGBA_Color processRayHit(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining = 1.0, double accR = 0.0, double accG = 0.0, double accB = 0.0, double accA = 0.0) const;
+
+        RGBA_Color processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const;
 
         /**
          * Render the scene from the camera's perspective

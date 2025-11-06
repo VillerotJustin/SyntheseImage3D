@@ -264,7 +264,7 @@ namespace geometry {
         return tmax >= 0;
     }
 
-    std::optional<double> Box::rayIntersectDepth(const Ray& ray) const {
+    std::optional<double> Box::rayIntersectDepth(const Ray& ray, double tmax) const {
         // Using the "slab" method for ray-box intersection
         Vector3D rayDir = ray.getDirection();
         Vector3D rayOrigin = ray.getOrigin();
@@ -272,7 +272,6 @@ namespace geometry {
         Vector3D maxCorner = getMaxCorner();
         
         double tmin = -std::numeric_limits<double>::infinity();
-        double tmax = std::numeric_limits<double>::infinity();
         
         // Check intersection with each pair of parallel planes (slabs)
         for (int i = 0; i < 3; ++i) {

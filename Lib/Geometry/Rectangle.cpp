@@ -224,7 +224,7 @@ namespace geometry {
         return containsPoint(intersectionPoint);
     }
 
-    std::optional<double> Rectangle::rayIntersectDepth(const Ray& ray) const {
+    std::optional<double> Rectangle::rayIntersectDepth(const Ray& ray, double tmax) const {
         // First, check if ray intersects the plane containing the rectangle
         Vector3D rayDir = ray.getDirection();
         Vector3D rayOrigin = ray.getOrigin();
@@ -250,10 +250,11 @@ namespace geometry {
         
         // Check if intersection point is within the rectangle bounds
         if (this->containsPoint(intersectionPoint)) {
-            return t; // Return intersection depth
-        } else {
-            return std::nullopt; // No intersection with rectangle bounds
+            if (t <= tmax) {
+                return t; // Return intersection depth
+            }
         }
+        return std::nullopt; // No intersection with rectangle bounds or beyond tmax
     }
 
 } // namespace geometry

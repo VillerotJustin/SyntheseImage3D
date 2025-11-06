@@ -105,7 +105,7 @@ namespace geometry {
         return t >= 0;
     }
 
-    std::optional<double> Plane::rayIntersectDepth(const Ray& ray) const {
+    std::optional<double> Plane::rayIntersectDepth(const Ray& ray, double tmax) const {
         // Get ray properties
         Vector3D rayDir = ray.getDirection();
         Vector3D rayOrigin = ray.getOrigin();
@@ -128,7 +128,10 @@ namespace geometry {
         
         // Ray intersects plane if t >= 0 (intersection is in front of ray origin)
         if (t >= 0) {
-            return t;
+            if (t <= tmax) {
+                return t;
+            }
+            return std::nullopt; // Intersection is beyond tmax
         } else {
             return std::nullopt; // Intersection is behind the ray origin
         }

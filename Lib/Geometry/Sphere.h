@@ -143,7 +143,7 @@ namespace geometry {
          * @param Ray ray The ray to check
          * @return std::optional<double> Distance to intersection point, or nullopt if no intersection
          */
-        std::optional<double> rayIntersectDepth(const Ray& ray) const;
+        std::optional<double> rayIntersectDepth(const Ray& ray, double tmax = std::numeric_limits<double>::max()) const;
 
         /**
          * Get the distance from the ray origin to the intersection point with the sphere

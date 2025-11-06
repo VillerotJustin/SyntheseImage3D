@@ -119,7 +119,7 @@ namespace geometry {
         return distToCenter <= radius;
     }
 
-    std::optional<double> Circle::rayIntersectDepth(const Ray& ray) const {
+    std::optional<double> Circle::rayIntersectDepth(const Ray& ray, double tmax) const {
         // First, check if ray intersects the plane containing the circle
         Vector3D rayDir = ray.getDirection();
         Vector3D rayOrigin = ray.getOrigin();
@@ -146,7 +146,10 @@ namespace geometry {
         // Check if intersection point is within the circle radius
         double distToCenter = (intersectionPoint - center).length();
         if (distToCenter <= radius) {
-            return t; // Return the depth of intersection
+            if (t <= tmax) {
+                return t; // Return the depth of intersection
+            }
+            return std::nullopt; // Intersection is beyond tmax
         } else {
             return std::nullopt; // No intersection with the circle
         }
