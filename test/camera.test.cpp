@@ -1,10 +1,7 @@
-#include <iostream>
-#include <cassert>
-#include <cmath>
-#include <stdexcept>
-#include <fstream>
-#include <chrono>
-#include <iomanip>
+
+// Import
+
+// Internal libraries
 #include "../Lib/Rendering/Camera.h"
 #include "../Lib/Geometry/Vector3D.h"
 #include "../Lib/Geometry/Rectangle.h"
@@ -17,6 +14,11 @@
 #include "../Lib/Rendering/Shape.hpp"
 #include "../Lib/Math/Vector.hpp"
 #include "../Lib/Math/math_common.h"
+#include "test_helpers/Logger.h"
+
+// External libraries
+#include <cassert>
+
 
 using namespace rendering;
 using Vector3D = ::geometry::Vector3D;
@@ -35,145 +37,6 @@ bool isEqual(double a, double b, double epsilon = 1e-9) {
 bool isEqual(const Vector3D& a, const Vector3D& b, double epsilon = 1e-9) {
     return (a - b).length() < epsilon;
 }
-
-// Logger class for render information
-class RenderLogger {
-    std::ofstream logFile;
-    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
-
-public:
-    RenderLogger(const std::string& testName) {
-        // Create the camera directory if it doesn't exist
-        std::string dirPath = "test/test_by_product/camera";
-        if (system(("mkdir -p " + dirPath).c_str()) != 0) {
-            throw std::runtime_error("Failed to create directory: " + dirPath);
-        }
-
-        std::string logPath = dirPath + "/" + testName + ".log";
-        logFile.open(logPath);
-        if (!logFile.is_open()) {
-            throw std::runtime_error("Could not open log file: " + logPath);
-        }
-        startTime = std::chrono::high_resolution_clock::now();
-        logFile << "=== Render Test: " << testName << " ===" << std::endl;
-        logFile << "Start time: " << getCurrentTime() << std::endl << std::endl;
-    }
-
-    ~RenderLogger() {
-        if (logFile.is_open()) {
-            logFile.close();
-        }
-    }
-
-    // Just delegate to logScene with an empty lights vector
-    void logSceneObjects(const math::Vector<Camera::ShapeVariant>& shapes) {
-        logScene(shapes, math::Vector<Light>());
-    }
-
-    void logScene(const math::Vector<Camera::ShapeVariant>& shapes, const math::Vector<Light>& lights) {
-        logFile << "Scene Configuration:" << std::endl;
-        logFile << "-------------------" << std::endl;
-        
-        // Log shapes
-        logFile << "Shapes (" << shapes.size() << " total):" << std::endl;
-        for (size_t i = 0; i < shapes.size(); ++i) {
-            std::visit([&](const auto& shape) {
-                logFile << "  Shape " << i + 1 << ":" << std::endl;
-                
-                if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Sphere>>) {
-                    if (const auto* geom = shape.getGeometry()) {
-                        logFile << "    Type: Sphere" << std::endl;
-                        logFile << "    Center: " << geom->getCenter() << std::endl;
-                        logFile << "    Radius: " << geom->getRadius() << std::endl;
-                    }
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Box>>) {
-                    if (const auto* geom = shape.getGeometry()) {
-                        logFile << "    Type: Box" << std::endl;
-                        logFile << "    Origin: " << geom->getOrigin() << std::endl;
-                        logFile << "    Width: " << geom->getWidth() << std::endl;
-                        logFile << "    Height: " << geom->getHeight() << std::endl;
-                        logFile << "    Depth: " << geom->getDepth() << std::endl;
-                    }
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Rectangle>>) {
-                    if (const auto* geom = shape.getGeometry()) {
-                        logFile << "    Type: Rectangle" << std::endl;
-                        logFile << "    Origin: " << geom->getOrigin() << std::endl;
-                        logFile << "    Length: " << geom->getLength() << std::endl;
-                        logFile << "    Width: " << geom->getWidth() << std::endl;
-                    }
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Circle>>) {
-                    if (const auto* geom = shape.getGeometry()) {
-                        logFile << "    Type: Circle" << std::endl;
-                        logFile << "    Center: " << geom->getCenter() << std::endl;
-                        logFile << "    Radius: " << geom->getRadius() << std::endl;
-                    }
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(shape)>, Shape<Plane>>) {
-                    if (const auto* geom = shape.getGeometry()) {
-                        logFile << "    Type: Plane" << std::endl;
-                        logFile << "    Origin: " << geom->getOrigin() << std::endl;
-                        logFile << "    Normal: " << geom->getNormal() << std::endl;
-                    }
-                }
-
-                if (const auto* color = shape.getColor()) {
-                    logFile << "    Color: " << *color << std::endl;
-                } else {
-                    logFile << "    Color: None" << std::endl;
-                }
-            }, shapes[i]);
-        }
-        logFile << std::endl;
-
-        // Log lights
-        logFile << "Lights (" << lights.size() << " total):" << std::endl;
-        for (size_t i = 0; i < lights.size(); ++i) {
-            const Light light = lights[i];
-            logFile << "  Light " << i + 1 << ":" << std::endl;
-            logFile << "    Type: Point Light" << std::endl;
-            logFile << "    Position: " << light.getPosition() << std::endl;
-            logFile << "    Intensity: " << light.getIntensity() << std::endl;
-            logFile << "    Color: " << light.getColor() << std::endl;
-        }
-        logFile << std::endl;
-    }
-
-    void logCameraSettings(const Camera& camera, const Vector3D& origin) {
-        logFile << "Camera Configuration:" << std::endl;
-        logFile << "--------------------" << std::endl;
-        logFile << "Origin: " << origin << std::endl;
-        logFile << "Direction: " << camera.getDirection() << std::endl;
-        logFile << "Field of View: " << camera.getFOVAngle() << std::endl;
-        logFile << std::endl;
-    }
-
-    void logRenderTime() {
-        auto endTime = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-        logFile << "Render Time: " << duration.count() << " ms" << std::endl << std::endl;
-        logFile << "-------------" << std::endl;
-        logFile << std::endl;
-    }
-
-    void logImageInfo(int width, int height) {
-        logFile << "Output Image:" << std::endl;
-        logFile << "-------------" << std::endl;
-        logFile << "Dimensions: " << width << "x" << height << " pixels" << std::endl;
-        logFile << std::endl;
-    }
-
-    void logMessage(const std::string& message) {
-        logFile << message << std::endl;
-    }
-
-private:
-    std::string getCurrentTime() {
-        auto now = std::chrono::system_clock::now();
-        auto nowTime = std::chrono::system_clock::to_time_t(now);
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&nowTime), "%Y-%m-%d %H:%M:%S");
-        return ss.str();
-    }
-};
 
 // Test function declarations
 void testCameraConstructor();
@@ -433,6 +296,7 @@ void testCameraRayHitFind() {
 }
 
 void testCameraProcessHit() {
+    RenderLogger logger("process_hit_performance");
     
     // Create Rays
     Vector3D rayOrigin(0, 0, -10);
@@ -471,6 +335,13 @@ void testCameraProcessHit() {
     math::Vector<Light> lights;
     lights.append(light);
     lights.append(light2);
+
+    // Log scene configuration
+    logger.logScene(shapes, lights);
+    logger.logMessage("Performance Test Configuration:");
+    logger.logMessage("Ray Origin: (0, 0, -10)");
+    logger.logMessage("Ray Direction: (0, 0, 1)");
+    logger.logMessage("Test Iterations: 1000");
 
     // Find hit
     std::optional<Hit> hit;
@@ -519,24 +390,86 @@ void testCameraProcessHit() {
     double avg_duration_old = static_cast<double>(total_duration_old.count()) / NUM_ITERATIONS;
     
     assert(outColor != RGBA_Color(1.0, 0.0, 1.0, 1.0)); // Should not be debug color
-    std::cout << "Processed color from hit: " << outColor << std::endl;
-    std::cout << "Processed color from hit (old): " << outColor_old << std::endl;
+    
+    // Log results to both console and log file
+    std::stringstream logStream;
+    logStream << "Processed color from hit: " << outColor;
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
+    
+    logStream.str("");
+    logStream << "Processed color from hit (old): " << outColor_old;
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
+    
+    logger.logMessage("");
+    logger.logMessage("=== PERFORMANCE TEST RESULTS ===");
+    logStream.str("");
+    logStream << "Test iterations: " << NUM_ITERATIONS;
+    logger.logMessage(logStream.str());
     std::cout << "Performance test results (" << NUM_ITERATIONS << " iterations):" << std::endl;
-    std::cout << "New processRayHit average time: " << std::fixed << std::setprecision(3) << avg_duration_new << " microseconds" << std::endl;
-    std::cout << "Old processRayHitOld average time: " << std::fixed << std::setprecision(3) << avg_duration_old << " microseconds" << std::endl;
-    std::cout << "New processRayHit total time: " << total_duration_new.count() << " microseconds" << std::endl;
-    std::cout << "Old processRayHitOld total time: " << total_duration_old.count() << " microseconds" << std::endl;
+    
+    logStream.str("");
+    logStream << "New processRayHit average time: " << std::fixed << std::setprecision(3) << avg_duration_new << " microseconds";
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
+    
+    logStream.str("");
+    logStream << "Old processRayHitOld average time: " << std::fixed << std::setprecision(3) << avg_duration_old << " microseconds";
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
+    
+    logStream.str("");
+    logStream << "New processRayHit total time: " << total_duration_new.count() << " microseconds";
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
+    
+    logStream.str("");
+    logStream << "Old processRayHitOld total time: " << total_duration_old.count() << " microseconds";
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
     
     // Calculate performance difference
     if (avg_duration_old > 0) {
         double speedup = avg_duration_old / avg_duration_new;
-        std::cout << "Performance ratio (old/new): " << std::fixed << std::setprecision(2) << speedup << "x" << std::endl;
+        
+        logStream.str("");
+        logStream << "Performance ratio (old/new): " << std::fixed << std::setprecision(2) << speedup << "x";
+        logger.logMessage(logStream.str());
+        std::cout << logStream.str() << std::endl;
+        
         if (speedup > 1.0) {
-            std::cout << "New method is " << std::fixed << std::setprecision(2) << speedup << "x FASTER than old method" << std::endl;
+            logStream.str("");
+            logStream << "New method is " << std::fixed << std::setprecision(2) << speedup << "x FASTER than old method";
+            logger.logMessage(logStream.str());
+            std::cout << logStream.str() << std::endl;
         } else {
-            std::cout << "Old method is " << std::fixed << std::setprecision(2) << (1.0/speedup) << "x FASTER than new method" << std::endl;
+            logStream.str("");
+            logStream << "Old method is " << std::fixed << std::setprecision(2) << (1.0/speedup) << "x FASTER than new method";
+            logger.logMessage(logStream.str());
+            std::cout << logStream.str() << std::endl;
+        }
+        
+        // Additional analysis in log
+        logger.logMessage("");
+        logger.logMessage("=== PERFORMANCE ANALYSIS ===");
+        logStream.str("");
+        logStream << "Performance difference: " << std::abs(avg_duration_new - avg_duration_old) << " microseconds per call";
+        logger.logMessage(logStream.str());
+        
+        logStream.str("");
+        logStream << "Efficiency gain per 1M calls: " << std::fixed << std::setprecision(1) 
+                  << (std::abs(avg_duration_new - avg_duration_old) * 1000000.0 / 1000000.0) << " seconds";
+        logger.logMessage(logStream.str());
+        
+        if (speedup > 1.0) {
+            logger.logMessage("✓ Optimization successful - new method is faster");
+        } else {
+            logger.logMessage("⚠ Performance regression detected - old method is faster");
         }
     }
+    
+    logger.logRenderTime();
 }
 
 void testCameraRenderScene2DColor() {

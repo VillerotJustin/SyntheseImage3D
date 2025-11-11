@@ -80,6 +80,15 @@ compile_test() {
     # Get all library files
     local lib_files=$(get_all_lib_files)
     
+    # Add test helper files for camera tests
+    local helper_files=""
+    if [[ "$test_name" == "camera.test" ]]; then
+        helper_files="test/test_helpers/Logger.cpp"
+        if [[ "$DEBUG_MODE" == "true" ]]; then
+            echo "  Adding test helper files: $helper_files"
+        fi
+    fi
+    
     # Show which libraries are being linked (for debugging)
     if [[ "$DEBUG_MODE" == "true" ]]; then
         echo "  Using all library files: $lib_files"
@@ -87,7 +96,7 @@ compile_test() {
         echo "  Linking with all Lib/*.cpp files"
     fi
     
-    if $CXX_COMPILER $CXX_FLAGS -o "$executable" "$source_file" $lib_files; then
+    if $CXX_COMPILER $CXX_FLAGS -o "$executable" "$source_file" $lib_files $helper_files; then
         print_status $GREEN "✓ $test_name compiled successfully"
         return 0
     else
