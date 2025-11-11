@@ -10,7 +10,7 @@
 #include "../Geometry/Vector3D.h"
 
 // Rendering Imports
-#include "./RGBA_Color.h"
+#include "./Material.h"
 
 #include <memory>
 #include <stdexcept>
@@ -60,34 +60,52 @@ namespace rendering {
 
         /**
          * @brief Default constructor
-         * Creates a shape with no geometry and no color
+         * Creates a shape with no geometry and no material
          */
-        Shape() : geometry(nullptr), color(nullptr) {}
+        Shape() : geometry(nullptr), material(nullptr) {}
 
         /**
          * @brief Constructor with geometry only
          * @param geom The geometric shape to wrap
          */
         explicit Shape(const GeometryType& geom) 
-            : geometry(std::make_unique<GeometryType>(geom)), color(nullptr) {}
+            : geometry(std::make_unique<GeometryType>(geom)), material(nullptr) {}
 
         /**
-         * @brief Constructor with geometry and color
+         * @brief Constructor with geometry and color (creates material from color)
          * @param geom The geometric shape to wrap
-         * @param shapeColor The RGBA color for this shape
+         * @param shapeColor The RGBA color for this shape (converted to material)
          */
         Shape(const GeometryType& geom, const RGBA_Color& shapeColor) 
             : geometry(std::make_unique<GeometryType>(geom)), 
-              color(std::make_unique<RGBA_Color>(shapeColor)) {}
+              material(std::make_unique<Material>(shapeColor)) {}
+
+        /**
+         * @brief Constructor with geometry and material
+         * @param geom The geometric shape to wrap
+         * @param shapeMaterial The Material for this shape
+         */
+        Shape(const GeometryType& geom, const Material& shapeMaterial) 
+            : geometry(std::make_unique<GeometryType>(geom)), 
+              material(std::make_unique<Material>(shapeMaterial)) {}
 
         /**
          * @brief Constructor with geometry pointer and color
          * @param geom Unique pointer to the geometric shape (takes ownership)
-         * @param shapeColor The RGBA color for this shape
+         * @param shapeColor The RGBA color for this shape (converted to material)
          */
         Shape(std::unique_ptr<GeometryType> geom, const RGBA_Color& shapeColor)
             : geometry(std::move(geom)), 
-              color(std::make_unique<RGBA_Color>(shapeColor)) {}
+              material(std::make_unique<Material>(shapeColor)) {}
+
+        /**
+         * @brief Constructor with geometry pointer and material
+         * @param geom Unique pointer to the geometric shape (takes ownership)
+         * @param shapeMaterial The Material for this shape
+         */
+        Shape(std::unique_ptr<GeometryType> geom, const Material& shapeMaterial)
+            : geometry(std::move(geom)), 
+              material(std::make_unique<Material>(shapeMaterial)) {}
 
         /**
          * @brief Copy constructor
@@ -95,7 +113,7 @@ namespace rendering {
          */
         Shape(const Shape& other) 
             : geometry(other.geometry ? std::make_unique<GeometryType>(*other.geometry) : nullptr),
-              color(other.color ? std::make_unique<RGBA_Color>(*other.color) : nullptr) {}
+              material(other.material ? std::make_unique<Material>(*other.material) : nullptr) {}
 
         /**
          * @brief Move constructor
@@ -103,7 +121,7 @@ namespace rendering {
          */
         Shape(Shape&& other) noexcept 
             : geometry(std::move(other.geometry)), 
-              color(std::move(other.color)) {}
+              material(std::move(other.material)) {}
 
         /**
          * @brief Destructor (default, smart pointers handle cleanup)
@@ -122,7 +140,7 @@ namespace rendering {
         Shape& operator=(const Shape& other) {
             if (this != &other) {
                 geometry = other.geometry ? std::make_unique<GeometryType>(*other.geometry) : nullptr;
-                color = other.color ? std::make_unique<RGBA_Color>(*other.color) : nullptr;
+                material = other.material ? std::make_unique<Material>(*other.material) : nullptr;
             }
             return *this;
         }
@@ -135,7 +153,7 @@ namespace rendering {
         Shape& operator=(Shape&& other) noexcept {
             if (this != &other) {
                 geometry = std::move(other.geometry);
-                color = std::move(other.color);
+                material = std::move(other.material);
             }
             return *this;
         }
@@ -193,45 +211,83 @@ namespace rendering {
 
         #pragma endregion
 
-        #pragma region Color Management
+        #pragma region Material Management
 
         /**
-         * @brief Get the shape's color
-         * @return Pointer to the RGBA_Color object, or nullptr if no color is set
+         * @brief Get the shape's material
+         * @return Pointer to the Material object, or nullptr if no material is set
+         */
+        const Material* getMaterial() const {
+            return material.get();
+        }
+
+        /**
+         * @brief Get the shape's material (non-const version)
+         * @return Pointer to the Material object, or nullptr if no material is set
+         */
+        Material* getMaterial() {
+            return material.get();
+        }
+
+        /**
+         * @brief Set the shape's material
+         * @param newMaterial The new Material for this shape
+         */
+        void setMaterial(const Material& newMaterial) {
+            material = std::make_unique<Material>(newMaterial);
+        }
+
+        /**
+         * @brief Check if the shape has a material assigned
+         * @return True if the shape has a material, false otherwise
+         */
+        bool hasMaterial() const {
+            return material != nullptr;
+        }
+
+        /**
+         * @brief Remove the material from the shape
+         */
+        void clearMaterial() {
+            material.reset();
+        }
+
+        // Backward compatibility methods for color access
+        /**
+         * @brief Get the shape's color (backward compatibility)
+         * @return Pointer to the albedo color from the material, or nullptr if no material is set
+         * @deprecated Use getMaterial() instead
          */
         const RGBA_Color* getColor() const {
-            return color.get();
+            if (!material || !material->hasAlbedo()) {
+                return nullptr;
+            }
+            // Return a pointer to a static color to maintain compatibility
+            static RGBA_Color tempColor;
+            tempColor = material->getAlbedo();
+            return &tempColor;
         }
 
         /**
-         * @brief Get the shape's color (non-const version)
-         * @return Pointer to the RGBA_Color object, or nullptr if no color is set
+         * @brief Set the shape's color (backward compatibility)
+         * @param color The RGBA color to set (creates a material with this as albedo)
+         * @deprecated Use setMaterial() instead
          */
-        RGBA_Color* getColor() {
-            return color.get();
+        void setColor(const RGBA_Color& color) {
+            if (!material) {
+                material = std::make_unique<Material>(color);
+            } else {
+                material->setAlbedo(color);
+            }
         }
 
         /**
-         * @brief Set the shape's color
-         * @param newColor The new RGBA color for this shape
-         */
-        void setColor(const RGBA_Color& newColor) {
-            color = std::make_unique<RGBA_Color>(newColor);
-        }
-
-        /**
-         * @brief Check if the shape has a color assigned
-         * @return True if the shape has a color, false otherwise
+         * @brief Check if the shape has a color assigned (backward compatibility)
+         * @return True if the shape has a material with albedo, false otherwise
+         * @deprecated Use hasMaterial() instead
          */
         bool hasColor() const {
-            return color != nullptr;
-        }
-
-        /**
-         * @brief Remove the color from the shape
-         */
-        void clearColor() {
-            color.reset();
+            return material && material->hasAlbedo();
         }
 
         geometry::Vector3D getNormalAt(const geometry::Vector3D& point) const {
@@ -247,11 +303,11 @@ namespace rendering {
         #pragma region Convenience Methods
 
         /**
-         * @brief Check if the shape is complete (has both geometry and color)
-         * @return True if the shape has both geometry and color, false otherwise
+         * @brief Check if the shape is complete (has both geometry and material)
+         * @return True if the shape has both geometry and material, false otherwise
          */
         bool isComplete() const {
-            return hasGeometry() && hasColor();
+            return hasGeometry() && hasMaterial();
         }
 
         /**
@@ -332,7 +388,7 @@ namespace rendering {
 
     private:
         std::unique_ptr<GeometryType> geometry;  ///< The geometric shape (owned by this object)
-        std::unique_ptr<RGBA_Color> color;       ///< The color of the shape (owned by this object)
+        std::unique_ptr<Material> material;       ///< The material of the shape (owned by this object)
     };
 
     // Common type aliases for convenience

@@ -183,7 +183,7 @@ namespace rendering {
                     closestDistance = *distance;
                     hitFound = true;
 
-                    pixelColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0, 0, 0, 1); // Default to black if no color
+                    pixelColor = shape.getMaterial() ? shape.getMaterial()->getAlbedo() : RGBA_Color(1, 0, 1, 1); // Default to black if no color
 
                     if (pixelColor == RGBA_Color(0, 0, 0, 1)) {
                         if constexpr (std::is_same_v<T, Shape<Box>>) {
@@ -288,7 +288,7 @@ namespace rendering {
         return closest_hit;
     }
 
-    RGBA_Color Camera::processRayHit(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining, double accR, double accG, double accB, double accA) {
+    RGBA_Color Camera::processRayHitRegression(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining, double accR, double accG, double accB, double accA) {
         if (remaining <= 1e-6) {
             // Fully opaque already
             double finalA = 1.0 - remaining;
@@ -299,7 +299,7 @@ namespace rendering {
         // Access the shape
         size_t i = closest_hit.shapeIndex;
         std::visit([&](auto&& shape) {
-            using T = std::decay_t<decltype(shape)>;
+            // using T = std::decay_t<decltype(shape)>;
             // Compute lighting at this hit
             Vector3D hitPoint = hitRay.getPointAt(closest_hit.t);
             Vector3D normal = shape.getNormalAt(hitPoint);
@@ -324,7 +324,7 @@ namespace rendering {
                             if (otherShape.getGeometry()) {
                                 auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
                                 if (shadowDist && *shadowDist < distanceToLight) {
-                                    const RGBA_Color* occColor = otherShape.getColor();
+                                    const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
                                     double occAlpha = occColor ? occColor->a() : 1.0;
                                     if (occAlpha >= 1.0 - 1e-12) {
                                         transmission = 0.0;
@@ -348,36 +348,23 @@ namespace rendering {
 
             // No ambient
 
-            RGBA_Color surfColor = shape.getColor() ? *shape.getColor() : RGBA_Color(0,0,0,1);
-                if (surfColor == RGBA_Color(0,0,0,1)) {
-                    if constexpr (std::is_same_v<T, Shape<Box>>) {
-                        surfColor = RGBA_Color(1,0,0,1);
-                    } else if constexpr (std::is_same_v<T, Shape<Circle>>) {
-                        surfColor = RGBA_Color(0,1,0,1);
-                    } else if constexpr (std::is_same_v<T, Shape<Plane>>) {
-                        surfColor = RGBA_Color(0.5,0.5,0.5,1);
-                    } else if constexpr (std::is_same_v<T, Shape<Rectangle>>) {
-                        surfColor = RGBA_Color(0,0,1,1);
-                    } else if constexpr (std::is_same_v<T, Shape<Sphere>>) {
-                        surfColor = RGBA_Color(1,1,1,1);
-                    }
-                }
+            RGBA_Color surfColor = *shape.getColor();
 
-                RGBA_Color litSurface = surfColor * accumulatedLight;
+            RGBA_Color litSurface = surfColor * accumulatedLight;
 
-                double srcA = surfColor.a();
-                // premultiplied source color
-                double srcR = litSurface.r() * srcA;
-                double srcG = litSurface.g() * srcA;
-                double srcB = litSurface.b() * srcA;
+            double srcA = surfColor.a();
+            // premultiplied source color
+            double srcR = litSurface.r() * srcA;
+            double srcG = litSurface.g() * srcA;
+            double srcB = litSurface.b() * srcA;
 
-                // accumulate front-to-back
-                accR += srcR * remaining;
-                accG += srcG * remaining;
-                accB += srcB * remaining;
-                accA += srcA * remaining;
+            // accumulate front-to-back
+            accR += srcR * remaining;
+            accG += srcG * remaining;
+            accB += srcB * remaining;
+            accA += srcA * remaining;
 
-                remaining *= (1.0 - srcA);
+            remaining *= (1.0 - srcA);
         }, shapes[i]);
 
         // Find next hit
@@ -390,7 +377,7 @@ namespace rendering {
 
         std::optional<Hit> next_hit = findNextHit(hitRay, shapes, index_to_test);
         if (next_hit) {
-            return processRayHit(*next_hit, hitRay, shapes, lights, index_to_test, remaining,  accR, accG, accB, accA);
+            return processRayHitRegression(*next_hit, hitRay, shapes, lights, index_to_test, remaining,  accR, accG, accB, accA);
         }
 
         // No more hits, build final color
@@ -451,7 +438,7 @@ namespace rendering {
                                 if (otherShape.getGeometry() && transmission > 1e-12) {
                                     auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
                                     if (shadowDist && *shadowDist < distanceToLight) {
-                                        const RGBA_Color* occColor = otherShape.getColor();
+                                        const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
                                         double occAlpha = occColor ? occColor->a() : 1.0;
                                         if (occAlpha >= 1.0 - 1e-12) {
                                             transmission = 0.0; // Early exit when fully occluded
@@ -479,7 +466,7 @@ namespace rendering {
                 }
 
                 // Get surface color (avoid repeated comparisons)
-                const RGBA_Color* shapeColor = shape.getColor();
+                const RGBA_Color* shapeColor = shape.getMaterial() ? &shape.getMaterial()->getAlbedo() : nullptr;
                 RGBA_Color surfColor;
                 if (shapeColor && *shapeColor != RGBA_Color(0,0,0,1)) {
                     surfColor = *shapeColor;

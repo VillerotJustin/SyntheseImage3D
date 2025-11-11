@@ -1,5 +1,5 @@
 === Render Test: process_hit_performance ===
-Start time: 2025-11-11 15:38:30
+Start time: 2025-11-11 17:06:25
 
 Scene Configuration:
 -------------------
@@ -33,23 +33,23 @@ Performance Test Configuration:
 Ray Origin: (0, 0, -10)
 Ray Direction: (0, 0, 1)
 Test Iterations: 1000
-Processed color from hit: RGBA(0.034, 0.000, 0.007, 1.000)
+Processed color from hit: RGBA(0.028, 0.000, 0.026, 1.000)
 Processed color from hit (old): RGBA(0.034, 0.000, 0.033, 1.000)
 
 === PERFORMANCE TEST RESULTS ===
 Test iterations: 1000
-New processRayHit average time: 49.287 microseconds
-Old processRayHitOld average time: 3.366 microseconds
-New processRayHit total time: 49287 microseconds
-Old processRayHitOld total time: 3366 microseconds
+New processRayHit average time: 59.302 microseconds
+Old processRayHitOld average time: 3.869 microseconds
+New processRayHit total time: 59302 microseconds
+Old processRayHitOld total time: 3869 microseconds
 Performance ratio (old/new): 0.07x
-Old method is 14.64x FASTER than new method
+Old method is 15.33x FASTER than new method
 
 === PERFORMANCE ANALYSIS ===
-Performance difference: 45.92 microseconds per call
-Efficiency gain per 1M calls: 45.9 seconds
+Performance difference: 55.43 microseconds per call
+Efficiency gain per 1M calls: 55.4 seconds
 ⚠ Performance regression detected - old method is faster
-Render Time: 52 ms
+Render Time: 63 ms
 
 -------------
 

@@ -372,7 +372,7 @@ void testCameraProcessHit() {
     // Measure time for new processRayHit method (multiple iterations)
     auto start_new = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        outColor = Camera::processRayHit(*hit, ray, shapes, lights, index_to_test);
+        outColor = Camera::processRayHitRegression(*hit, ray, shapes, lights, index_to_test);
     }
     auto end_new = std::chrono::high_resolution_clock::now();
     auto total_duration_new = std::chrono::duration_cast<std::chrono::microseconds>(end_new - start_new);
@@ -491,6 +491,7 @@ void testCameraRenderScene2DColor() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(4, 4, 0), 2.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
+    sphereShape.setColor(RGBA_Color(0, 1, 0, 1)); // Green color
     Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     std::visit([](auto& shape) { shape.setColor(RGBA_Color(1, 0, 0, 1)); }, sphereVariant); // Red color
     shapes.append(sphereVariant);
@@ -498,6 +499,7 @@ void testCameraRenderScene2DColor() {
     // Add a box 
     Box box(Vector3D(5, 5, 10), 2.0, 2.0, 2.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
+    boxShape.setColor(RGBA_Color(0, 0, 1, 1)); // Blue color
     Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     std::visit([](auto& shape) { shape.setColor(RGBA_Color(0, 1, 0, 1)); }, boxVariant); // Green color
     shapes.append(boxVariant);
@@ -545,12 +547,14 @@ void testCameraRenderScene2DDepth() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(4, 4, 0), 3.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
+    sphereShape.setColor(RGBA_Color(0, 1, 0, 1)); // Green color
     Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 5, 10), 2.0, 2.0, 2.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
+    boxShape.setColor(RGBA_Color(0, 0, 1, 1)); // Blue color
     Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
     
@@ -597,12 +601,14 @@ void testCameraRenderScene3DColor() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
+    sphereShape.setColor(RGBA_Color(1, 1, 1, 1)); // White color
     Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
+    boxShape.setColor(RGBA_Color(1, 0, 0, 1)); // Blue color
     Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 
@@ -689,12 +695,14 @@ void testCameraRenderScene3DDepth() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
+    sphereShape.setColor(RGBA_Color(1, 1, 1, 1)); // White color
     Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
+    boxShape.setColor(RGBA_Color(1, 0, 0, 1)); // Red color
     Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 
@@ -794,12 +802,14 @@ void testCameraRenderScene3DLight() {
     // Add a sphere at the origin
     Sphere sphere(Vector3D(0, 0, 0), 4.0);
     Shape<::geometry::Sphere> sphereShape(sphere);
+    sphereShape.setColor(RGBA_Color(1, 1, 1, 1)); // White color
     Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
     shapes.append(sphereVariant);
     
     // Add a box 
     Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
     Shape<::geometry::Box> boxShape(box);
+    boxShape.setColor(RGBA_Color(1, 0, 0, 1)); // Red color
     Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
     shapes.append(boxVariant);
 

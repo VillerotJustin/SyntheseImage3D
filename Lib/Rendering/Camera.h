@@ -177,7 +177,7 @@ namespace rendering {
          * @param lights The vector of lights in the scene
          * @return RGBA_Color The resulting color at the hit point
          */
-        static RGBA_Color processRayHit(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining = 1.0, double accR = 0.0, double accG = 0.0, double accB = 0.0, double accA = 0.0);
+        static RGBA_Color processRayHitRegression(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining = 1.0, double accR = 0.0, double accG = 0.0, double accB = 0.0, double accA = 0.0);
 
         static RGBA_Color processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights);
 

@@ -25,6 +25,7 @@ void testShapeConstructors();
 void testShapeAssignmentOperators();
 void testGeometryManagement();
 void testColorManagement();
+void testMaterialManagement();
 void testConvenienceMethods();
 void testErrorHandling();
 void testTypeAliases();
@@ -44,6 +45,9 @@ int main() {
         
         testColorManagement();
         std::cout << "✓ Color management test passed" << std::endl;
+        
+        testMaterialManagement();
+        std::cout << "✓ Material management test passed" << std::endl;
         
         testConvenienceMethods();
         std::cout << "✓ Convenience methods test passed" << std::endl;
@@ -100,12 +104,31 @@ void testShapeConstructors() {
     assert(completeBoxShape.getColor() != nullptr);
     assert(*completeBoxShape.getColor() == red);
 
+    // Test constructor with geometry and Material
+    Material testMaterial = Material::createMetal(red, 0.2);
+    Shape<::geometry::Box> materialBoxShape(testBox, testMaterial);
+    assert(materialBoxShape.hasGeometry());
+    assert(materialBoxShape.hasMaterial());
+    assert(materialBoxShape.hasColor()); // Should have color from material albedo
+    assert(materialBoxShape.isComplete());
+    assert(materialBoxShape.getMaterial()->isMetallic());
+    assert(isEqual(materialBoxShape.getMaterial()->getRoughness(), 0.2));
+
     // Test constructor with unique_ptr geometry and color (Box)
     auto boxPtr = std::make_unique<::geometry::Box>(testBox);
     Shape<::geometry::Box> ptrBoxShape(std::move(boxPtr), red);
     assert(ptrBoxShape.hasGeometry());
     assert(ptrBoxShape.hasColor());
     assert(ptrBoxShape.isComplete());
+
+    // Test constructor with unique_ptr geometry and Material
+    auto boxPtr2 = std::make_unique<::geometry::Box>(testBox);
+    Material glassMaterial = Material::createGlass(RGBA_Color(0.9f, 0.9f, 1.0f, 0.1f), 1.5);
+    Shape<::geometry::Box> ptrMaterialBoxShape(std::move(boxPtr2), glassMaterial);
+    assert(ptrMaterialBoxShape.hasGeometry());
+    assert(ptrMaterialBoxShape.hasMaterial());
+    assert(ptrMaterialBoxShape.isComplete());
+    assert(isEqual(ptrMaterialBoxShape.getMaterial()->getRefractiveIndex(), 1.5));
 
     // Test copy constructor (Box)
     Shape<::geometry::Box> copiedBoxShape(completeBoxShape);
@@ -231,7 +254,7 @@ void testGeometryManagement() {
 }
 
 void testColorManagement() {
-    std::cout << "Testing color management..." << std::endl;
+    std::cout << "Testing color management (backward compatibility)..." << std::endl;
     
     Shape<::geometry::Plane> shape;
     assert(!shape.hasColor());
@@ -244,14 +267,89 @@ void testColorManagement() {
     assert(shape.getColor() != nullptr);
     assert(*shape.getColor() == green);
     
-    // Test color modification
-    shape.getColor()->setR(0.5f);
-    assert(shape.getColor()->r() == 0.5f);
+    // Test that setting color creates a material
+    assert(shape.hasMaterial());
+    assert(shape.getMaterial() != nullptr);
+    assert(shape.getMaterial()->hasAlbedo());
+    assert(shape.getMaterial()->getAlbedo() == green);
 
-    // Clear color
-    shape.clearColor();
+    // Clear material (removes color too)
+    shape.clearMaterial();
     assert(!shape.hasColor());
     assert(shape.getColor() == nullptr);
+    assert(!shape.hasMaterial());
+}
+
+void testMaterialManagement() {
+    std::cout << "Testing material management..." << std::endl;
+    
+    Shape<::geometry::Sphere> shape;
+    assert(!shape.hasMaterial());
+    assert(shape.getMaterial() == nullptr);
+    
+    // Create a test material
+    RGBA_Color red(1.0f, 0.0f, 0.0f, 1.0f);
+    RGBA_Color white(1.0f, 1.0f, 1.0f, 1.0f);
+    Material testMaterial(red, white);  // albedo and specular
+    testMaterial.setRoughness(0.3);
+    testMaterial.setMetalness(0.8);
+    
+    // Set material
+    shape.setMaterial(testMaterial);
+    assert(shape.hasMaterial());
+    assert(shape.getMaterial() != nullptr);
+    
+    // Verify material properties
+    const Material* mat = shape.getMaterial();
+    assert(mat->hasAlbedo());
+    assert(mat->getAlbedo() == red);
+    assert(mat->hasSpecular());
+    assert(mat->getSpecular() == white);
+    assert(isEqual(mat->getRoughness(), 0.3));
+    assert(isEqual(mat->getMetalness(), 0.8));
+    
+    // Test backward compatibility - material albedo should be accessible via getColor()
+    assert(shape.hasColor());
+    assert(shape.getColor() != nullptr);
+    assert(*shape.getColor() == red);
+    
+    // Test constructor with material
+    ::geometry::Vector3D center(1.0, 2.0, 3.0);
+    ::geometry::Sphere testSphere(center, 5.0);
+    Material glassMaterial = Material::createGlass(RGBA_Color(0.9f, 0.9f, 1.0f, 0.1f), 1.5);
+    
+    Shape<::geometry::Sphere> glassShape(testSphere, glassMaterial);
+    assert(glassShape.hasMaterial());
+    assert(glassShape.hasGeometry());
+    assert(glassShape.isComplete());
+    
+    const Material* glassMat = glassShape.getMaterial();
+    assert(isEqual(glassMat->getRefractiveIndex(), 1.5));
+    assert(isEqual(glassMat->getTransmission(), 0.9));
+    assert(isEqual(glassMat->getRoughness(), 0.0));
+    
+    // Test emissive material
+    Material emissiveMaterial = Material::createEmissive(RGBA_Color(1.0f, 0.5f, 0.0f, 1.0f), 2.0);
+    shape.setMaterial(emissiveMaterial);
+    
+    const Material* emissiveMat = shape.getMaterial();
+    assert(emissiveMat->hasEmissive());
+    assert(emissiveMat->isEmissive());
+    
+    // Test metallic material
+    Material metalMaterial = Material::createMetal(RGBA_Color(0.8f, 0.8f, 0.9f, 1.0f), 0.1);
+    shape.setMaterial(metalMaterial);
+    
+    const Material* metalMat = shape.getMaterial();
+    assert(metalMat->isMetallic());
+    assert(metalMat->isReflective());
+    assert(isEqual(metalMat->getMetalness(), 1.0));
+    
+    // Clear material
+    shape.clearMaterial();
+    assert(!shape.hasMaterial());
+    assert(shape.getMaterial() == nullptr);
+    assert(!shape.hasColor());  // Should also clear backward compatibility color
 }
 
 void testConvenienceMethods() {
@@ -274,6 +372,14 @@ void testConvenienceMethods() {
     RGBA_Color yellow(1.0f, 1.0f, 0.0f, 1.0f);
     shape.setColor(yellow);
     assert(shape.isComplete()); // Has both geometry and color
+    
+    // Test isComplete with material
+    shape.clearMaterial(); // Remove the material created by setColor
+    assert(!shape.isComplete()); // Should not be complete without material
+    
+    Material testMaterial = Material::createPlastic(yellow, 0.7);
+    shape.setMaterial(testMaterial);
+    assert(shape.isComplete()); // Has both geometry and material
     
     // Test isValid (basic check)
     assert(shape.isValid()); // Has geometry

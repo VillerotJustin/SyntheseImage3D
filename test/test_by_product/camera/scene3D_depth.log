@@ -1,5 +1,5 @@
 === Render Test: scene3D_depth ===
-Start time: 2025-11-11 15:38:30
+Start time: 2025-11-11 17:06:25
 
 Camera Configuration:
 --------------------
@@ -18,18 +18,18 @@ Shapes (7 total):
     Type: Sphere
     Center: [0, 0, 0]
     Radius: 4
-    Color: None
+    Color: RGBA(1.000, 1.000, 1.000, 1.000)
   Shape 2:
     Type: Box
-    Origin: [5, 3, 10]
-    Width: 3
-    Height: 3
-    Depth: 3
-    Color: None
+    Origin: [5.000, 3.000, 10.000]
+    Width: 3.000
+    Height: 3.000
+    Depth: 3.000
+    Color: RGBA(1.000, 0.000, 0.000, 1.000)
   Shape 3:
     Type: Plane
-    Origin: [0, 0, 15]
-    Normal: [0, 0, -1]
+    Origin: [0.000, 0.000, 15.000]
+    Normal: [0.000, 0.000, -1.000]
     Color: RGBA(0.800, 0.200, 0.800, 1.000)
   Shape 4:
     Type: Plane
@@ -54,7 +54,7 @@ Shapes (7 total):
 
 Lights (0 total):
 
-Render Time: 39 ms
+Render Time: 56 ms
 
 -------------
 
@@ -64,7 +64,7 @@ Origin: [-10.000, -10.000, -5.000]
 Direction: [0.000, 0.000, 1.000]
 Field of View: 120.000
 
-Render Time: 183 ms
+Render Time: 207 ms
 
 -------------
 
@@ -74,7 +74,7 @@ Origin: [-10.000, -10.000, -5.000]
 Direction: [0.000, 0.000, 1.000]
 Field of View: 30.000
 
-Render Time: 339 ms
+Render Time: 362 ms
 
 -------------
 
