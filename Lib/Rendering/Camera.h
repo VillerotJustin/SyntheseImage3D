@@ -177,9 +177,18 @@ namespace rendering {
          * @param lights The vector of lights in the scene
          * @return RGBA_Color The resulting color at the hit point
          */
-        RGBA_Color processRayHit(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining = 1.0, double accR = 0.0, double accG = 0.0, double accB = 0.0, double accA = 0.0) const;
+        static RGBA_Color processRayHit(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining = 1.0, double accR = 0.0, double accG = 0.0, double accB = 0.0, double accA = 0.0);
 
-        RGBA_Color processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights) const;
+        static RGBA_Color processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights);
+
+        /**
+         * Find the next hit along a ray for a given set of shapes
+         * @param ray The ray to test for intersections
+         * @param shapes The vector of shapes to test against
+         * @param index_to_test The indices of shapes to test
+         * @return std::optional<Hit> The closest hit, or nullopt if no hit
+         */
+        static std::optional<Hit> findNextHit(const Ray& ray, const math::Vector<ShapeVariant>& shapes, const math::Vector<size_t>& index_to_test);
 
         /**
          * Render the scene from the camera's perspective
