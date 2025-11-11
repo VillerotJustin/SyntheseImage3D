@@ -52,6 +52,7 @@ void testCameraRenderScene3DColor();
 void testCameraRenderScene3DDepth();
 void testCameraRenderScene3DLight();
 void testCameraRenderScene3DLight_AA();
+void testCameraRenderScene3DAdvanced();
 
 int main() {
     std::cout << "Running Camera tests..." << std::endl;
@@ -95,6 +96,9 @@ int main() {
 
         testCameraRenderScene3DLight_AA();
         std::cout << "✓ Camera render scene 3D light anti-aliasing tests passed" << std::endl;
+
+        testCameraRenderScene3DAdvanced();
+        std::cout << "✓ Camera render scene 3D advanced tests passed" << std::endl;
 
         std::cout << "All Camera tests passed!" << std::endl;
         return 0;
@@ -365,6 +369,7 @@ void testCameraProcessHit() {
 
     RGBA_Color outColor;
     RGBA_Color outColor_old;
+    RGBA_Color outColor_advanced;
     
     // Performance test parameters
     const int NUM_ITERATIONS = 1000;
@@ -385,9 +390,18 @@ void testCameraProcessHit() {
     auto end_old = std::chrono::high_resolution_clock::now();
     auto total_duration_old = std::chrono::duration_cast<std::chrono::microseconds>(end_old - start_old);
     
+    // Measure time for advanced processRayHit method (multiple iterations)
+    auto start_advanced = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < NUM_ITERATIONS; ++i) {
+        outColor_advanced = *Camera::processRayHitAdvanced(*hit, ray, shapes, lights);
+    }
+    auto end_advanced = std::chrono::high_resolution_clock::now();
+    auto total_duration_advanced = std::chrono::duration_cast<std::chrono::microseconds>(end_advanced - start_advanced);
+
     // Calculate averages
     double avg_duration_new = static_cast<double>(total_duration_new.count()) / NUM_ITERATIONS;
     double avg_duration_old = static_cast<double>(total_duration_old.count()) / NUM_ITERATIONS;
+    double avg_duration_advanced = static_cast<double>(total_duration_advanced.count()) / NUM_ITERATIONS;
     
     assert(outColor != RGBA_Color(1.0, 0.0, 1.0, 1.0)); // Should not be debug color
     
@@ -402,6 +416,11 @@ void testCameraProcessHit() {
     logger.logMessage(logStream.str());
     std::cout << logStream.str() << std::endl;
     
+    logStream.str("");
+    logStream << "Processed color from hit (advanced): " << outColor_advanced;
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
+    
     logger.logMessage("");
     logger.logMessage("=== PERFORMANCE TEST RESULTS ===");
     logStream.str("");
@@ -410,7 +429,7 @@ void testCameraProcessHit() {
     std::cout << "Performance test results (" << NUM_ITERATIONS << " iterations):" << std::endl;
     
     logStream.str("");
-    logStream << "New processRayHit average time: " << std::fixed << std::setprecision(3) << avg_duration_new << " microseconds";
+    logStream << "Regression processRayHit average time: " << std::fixed << std::setprecision(3) << avg_duration_new << " microseconds";
     logger.logMessage(logStream.str());
     std::cout << logStream.str() << std::endl;
     
@@ -418,9 +437,14 @@ void testCameraProcessHit() {
     logStream << "Old processRayHitOld average time: " << std::fixed << std::setprecision(3) << avg_duration_old << " microseconds";
     logger.logMessage(logStream.str());
     std::cout << logStream.str() << std::endl;
+
+    logStream.str("");
+    logStream << "Advanced processRayHit average time: " << std::fixed << std::setprecision(3) << avg_duration_advanced << " microseconds";
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
     
     logStream.str("");
-    logStream << "New processRayHit total time: " << total_duration_new.count() << " microseconds";
+    logStream << "Regression processRayHit total time: " << total_duration_new.count() << " microseconds";
     logger.logMessage(logStream.str());
     std::cout << logStream.str() << std::endl;
     
@@ -428,46 +452,11 @@ void testCameraProcessHit() {
     logStream << "Old processRayHitOld total time: " << total_duration_old.count() << " microseconds";
     logger.logMessage(logStream.str());
     std::cout << logStream.str() << std::endl;
-    
-    // Calculate performance difference
-    if (avg_duration_old > 0) {
-        double speedup = avg_duration_old / avg_duration_new;
-        
-        logStream.str("");
-        logStream << "Performance ratio (old/new): " << std::fixed << std::setprecision(2) << speedup << "x";
-        logger.logMessage(logStream.str());
-        std::cout << logStream.str() << std::endl;
-        
-        if (speedup > 1.0) {
-            logStream.str("");
-            logStream << "New method is " << std::fixed << std::setprecision(2) << speedup << "x FASTER than old method";
-            logger.logMessage(logStream.str());
-            std::cout << logStream.str() << std::endl;
-        } else {
-            logStream.str("");
-            logStream << "Old method is " << std::fixed << std::setprecision(2) << (1.0/speedup) << "x FASTER than new method";
-            logger.logMessage(logStream.str());
-            std::cout << logStream.str() << std::endl;
-        }
-        
-        // Additional analysis in log
-        logger.logMessage("");
-        logger.logMessage("=== PERFORMANCE ANALYSIS ===");
-        logStream.str("");
-        logStream << "Performance difference: " << std::abs(avg_duration_new - avg_duration_old) << " microseconds per call";
-        logger.logMessage(logStream.str());
-        
-        logStream.str("");
-        logStream << "Efficiency gain per 1M calls: " << std::fixed << std::setprecision(1) 
-                  << (std::abs(avg_duration_new - avg_duration_old) * 1000000.0 / 1000000.0) << " seconds";
-        logger.logMessage(logStream.str());
-        
-        if (speedup > 1.0) {
-            logger.logMessage("✓ Optimization successful - new method is faster");
-        } else {
-            logger.logMessage("⚠ Performance regression detected - old method is faster");
-        }
-    }
+
+    logStream.str("");
+    logStream << "Advanced processRayHit total time: " << total_duration_advanced.count() << " microseconds";
+    logger.logMessage(logStream.str());
+    std::cout << logStream.str() << std::endl;
     
     logger.logRenderTime();
 }
@@ -1000,4 +989,152 @@ void testCameraRenderScene3DLight_AA() {
         std::cout << "FXAA anti-aliasing test skipped due to exception: " << e.what() << std::endl;
     }
     
+}
+
+void testCameraRenderScene3DAdvanced() {
+    RenderLogger logger("scene3D_advanced");
+
+    // Create camera
+    Vector3D origin(-10, -10, -5);
+    // Build top-right and bottom-left points explicitly instead of using the old ctor
+    Vector3D topRight = origin + Vector3D(20.0, 0, 0);
+    Vector3D bottomLeft = origin + Vector3D(0, 20.0, 0);
+    Rectangle viewport(origin, topRight, bottomLeft);
+    Camera camera(viewport);
+    
+    // Log camera settings
+    logger.logCameraSettings(camera, origin);
+    
+    
+    // Create the lights of the room
+    Light light1(Vector3D(0, 8, -2), RGBA_Color(1.0, 1.0, 1.0, 1.0), 2.0);
+    Light light2(Vector3D(-5, -5, 0), RGBA_Color(1.0, 1.0, 1.0, 1.0), 0.6);
+    Light light3(Vector3D(5, 5, -2), RGBA_Color(1.0, 0.0, 0.0, 1.0), 1.0);
+    Light light4(Vector3D(5, 5, 2), RGBA_Color(0.0, 1.0, 0.0, 1.0), 1.0);
+    Light light5(Vector3D(5, -5, -2), RGBA_Color(0.0, 0.0, 1.0, 1.0), 1.0);
+    math::Vector<Light> lights;
+    lights.append(light1);
+    lights.append(light2);
+    lights.append(light3);
+    lights.append(light4);
+    lights.append(light5);
+
+    // Create some shapes to render
+    math::Vector<Camera::ShapeVariant> shapes;
+    
+    // Add a sphere at the origin
+    Sphere sphere(Vector3D(0, 0, 0), 4.0);
+    Shape<::geometry::Sphere> sphereShape(sphere);
+    Material sphereMaterial; // White metallic material
+    sphereMaterial.setAlbedo(RGBA_Color(1, 1, 1, 1)); // White color
+    sphereMaterial.setMetalness(1.0f);
+    sphereMaterial.setRoughness(0.0f);
+
+    sphereShape.setMaterial(sphereMaterial);
+    Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
+    shapes.append(sphereVariant);
+    
+    // Add a box 
+    Box box(Vector3D(5, 3, 10), 3.0, 3.0, 3.0, Vector3D(0, 0, 1));
+    Shape<::geometry::Box> boxShape(box);
+    Material boxMaterial; // Red plastic material
+    boxMaterial.setAlbedo(RGBA_Color(1, 0, 0, 1)); // Red color
+    boxMaterial.setMetalness(0.0f);
+    boxMaterial.setRoughness(0.8f);
+    boxShape.setMaterial(boxMaterial);
+    Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
+    shapes.append(boxVariant);
+
+    // Add transparent rectangle
+    Vector3D rectTopLeft(-7, -7, -3);
+    Rectangle transparentRect(rectTopLeft, rectTopLeft + Vector3D(5.0, 0, 0), rectTopLeft + Vector3D(0.0, 5.0, 0.0));
+    Shape<::geometry::Rectangle> transparentRectShape(transparentRect, RGBA_Color(0.0, 0.0, 0.8, 0.3)); // Semi-transparent blue
+    Material transparentRectMaterial;
+    transparentRectMaterial.setAlbedo(RGBA_Color(0.0, 0.0, 0.8, 0.3));
+    transparentRectMaterial.setMetalness(0.0f);
+    transparentRectMaterial.setRoughness(0.1f);
+    transparentRectMaterial.setRefractiveIndex(1.5f); // Glass-like
+    transparentRectShape.setMaterial(transparentRectMaterial);
+    
+    Camera::ShapeVariant transparentRectVariant = Camera::ShapeVariant{transparentRectShape};
+    shapes.append(transparentRectVariant);
+
+    // Add walls (Back top bottom right & left)
+    Plane backWall(Vector3D(0, 0, 15), Vector3D(0, 0, -1));
+    Shape<::geometry::Plane> backWallShape(backWall); // Purple Rough wall
+    Material backWallMaterial;
+    backWallMaterial.setAlbedo(RGBA_Color(0.5, 0.2, 0.8, 1.0));
+    backWallMaterial.setMetalness(0.0f);
+    backWallMaterial.setRoughness(1.0f);
+    backWallShape.setMaterial(backWallMaterial);
+    Camera::ShapeVariant backWallVariant = Camera::ShapeVariant{backWallShape};
+    shapes.append(backWallVariant);
+
+    Plane leftWall(Vector3D(-10, 0, 0), Vector3D(1, 0, 0));
+    Shape<::geometry::Plane> leftWallShape(leftWall); // Mirror-like Cyan wall
+    Material leftWallMaterial;
+    leftWallMaterial.setAlbedo(RGBA_Color(0.2, 0.8, 0.8, 1.0));
+    leftWallMaterial.setMetalness(1.0f);
+    leftWallMaterial.setRoughness(0.0f);
+    leftWallShape.setMaterial(leftWallMaterial);
+    Camera::ShapeVariant leftWallVariant = Camera::ShapeVariant{leftWallShape};
+    shapes.append(leftWallVariant);
+
+    Plane rightWall(Vector3D(10, 0, 0), Vector3D(-1, 0, 0));
+    Shape<::geometry::Plane> rightWallShape(rightWall); // Mirror-like Yellow wall
+    Material rightWallMaterial;
+    rightWallMaterial.setAlbedo(RGBA_Color(0.8, 0.8, 0.2, 1.0));
+    rightWallMaterial.setMetalness(1.0f);
+    rightWallMaterial.setRoughness(0.0f);
+    rightWallShape.setMaterial(rightWallMaterial);
+    Camera::ShapeVariant rightWallVariant = Camera::ShapeVariant{rightWallShape};
+    shapes.append(rightWallVariant);
+
+    Plane topWall(Vector3D(0, 10, 0), Vector3D(0, -1, 0));
+    Shape<::geometry::Plane> topWallShape(topWall); // Gray wall
+    Material topWallMaterial;
+    topWallMaterial.setAlbedo(RGBA_Color(0.8, 0.8, 0.8, 1.0));
+    topWallMaterial.setMetalness(0.0f);
+    topWallMaterial.setRoughness(1.0f);
+    topWallShape.setMaterial(topWallMaterial);
+    Camera::ShapeVariant topWallVariant = Camera::ShapeVariant{topWallShape};
+    shapes.append(topWallVariant);
+
+    Plane bottomWall(Vector3D(0, -10, 0), Vector3D(0, 1, 0));
+    Shape<::geometry::Plane> bottomWallShape(bottomWall); // Blue wall
+    Material bottomWallMaterial;
+    bottomWallMaterial.setAlbedo(RGBA_Color(0.2, 0.2, 0.8, 1.0));
+    bottomWallMaterial.setMetalness(0.0f);
+    bottomWallMaterial.setRoughness(1.0f);
+    bottomWallShape.setMaterial(bottomWallMaterial);
+    Camera::ShapeVariant bottomWallVariant = Camera::ShapeVariant{bottomWallShape};
+    shapes.append(bottomWallVariant);
+
+    // Log scene configuration
+    logger.logScene(shapes, lights);
+    
+    logger.logImageInfo(720, 720);
+    // Render with No AA
+    Image lightImage3D = camera.renderScene3DLight_Advanced(720, 720, shapes, lights);
+    logger.logRenderTime();
+    
+    // Basic checks on the rendered image
+    assert(lightImage3D.getWidth() == 720);
+    assert(lightImage3D.getHeight() == 720);
+
+    // Check that some pixels have depth values (not all default/black)
+    assert(has_non_debug_pixel(lightImage3D));
+
+    lightImage3D.toPngFile("test_3d_advanced_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Advanced render test completed - check output manually if needed" << std::endl;
+
+    Image lightImage3D_SSAA = camera.renderScene3DLight_Advanced_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::SSAA);
+    logger.logRenderTime();
+    lightImage3D_SSAA.toPngFile("test_3d_advanced_aa_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Advanced render with AA test completed - check output manually if needed" << std::endl;
+
+    Image lightImage3D_MSAA = camera.renderScene3DLight_Advanced_AA(720, 720, shapes, lights, 16UL, rendering::Camera::AntiAliasingMethod::MSAA);
+    logger.logRenderTime();
+    lightImage3D_MSAA.toPngFile("test_3d_advanced_msaa_output", "./test/test_by_product/camera/");
+    std::cout << "Note: 3D Advanced render with MSAA test completed - check output manually if needed" << std::endl;
 }

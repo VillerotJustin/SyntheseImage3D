@@ -285,6 +285,20 @@ namespace rendering {
         return material;
     }
 
+    geometry::Vector3D Material::getRefractedDirection(const geometry::Vector3D& incident, const geometry::Vector3D& normal) const {
+        double eta = 1.0 / refractiveIndex; // Assuming air to material transition
+        double cosI = -normal.dot(incident);
+        double sinT2 = eta * eta * (1.0 - cosI * cosI);
+        
+        if (sinT2 > 1.0) {
+            // Total internal reflection
+            return geometry::Vector3D(0, 0, 0); // Indicate no refraction
+        }
+        
+        double cosT = std::sqrt(1.0 - sinT2);
+        return incident * eta + normal * (eta * cosI - cosT);
+    }
+
     // Equality operators
     bool Material::operator==(const Material& other) const {
         // Compare properties

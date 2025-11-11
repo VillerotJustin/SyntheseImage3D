@@ -7,12 +7,12 @@
 
 RenderLogger::RenderLogger(const std::string& testName) {
     // Create the camera directory if it doesn't exist
-    std::string dirPath = "test/test_by_product/camera";
+    std::string dirPath = "test/test_by_product/camera/logs";
     if (system(("mkdir -p " + dirPath).c_str()) != 0) {
         throw std::runtime_error("Failed to create directory: " + dirPath);
     }
 
-    std::string logPath = dirPath + "/" + testName + ".log";
+    std::string logPath = dirPath + "/" + testName + "_" + getCurrentTime() + ".log";
     logFile.open(logPath);
     if (!logFile.is_open()) {
         throw std::runtime_error("Could not open log file: " + logPath);

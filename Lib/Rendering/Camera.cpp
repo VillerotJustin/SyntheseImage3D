@@ -514,6 +514,202 @@ namespace rendering {
         return finalColor.clamp();
     }
 
+    RGBA_Color* Camera::processRayHitAdvanced(const Hit& hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, int recursivity_depth){
+        // Add recursivity depth check
+        if (recursivity_depth <= 0) {
+            return new RGBA_Color(0,0,0,1); // Black if max depth
+        }
+
+        if (hit.t == std::numeric_limits<double>::infinity()) return new RGBA_Color(1,0,1,1); // Magenta for no hit
+        
+        RGBA_Color* Local_color = new RGBA_Color(0,0,0,1);
+        RGBA_Color* Transparency_color = new RGBA_Color(0,0,0,1);
+        RGBA_Color* Reflection_color = new RGBA_Color(0,0,0,1);
+        RGBA_Color *final_color = new RGBA_Color(1,0,1,1);
+
+        // Access the shape
+        size_t i = hit.shapeIndex;
+        std::visit([&](auto&& shape) {
+
+            // Get material
+            const Material* material = shape.getMaterial();
+
+            // Get Color at hit point
+
+            // Compute lighting at this hit
+            Vector3D hitPoint = hitRay.getPointAt(hit.t);
+            Vector3D normal = shape.getNormalAt(hitPoint);
+
+            RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
+            #pragma omp parallel for schedule(dynamic)
+            for (const Light &light : lights) {
+                Vector3D hitToLight = (light.getPosition() - hitPoint);
+                double distanceToLight = hitToLight.length();
+                Vector3D lightDir = hitToLight.normal();
+
+                const double epsilon = 1e-4;
+                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
+
+                double transmission = 1.0;
+
+                // Check for occlusions
+                #pragma omp parallel for schedule(dynamic)
+                for (size_t j = 0; j < shapes.size(); ++j) {
+                    if (i != j && transmission > 1e-12) {
+                        std::visit([&](auto&& otherShape) {
+                            if (otherShape.getGeometry()) {
+                                auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay);
+                                if (shadowDist && *shadowDist < distanceToLight) {
+                                    const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
+                                    double occAlpha = occColor ? occColor->a() : 1.0;
+                                    if (occAlpha >= 1.0 - 1e-12) {
+                                        transmission = 0.0;
+                                    } else {
+                                        transmission *= (1.0 - occAlpha);
+                                    }
+                                }
+                            }
+                        }, shapes[j]);
+                    }
+                }
+
+                if (transmission > 1e-12) {
+                    double nDotL = std::max(0.0, normal.dot(lightDir));
+                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
+                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
+                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
+                    accumulatedLight = accumulatedLight + contrib;
+                }
+            }
+
+            // No ambient
+
+            RGBA_Color surfColor = material ? material->getAlbedo() : RGBA_Color(1,0,1,1);
+            *Local_color = (surfColor * accumulatedLight).clamp();
+
+            // If no material, skip advanced processing but continue to blending
+            if (material != nullptr) {
+                Vector3D rayDir = hitRay.getDirection();
+                
+                // Handle transparency with recursion
+                if (material->isTransparent()) {
+                    Ray refractRay(hitPoint + rayDir * 1e-4, material ? material->getRefractedDirection(rayDir, normal) : rayDir);
+                    
+                    Hit next_hit;
+                    double closest_t = std::numeric_limits<double>::infinity();
+
+                    for (size_t idx = 0; idx < shapes.size(); ++idx) {
+                        if (idx == i) continue; // Skip current shape
+                        std::visit([&](auto&& otherShape) {
+                            if (otherShape.getGeometry()) {
+                                if (auto d = otherShape.getGeometry()->rayIntersectDepth(refractRay, closest_t)) {
+                                    // only accept hits in front of the origin
+                                    if (*d > 1e-9) {
+                                        next_hit = Hit{*d, idx};
+                                        closest_t = *d;
+                                    }
+                                }
+                            }
+                        }, shapes[idx]);
+                    }
+
+                    if (closest_t < std::numeric_limits<double>::infinity()) {
+                        Transparency_color = processRayHitAdvanced(next_hit, refractRay, shapes, lights, recursivity_depth - 1);
+                    } else {
+                        Transparency_color = new RGBA_Color(1,0,1,1); // Debug color
+                    }
+                }
+
+                // Handle reflection/refraction here if needed
+                if (material->isReflective()) {
+                    Vector3D reflectDir = rayDir - normal * 2.0 * rayDir.dot(normal);
+                    Ray reflectRay(hitPoint + reflectDir * 1e-4, reflectDir);
+
+                    Hit next_hit;
+                    double closest_t = std::numeric_limits<double>::infinity();
+
+                    for (size_t idx = 0; idx < shapes.size(); ++idx) {
+                        if (idx == i) continue; // Skip current shape
+                        std::visit([&](auto&& otherShape) {
+                            if (otherShape.getGeometry()) {
+                                if (auto d = otherShape.getGeometry()->rayIntersectDepth(reflectRay, closest_t)) {
+                                    // only accept hits in front of the origin
+                                    if (*d > 1e-9) {
+                                        next_hit = Hit{*d, idx};
+                                        closest_t = *d;
+                                    }
+                                }
+                            }
+                        }, shapes[idx]);
+                    }
+
+                    if (closest_t < std::numeric_limits<double>::infinity()) {
+                        Reflection_color = processRayHitAdvanced(next_hit, reflectRay, shapes, lights, recursivity_depth - 1);
+                    } else {
+                        Reflection_color = new RGBA_Color(1,0,1,1); // Debug color
+                    }
+                }
+            } // End of material processing
+
+            // Combine colors based on material properties
+            // Blend local color with reflection and transmission based on material properties
+            *final_color = *Local_color;
+            
+            if (material) {
+                double metalness = material->getMetalness();
+                double transmission = material->getTransmission();
+                double roughness = material->getRoughness();
+                
+                // For metallic materials, blend more reflection
+                if (material->isReflective() && Reflection_color) {
+                    // Fresnel-like reflection mixing based on metalness and roughness
+                    double reflectionStrength = metalness * (1.0 - roughness * 0.8);
+                    // Manual alpha blending: result = src * (1-alpha) + dst * alpha
+                    *final_color = (*final_color) * (1.0 - reflectionStrength) + (*Reflection_color) * reflectionStrength;
+                }
+                
+                // For transparent materials, blend with transmitted light
+                if (material->isTransparent() && Transparency_color) {
+                    // Transmission strength based on material transmission property or alpha channel
+                    double transmissionStrength = transmission;
+                    if (transmissionStrength == 0.0 && material->hasAlbedo()) {
+                        // Use alpha channel for transparency if no explicit transmission
+                        transmissionStrength = 1.0 - material->getAlbedo().a();
+                    }
+                    transmissionStrength *= (1.0 - metalness); // Metals don't transmit light
+                    // Manual alpha blending for transparency
+                    *final_color = (*final_color) * (1.0 - transmissionStrength) + (*Transparency_color) * transmissionStrength;
+                }
+                
+                // Add emissive contribution if material is emissive
+                if (material->isEmissive()) {
+                    RGBA_Color emissiveContrib = material->getEmissive() * material->getEmissiveIntensity();
+                    *final_color = *final_color + emissiveContrib;
+                }
+            }
+            
+            // Apply clamping to final color
+            *final_color = final_color->clamp();
+            
+            // Clean up temporary colors
+            if (Transparency_color && Transparency_color != final_color) {
+                delete Transparency_color;
+            }
+            if (Reflection_color && Reflection_color != final_color) {
+                delete Reflection_color;
+            }
+            if (Local_color && Local_color != final_color) {
+                delete Local_color;
+            }
+
+        }, shapes[i]);
+        return final_color;
+        
+        // Fallback return (should not reach here)
+        return new RGBA_Color(1, 0, 1, 1); // Magenta for error
+    }
+
+
     // ========== Rendering Methods ==========
 
 
@@ -797,6 +993,153 @@ namespace rendering {
                 size_t antiAlias_imageWidth = imageWidth * samplesPerPixel / 2;
 
                 Image Image3D_antiAliased = renderScene3DLight(antiAlias_imageWidth, antiAlias_imageHeight, shapes, lights);
+                
+                // Downsample anti-aliased image to final image
+                return SSAADownScaling(Image3D_antiAliased, samplesPerPixel);
+            }
+            case AntiAliasingMethod::FXAA: {
+                // Fast Approximate Anti-Aliasing
+                throw std::invalid_argument("FXAA not implemented yet");
+            }
+            default: {
+                throw std::invalid_argument("Unknown AntiAliasingMethod");
+            }
+        }
+    }
+
+    Image Camera::renderScene3DLight_Advanced(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const {
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0 || lights.size() == 0) {
+            return Image3D; // Return empty image if no shapes or lights
+        }
+
+        #pragma omp parallel for collapse(2) schedule(dynamic)
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                Ray ray = generateRayForPixel(x, y, imageWidth, imageHeight, true);
+
+                Hit hit;
+                double closestDistance = std::numeric_limits<double>::infinity();
+
+                #pragma omp parallel for schedule(dynamic)
+                for (size_t i = 0; i < shapes.size(); ++i) {
+                    std::visit([&](auto&& shape) {
+                        if (shape.getGeometry()) {
+                            if (auto d = shape.getGeometry()->rayIntersectDepth(ray, closestDistance)) {
+                                // only accept hits in front of the origin
+                                if (*d > 1e-9) {
+                                    hit = Hit{*d, i};
+                                    closestDistance = *d;
+                                }
+                            }
+                        }
+                    }, shapes[i]);
+                }
+
+                if (closestDistance < std::numeric_limits<double>::infinity()) {
+                    RGBA_Color finalColor = *processRayHitAdvanced(hit, ray, shapes, lights);
+                    Image3D.setPixel(x, y, finalColor.clamp());
+                }
+            }
+        }
+
+        return Image3D;
+    }
+
+    Image Camera::renderScene3DLight_Advanced_MSAA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const {
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0 || lights.size() == 0) {
+            return Image3D; // Return empty image if no shapes or lights
+        }
+
+        #pragma omp parallel for collapse(2) schedule(dynamic)
+        for (size_t y = 0; y < imageHeight; ++y) {
+            for (size_t x = 0; x < imageWidth; ++x) {
+                math::Vector<RGBA_Color> sampleColors;
+
+                #pragma omp parallel for schedule(dynamic)
+                for (size_t sample_number = 0; sample_number < samplesPerPixel; ++sample_number) {
+                    Ray ray = generateRandomRayForPixel(x, y, imageWidth, imageHeight, true);
+
+                    Hit hit;
+                    double closestDistance = std::numeric_limits<double>::infinity();
+
+                    #pragma omp parallel for schedule(dynamic)
+                    for (size_t i = 0; i < shapes.size(); ++i) {
+                        std::visit([&](auto&& shape) {
+                            if (shape.getGeometry()) {
+                                if (auto d = shape.getGeometry()->rayIntersectDepth(ray, closestDistance)) {
+                                    // only accept hits in front of the origin
+                                    if (*d > 1e-9) {
+                                        hit = Hit{*d, i};
+                                        closestDistance = *d;
+                                    }
+                                }
+                            }
+                        }, shapes[i]);
+                    }
+
+                    if (closestDistance < std::numeric_limits<double>::infinity()) {
+                        sampleColors.append(*processRayHitAdvanced(hit, ray, shapes, lights));
+                    }              
+                }
+
+                // Average samples for this pixel
+                if (!sampleColors.empty()) {
+                    double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
+                    size_t numColors = sampleColors.size();
+
+                    // Move accumulation outside the parallel region
+                    accR = sampleColors[0].r();
+                    accG = sampleColors[0].g();
+                    accB = sampleColors[0].b();
+                    accA = sampleColors[0].a();
+
+                    for (size_t i = 1; i < numColors; i++) {
+                        accR += sampleColors[i].r();
+                        accG += sampleColors[i].g();
+                        accB += sampleColors[i].b();
+                        accA += sampleColors[i].a();
+                    }
+
+                    double numSamples = static_cast<double>(numColors);
+                    RGBA_Color finalColor(accR / numSamples, accG / numSamples, accB / numSamples, accA / numSamples);
+                    Image3D.setPixel(x, y, finalColor.clamp());
+                }
+            }
+        }
+
+        return Image3D;
+    }
+
+    Image Camera::renderScene3DLight_Advanced_AA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel, AntiAliasingMethod method) const {
+        if (samplesPerPixel == 0 || samplesPerPixel % 4 != 0) {
+            throw std::invalid_argument("samplesPerPixel must be a multiple of 4 not zero");
+        }
+
+        Image Image3D(imageWidth, imageHeight);
+
+        if (shapes.size() == 0 || lights.size() == 0) {
+            return Image3D; // Return empty image if no shapes or lights
+        }
+
+        switch (method)
+        {
+            case AntiAliasingMethod::NONE: {
+                return renderScene3DLight_Advanced(imageWidth, imageHeight, shapes, lights);
+            }
+            case AntiAliasingMethod::MSAA: {
+                // Multi-Sample Anti-Aliasing
+                return renderScene3DLight_Advanced_MSAA(imageWidth, imageHeight, shapes, lights, samplesPerPixel);
+            }
+            case AntiAliasingMethod::SSAA: {
+                // Super-Sample Anti-Aliasing
+                size_t antiAlias_imageHeight = imageHeight * samplesPerPixel / 2;
+                size_t antiAlias_imageWidth = imageWidth * samplesPerPixel / 2;
+
+                Image Image3D_antiAliased = renderScene3DLight_Advanced(antiAlias_imageWidth, antiAlias_imageHeight, shapes, lights);
                 
                 // Downsample anti-aliased image to final image
                 return SSAADownScaling(Image3D_antiAliased, samplesPerPixel);

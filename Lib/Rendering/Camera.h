@@ -180,6 +180,8 @@ namespace rendering {
         static RGBA_Color processRayHitRegression(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining = 1.0, double accR = 0.0, double accG = 0.0, double accB = 0.0, double accA = 0.0);
 
         static RGBA_Color processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights);
+        
+        static RGBA_Color* processRayHitAdvanced(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, int recursivity_depth = 10);
 
         /**
          * Find the next hit along a ray for a given set of shapes
@@ -241,6 +243,27 @@ namespace rendering {
          */
         Image renderScene3DLight(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
 
+        /**
+         * Render the depth map of the scene from the camera's perspective
+         * @tparam T The geometry type of the shapes to render
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @param shapes The vector of shapes in the scene
+         * @param lights The vector of lights in the scene
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DLight_Advanced(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
+        /**
+         * Render the depth map of the scene from the camera's perspective
+         * @tparam T The geometry type of the shapes to render
+         * @param imageWidth The width of the output image in pixels
+         * @param imageHeight The height of the output image in pixels
+         * @param shapes The vector of shapes in the scene
+         * @param lights The vector of lights in the scene
+         * @return Image The rendered depth map image
+         */
+        Image renderScene3DLight_Advanced_MSAA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const;
+
         Image renderScene3DLight_MSAA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel) const;
 
         // Enum for anti-aliasing methods
@@ -250,6 +273,8 @@ namespace rendering {
             MSAA,
             FXAA
         };
+
+        Image renderScene3DLight_Advanced_AA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel = 8, AntiAliasingMethod method = AntiAliasingMethod::NONE) const;
 
         Image renderScene3DLight_AA(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights, size_t samplesPerPixel = 8, AntiAliasingMethod method = AntiAliasingMethod::NONE) const;
 

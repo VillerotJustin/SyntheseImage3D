@@ -5,7 +5,11 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+// internal libraries
 #include "./RGBA_Color.h"
+#include "../Geometry/Vector3D.h"
+
+// external libraries
 #include <stdexcept>
 #include <memory>
 #include <string>
@@ -87,6 +91,8 @@ namespace rendering {
         static Material createGlass(const RGBA_Color& color, double ior = 1.5);
         static Material createEmissive(const RGBA_Color& color, double intensity = 1.0);
         static Material createPlastic(const RGBA_Color& color, double roughness = 0.5);
+
+        geometry::Vector3D getRefractedDirection(const geometry::Vector3D& incident, const geometry::Vector3D& normal) const;
 
         // Equality operators
         bool operator==(const Material& other) const;
