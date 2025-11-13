@@ -253,6 +253,7 @@ namespace rendering {
          * @return Image The rendered depth map image
          */
         Image renderScene3DLight_Advanced(size_t imageWidth, size_t imageHeight, math::Vector<ShapeVariant> shapes, math::Vector<Light> lights) const;
+        
         /**
          * Render the depth map of the scene from the camera's perspective
          * @tparam T The geometry type of the shapes to render

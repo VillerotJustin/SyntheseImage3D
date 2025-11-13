@@ -1,0 +1,99 @@
+=== Render Test: scene3D_advanced ===
+Start time: 2025-11-13 12:58:45
+
+Camera Configuration:
+--------------------
+Origin: [-10, -10, -5]
+Direction: [0, 0, 1]
+Field of View: 65
+
+Scene Configuration:
+-------------------
+Shapes (8 total):
+  Shape 1:
+    Type: Sphere
+    Center: [0, 0, 0]
+    Radius: 4
+    Color: RGBA(1.000, 1.000, 1.000, 1.000)
+  Shape 2:
+    Type: Box
+    Origin: [5.000, 3.000, 10.000]
+    Width: 3.000
+    Height: 3.000
+    Depth: 3.000
+    Color: RGBA(1.000, 0.000, 0.000, 1.000)
+  Shape 3:
+    Type: Rectangle
+    Origin: [-7.000, -7.000, -3.000]
+    Length: 5.000
+    Width: 5.000
+    Color: RGBA(0.000, 0.000, 0.800, 0.300)
+  Shape 4:
+    Type: Plane
+    Origin: [0.000, 0.000, 15.000]
+    Normal: [0.000, 0.000, -1.000]
+    Color: RGBA(0.500, 0.200, 0.800, 1.000)
+  Shape 5:
+    Type: Plane
+    Origin: [-10.000, 0.000, 0.000]
+    Normal: [1.000, 0.000, 0.000]
+    Color: RGBA(0.200, 0.800, 0.800, 1.000)
+  Shape 6:
+    Type: Plane
+    Origin: [10.000, 0.000, 0.000]
+    Normal: [-1.000, 0.000, 0.000]
+    Color: RGBA(0.800, 0.800, 0.200, 1.000)
+  Shape 7:
+    Type: Plane
+    Origin: [0.000, 10.000, 0.000]
+    Normal: [0.000, -1.000, 0.000]
+    Color: RGBA(0.800, 0.800, 0.800, 1.000)
+  Shape 8:
+    Type: Plane
+    Origin: [0.000, -10.000, 0.000]
+    Normal: [0.000, 1.000, 0.000]
+    Color: RGBA(0.200, 0.200, 0.800, 1.000)
+
+Lights (5 total):
+  Light 1:
+    Type: Point Light
+    Position: [0.000, 8.000, -2.000]
+    Intensity: 1.000
+    Color: RGBA(1.000, 1.000, 1.000, 1.000)
+  Light 2:
+    Type: Point Light
+    Position: [-5.000, -5.000, 0.000]
+    Intensity: 0.600
+    Color: RGBA(1.000, 1.000, 1.000, 1.000)
+  Light 3:
+    Type: Point Light
+    Position: [5.000, 5.000, -2.000]
+    Intensity: 1.000
+    Color: RGBA(1.000, 0.000, 0.000, 1.000)
+  Light 4:
+    Type: Point Light
+    Position: [5.000, 5.000, 2.000]
+    Intensity: 1.000
+    Color: RGBA(0.000, 1.000, 0.000, 1.000)
+  Light 5:
+    Type: Point Light
+    Position: [5.000, -5.000, -2.000]
+    Intensity: 1.000
+    Color: RGBA(0.000, 0.000, 1.000, 1.000)
+
+Output Image:
+-------------
+Dimensions: 720x720 pixels
+
+Render Time: 596 ms
+
+-------------
+
+Render Time: 38581 ms
+
+-------------
+
+Render Time: 48068 ms
+
+-------------
+
