@@ -174,7 +174,7 @@ namespace rendering {
 
                 math::Vector<Hit> hits;
 
-                #pragma omp parallel for schedule(dynamic)
+                // #pragma omp parallel for schedule(dynamic)
                 for (size_t i = 0; i < shapes.size(); ++i) {
                     std::visit([&](auto&& shape) {
                         if (shape.getGeometry()) {
@@ -216,7 +216,7 @@ namespace rendering {
                     // Collect all hits along the view ray and sort them front-to-back
                     math::Vector<Hit> hits;
 
-                    #pragma omp parallel for schedule(dynamic)
+                    // #pragma omp parallel for schedule(dynamic)
                     for (size_t i = 0; i < shapes.size(); ++i) {
                         std::visit([&](auto&& shape) {
                             if (shape.getGeometry()) {
@@ -319,7 +319,7 @@ namespace rendering {
                 Hit hit;
                 double closestDistance = std::numeric_limits<double>::infinity();
 
-                #pragma omp parallel for schedule(dynamic)
+                // #pragma omp parallel for schedule(dynamic)
                 for (size_t i = 0; i < shapes.size(); ++i) {
                     std::visit([&](auto&& shape) {
                         if (shape.getGeometry()) {
@@ -363,7 +363,7 @@ namespace rendering {
                     Hit hit;
                     double closestDistance = std::numeric_limits<double>::infinity();
 
-                    #pragma omp parallel for schedule(dynamic)
+                    // #pragma omp parallel for schedule(dynamic)
                     for (size_t i = 0; i < shapes.size(); ++i) {
                         std::visit([&](auto&& shape) {
                             if (shape.getGeometry()) {

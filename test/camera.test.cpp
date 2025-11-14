@@ -313,18 +313,64 @@ void testCameraProcessHit() {
     // Create Shapes
     Sphere sphere(Vector3D(0, 0, 0), 2.0); // Sphere at origin with radius 2
     Shape<::geometry::Sphere> sphereShape(sphere);
-    sphereShape.setColor(RGBA_Color(1, 0, 0, 0.5)); // Red translucent color
+    Material sphereMaterial;
+    sphereMaterial.setAlbedo(RGBA_Color(1, 0, 0, 0.5)); // Red translucent color
+    sphereShape.setMaterial(sphereMaterial);
     Camera::ShapeVariant sphereVariant = Camera::ShapeVariant{sphereShape};
 
-    Box box(Vector3D(-1, -1, 5), 2.0, 2.0, 2.0, Vector3D(0, 0, 1)); // Box in front of ray
+    Box box(Vector3D(-1, -1, -5), 2.0, 2.0, 2.0, Vector3D(0, 0, 1)); // Box behind sphere
     Shape<::geometry::Box> boxShape(box);
-    boxShape.setColor(RGBA_Color(0, 0, 1, 1.0)); // Blue opaque color
+    Material boxMaterial;
+    boxMaterial.setAlbedo(RGBA_Color(0, 0, 1, 1.0)); // Blue opaque color
+    boxShape.setMaterial(boxMaterial);
     Camera::ShapeVariant boxVariant = Camera::ShapeVariant{boxShape};
+
+    // Add walls
+    Plane leftWall(Vector3D(-10, -10, -10), Vector3D(-10, 10, -10), Vector3D(-10, -10, 10));
+    Shape<::geometry::Plane> leftWallShape(leftWall);
+    Material leftWallMaterial;
+    leftWallMaterial.setAlbedo(RGBA_Color(0, 1, 0, 1.0)); // Green opaque color
+    leftWallShape.setMaterial(leftWallMaterial);
+    Camera::ShapeVariant leftWallVariant = Camera::ShapeVariant{leftWallShape};
+
+    Plane rightWall(Vector3D(10, -10, -10), Vector3D(10, 10, -10), Vector3D(10, -10, 10));
+    Shape<::geometry::Plane> rightWallShape(rightWall);
+    Material rightWallMaterial;
+    rightWallMaterial.setAlbedo(RGBA_Color(1, 1, 0, 1.0)); // Yellow opaque color
+    rightWallShape.setMaterial(rightWallMaterial);
+    Camera::ShapeVariant rightWallVariant = Camera::ShapeVariant{rightWallShape};
+
+    Plane floor(Vector3D(-10, -10, -10), Vector3D(10, -10, -10), Vector3D(-10, -10, 10));
+    Shape<::geometry::Plane> floorShape(floor);
+    Material floorMaterial;
+    floorMaterial.setAlbedo(RGBA_Color(0.5, 0, 1, 1.0)); // Violet opaque color
+    floorShape.setMaterial(floorMaterial);
+    Camera::ShapeVariant floorVariant = Camera::ShapeVariant{floorShape};
+
+    Plane ceiling(Vector3D(-10, 10, -10), Vector3D(10, 10, -10), Vector3D(-10, 10, 10));
+    Shape<::geometry::Plane> ceilingShape(ceiling);
+    Material ceilingMaterial;
+    ceilingMaterial.setAlbedo(RGBA_Color(0, 1, 1, 1.0)); // Cyan opaque color
+    ceilingShape.setMaterial(ceilingMaterial);
+    Camera::ShapeVariant ceilingVariant = Camera::ShapeVariant{ceilingShape};
+
+    Plane backWall(Vector3D(-10, -10, 10), Vector3D(10, -10, 10), Vector3D(-10, 10, 10));
+    Shape<::geometry::Plane> backWallShape(backWall);
+    Material backWallMaterial;
+    backWallMaterial.setAlbedo(RGBA_Color(1, 0.5, 0, 1.0)); // Orange opaque color
+    backWallShape.setMaterial(backWallMaterial);
+    Camera::ShapeVariant backWallVariant = Camera::ShapeVariant{backWallShape};
+
 
     // Create vector of shapes
     math::Vector<Camera::ShapeVariant> shapes;
     shapes.append(sphereVariant);
     shapes.append(boxVariant);
+    shapes.append(leftWallVariant);
+    shapes.append(rightWallVariant);
+    shapes.append(floorVariant);
+    shapes.append(ceilingVariant);
+    shapes.append(backWallVariant);
 
     // Make index list
     math::Vector<size_t> index_to_test;
@@ -332,8 +378,8 @@ void testCameraProcessHit() {
     index_to_test.append(1); // Box
 
     // Create Lights
-    Light light(Vector3D(10, 10, -10), RGBA_Color(1, 1, 1, 1), 1.0);
-    Light light2(Vector3D(10, 10, -10), RGBA_Color(0.5, 1, 0.5, 1.0), 0.5);
+    Light light(Vector3D(9, 9, -9), RGBA_Color(1, 1, 1, 1), 1.0);
+    Light light2(Vector3D(-9, 9, -9), RGBA_Color(0.5, 1, 0.5, 1.0), 0.5);
 
     // Create vector of lights
     math::Vector<Light> lights;

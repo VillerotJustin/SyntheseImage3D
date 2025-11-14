@@ -192,6 +192,8 @@ namespace rendering {
          */
         static std::optional<Hit> findNextHit(const Ray& ray, const math::Vector<ShapeVariant>& shapes, const math::Vector<size_t>& index_to_test);
 
+        static std::optional<Hit> findClosestHit(const Ray& ray, const math::Vector<ShapeVariant>& shapes, int excludeIndex);
+
         /**
          * Render the scene from the camera's perspective
          * @tparam T The geometry type of the shapes to render
