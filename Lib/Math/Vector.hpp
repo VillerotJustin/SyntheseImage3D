@@ -64,9 +64,11 @@ namespace math {
         T* end() { return elements + m_size; }
         const T* end() const { return elements + m_size; }
 
-    bool operator==(const Vector& other) const noexcept;
-    bool operator!=(const Vector& other) const noexcept;
+        bool operator==(const Vector& other) const noexcept;
+        bool operator!=(const Vector& other) const noexcept;
         bool operator!=(const Vector&& other) noexcept;
+
+        bool contains(const T& element) const;
 
         template<typename U>
         friend std::ostream& operator<<(std::ostream& os, const Vector<U>& v);
@@ -240,6 +242,21 @@ namespace math {
     const T& Vector<T>::operator[](size_t index) const {
         if (index >= m_size) throw std::out_of_range("Vector index out of bounds");
         return elements[index];
+    }
+
+    /**
+     * @brief Checks if the vector contains a specific value.
+     * @param value The value to search for.
+     * @return True if the value is found, false otherwise.
+     */
+    template<typename T>
+    bool Vector<T>::contains(const T& value) const {
+        for (size_t i = 0; i < m_size; ++i) {
+            if (elements[i] == value) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

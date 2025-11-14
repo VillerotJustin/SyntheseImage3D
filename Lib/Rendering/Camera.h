@@ -181,7 +181,7 @@ namespace rendering {
 
         static RGBA_Color processRayHitOld(math::Vector<Hit>& hits, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights);
         
-        static RGBA_Color* processRayHitAdvanced(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, int recursivity_depth = 10);
+        static RGBA_Color processRayHitAdvanced(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, int recursivity_depth = 10);
 
         /**
          * Find the next hit along a ray for a given set of shapes
@@ -193,6 +193,8 @@ namespace rendering {
         static std::optional<Hit> findNextHit(const Ray& ray, const math::Vector<ShapeVariant>& shapes, const math::Vector<size_t>& index_to_test);
 
         static std::optional<Hit> findClosestHit(const Ray& ray, const math::Vector<ShapeVariant>& shapes, int excludeIndex);
+
+        static RGBA_Color calculateLighting(const Vector3D& hitPoint, const Vector3D& normal, const math::Vector<Light>& lights, const math::Vector<ShapeVariant>& shapes, size_t selfIndex);
 
         /**
          * Render the scene from the camera's perspective

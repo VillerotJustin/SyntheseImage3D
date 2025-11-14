@@ -1,4 +1,3 @@
-
 // Import
 
 // Internal libraries
@@ -276,24 +275,22 @@ void testCameraRayHitFind() {
     shapes.append(sphereVariant);
     shapes.append(boxVariant);
 
-    // Make index list
-    math::Vector<size_t> index_to_test;
-    index_to_test.append(0); // Sphere
-    index_to_test.append(1); // Box
+    // Make excluded index list (empty means test all shapes)
+    math::Vector<size_t> excluded_indexes;
 
     std::optional<Hit> hit;
-    hit = Camera::findNextHit(ray, shapes, index_to_test);
+    hit = Camera::findNextHit(ray, shapes, excluded_indexes);
     assert(hit.has_value());
     assert(hit->shapeIndex == 0); // Should hit sphere first
     assert(hit->t == 8); // Should hit sphere first
 
-    hit = Camera::findNextHit(ray2, shapes, index_to_test);
+    hit = Camera::findNextHit(ray2, shapes, excluded_indexes);
     assert(!hit.has_value()); // Should not hit anything
 
-    index_to_test.clear();
-    index_to_test.append(1); // Only test box
+    excluded_indexes.clear();
+    excluded_indexes.append(0); // Exclude sphere, only test box
 
-    hit = Camera::findNextHit(ray, shapes, index_to_test);
+    hit = Camera::findNextHit(ray, shapes, excluded_indexes);
     assert(hit.has_value());
     assert(hit->shapeIndex == 1); // Should hit box
     assert(hit->t == 15); // Should hit box at t=15
@@ -373,9 +370,7 @@ void testCameraProcessHit() {
     shapes.append(backWallVariant);
 
     // Make index list
-    math::Vector<size_t> index_to_test;
-    index_to_test.append(0); // Sphere
-    index_to_test.append(1); // Box
+    math::Vector<size_t> excluded_indexes;
 
     // Create Lights
     Light light(Vector3D(9, 9, -9), RGBA_Color(1, 1, 1, 1), 1.0);
@@ -395,14 +390,14 @@ void testCameraProcessHit() {
 
     // Find hit
     std::optional<Hit> hit;
-    hit = Camera::findNextHit(ray, shapes, index_to_test);
+    hit = Camera::findNextHit(ray, shapes, excluded_indexes);
     assert(hit.has_value());
 
-    index_to_test.clear();
-    index_to_test.append(1); // Only test box for further intersections
+    excluded_indexes.clear();
+    excluded_indexes.append(1);
 
     std::optional<Hit> hit2;
-    hit2 = Camera::findNextHit(ray, shapes, index_to_test);
+    hit2 = Camera::findNextHit(ray, shapes, excluded_indexes);
 
     // Hit Vector
     math::Vector<Hit> hitVector;
@@ -420,10 +415,13 @@ void testCameraProcessHit() {
     // Performance test parameters
     const int NUM_ITERATIONS = 1000;
     
+    // Reset excluded_indexes for regression test
+    excluded_indexes.clear();
+    
     // Measure time for new processRayHit method (multiple iterations)
     auto start_new = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        outColor = Camera::processRayHitRegression(*hit, ray, shapes, lights, index_to_test);
+        outColor = Camera::processRayHitRegression(*hit, ray, shapes, lights, excluded_indexes);
     }
     auto end_new = std::chrono::high_resolution_clock::now();
     auto total_duration_new = std::chrono::duration_cast<std::chrono::microseconds>(end_new - start_new);
@@ -439,7 +437,7 @@ void testCameraProcessHit() {
     // Measure time for advanced processRayHit method (multiple iterations)
     auto start_advanced = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        outColor_advanced = *Camera::processRayHitAdvanced(*hit, ray, shapes, lights);
+        outColor_advanced = Camera::processRayHitAdvanced(*hit, ray, shapes, lights);
     }
     auto end_advanced = std::chrono::high_resolution_clock::now();
     auto total_duration_advanced = std::chrono::duration_cast<std::chrono::microseconds>(end_advanced - start_advanced);

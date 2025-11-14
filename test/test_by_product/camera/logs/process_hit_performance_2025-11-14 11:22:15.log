@@ -1,5 +1,5 @@
 === Render Test: process_hit_performance ===
-Start time: 2025-11-14 10:45:08
+Start time: 2025-11-14 11:22:15
 
 Scene Configuration:
 -------------------
@@ -58,3 +58,19 @@ Performance Test Configuration:
 Ray Origin: (0, 0, -10)
 Ray Direction: (0, 0, 1)
 Test Iterations: 1000
+Processed color from hit: RGBA(0.000, 0.000, 0.059, 1.000)
+Processed color from hit (old): RGBA(0.000, 0.000, 0.059, 1.000)
+Processed color from hit (advanced): RGBA(0.000, 0.000, 0.059, 1.000)
+
+=== PERFORMANCE TEST RESULTS ===
+Test iterations: 1000
+Regression processRayHit average time: 0.545 microseconds
+Old processRayHitOld average time: 0.438 microseconds
+Advanced processRayHit average time: 0.763 microseconds
+Regression processRayHit total time: 545 microseconds
+Old processRayHitOld total time: 438 microseconds
+Advanced processRayHit total time: 763 microseconds
+Render Time: 1 ms
+
+-------------
+

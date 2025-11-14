@@ -1,0 +1,80 @@
+=== Render Test: scene3D_color ===
+Start time: 2025-11-14 11:22:16
+
+Camera Configuration:
+--------------------
+Origin: [-10, -10, -5]
+Direction: [0, 0, 1]
+Field of View: 65
+
+Output Image:
+-------------
+Dimensions: 720x720 pixels
+
+Scene Configuration:
+-------------------
+Shapes (7 total):
+  Shape 1:
+    Type: Sphere
+    Center: [0, 0, 0]
+    Radius: 4
+    Color: RGBA(1.000, 1.000, 1.000, 1.000)
+  Shape 2:
+    Type: Box
+    Origin: [5.000, 3.000, 10.000]
+    Width: 3.000
+    Height: 3.000
+    Depth: 3.000
+    Color: RGBA(1.000, 0.000, 0.000, 1.000)
+  Shape 3:
+    Type: Plane
+    Origin: [0.000, 0.000, 15.000]
+    Normal: [0.000, 0.000, -1.000]
+    Color: RGBA(0.800, 0.200, 0.800, 1.000)
+  Shape 4:
+    Type: Plane
+    Origin: [-10.000, 0.000, 0.000]
+    Normal: [1.000, 0.000, 0.000]
+    Color: RGBA(0.200, 0.800, 0.800, 1.000)
+  Shape 5:
+    Type: Plane
+    Origin: [10.000, 0.000, 0.000]
+    Normal: [-1.000, 0.000, 0.000]
+    Color: RGBA(0.800, 0.800, 0.200, 1.000)
+  Shape 6:
+    Type: Plane
+    Origin: [0.000, 10.000, 0.000]
+    Normal: [0.000, -1.000, 0.000]
+    Color: RGBA(0.800, 0.800, 0.800, 1.000)
+  Shape 7:
+    Type: Plane
+    Origin: [0.000, -10.000, 0.000]
+    Normal: [0.000, 1.000, 0.000]
+    Color: RGBA(0.200, 0.200, 0.800, 1.000)
+
+Lights (0 total):
+
+Render Time: 104 ms
+
+-------------
+
+Camera Configuration:
+--------------------
+Origin: [-10.000, -10.000, -5.000]
+Direction: [0.000, 0.000, 1.000]
+Field of View: 120.000
+
+Render Time: 409 ms
+
+-------------
+
+Camera Configuration:
+--------------------
+Origin: [-10.000, -10.000, -5.000]
+Direction: [0.000, 0.000, 1.000]
+Field of View: 30.000
+
+Render Time: 690 ms
+
+-------------
+

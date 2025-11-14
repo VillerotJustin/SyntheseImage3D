@@ -335,7 +335,7 @@ namespace rendering {
                 }
 
                 if (closestDistance < std::numeric_limits<double>::infinity()) {
-                    RGBA_Color finalColor = *Camera::processRayHitAdvanced(hit, ray, shapes, lights);
+                    RGBA_Color finalColor = Camera::processRayHitAdvanced(hit, ray, shapes, lights);
                     Image3D.setPixel(x, y, finalColor.clamp());
                 }
             }
@@ -379,7 +379,7 @@ namespace rendering {
                     }
 
                     if (closestDistance < std::numeric_limits<double>::infinity()) {
-                        sampleColors.append(*Camera::processRayHitAdvanced(hit, ray, shapes, lights));
+                        sampleColors.append(Camera::processRayHitAdvanced(hit, ray, shapes, lights));
                     }              
                 }
 

@@ -10,17 +10,24 @@
 
 namespace rendering {
 
-    std::optional<Hit> Camera::findNextHit(const Ray& ray, const math::Vector<rendering::Camera::ShapeVariant>& shapes, const math::Vector<size_t>& index_to_test) {
+    // Constants for better maintainability
+    static constexpr double EPSILON = 1e-9;
+    static constexpr double EPSILON_REMAINING = 1e-6;
+    static constexpr double SHADOW_EPSILON = 1e-6;
+    static constexpr double TRANSMISSION_THRESHOLD = 1e-12;
+
+    std::optional<Hit> Camera::findNextHit(const Ray& ray, const math::Vector<rendering::Camera::ShapeVariant>& shapes, const math::Vector<size_t>& excluded_indexes) {
         Hit next_hit;
         next_hit.t = std::numeric_limits<double>::infinity();
         next_hit.shapeIndex = size_t(-1);
 
-        for (size_t idx : index_to_test) {
-            std::visit([&](auto&& shape) {
-                if (shape.getGeometry()) {
-                    if (auto d = shape.getGeometry()->rayIntersectDepth(ray, next_hit.t)){
+        for (size_t idx = 0; idx < shapes.size(); ++idx) {
+            if (excluded_indexes.contains(idx)) continue;
+            std::visit([&](auto&& otherShape) {
+                if (otherShape.getGeometry()) {
+                    if (auto d = otherShape.getGeometry()->rayIntersectDepth(ray, next_hit.t)) {
                         // only accept hits in front of the origin
-                        if (*d > 1e-9) {
+                        if (*d > EPSILON) {
                             next_hit = Hit{*d, idx};
                         }
                     }
@@ -43,7 +50,7 @@ namespace rendering {
                 if (otherShape.getGeometry()) {
                     if (auto d = otherShape.getGeometry()->rayIntersectDepth(ray, closest_hit.t)) {
                         // only accept hits in front of the origin
-                        if (*d > 1e-9) {
+                        if (*d > EPSILON) {
                             closest_hit = Hit{*d, idx};
                         }
                     }
@@ -71,7 +78,7 @@ namespace rendering {
         double accR = 0.0, accG = 0.0, accB = 0.0, accA = 0.0;
 
         // Pre-allocate accumulated light outside the loop to avoid repeated allocations
-        double lightAccR = 0.0, lightAccG = 0.0, lightAccB = 0.0;
+        RGBA_Color accumulatedLight;
 
         for (const Hit h : hits) {
             // Early termination check moved to the beginning
@@ -86,55 +93,8 @@ namespace rendering {
                 const Vector3D hitPoint = hitRay.getPointAt(h.t);
                 const Vector3D normal = shape.getNormalAt(hitPoint);
 
-                // Reset accumulated light for this hit (reuse variables)
-                lightAccR = 0.0;
-                lightAccG = 0.0;
-                lightAccB = 0.0;
-
                 // #pragma omp parallel for schedule(dynamic)
-                for (const Light &light : lights) {
-                    const Vector3D hitToLight = (light.getPosition() - hitPoint);
-                    double distanceToLight = hitToLight.length();
-                    const Vector3D lightDir = hitToLight.normal();
-
-                    const double epsilon = 1e-4;
-                    const Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
-
-                    double transmission = 1.0;
-
-                    // Check for occlusions (sequential for early termination)
-                    for (size_t j = 0; j < shapes.size() && transmission > 1e-12; ++j) {
-                        if (i != j) {
-                            std::visit([&](auto&& otherShape) {
-                                if (otherShape.getGeometry() && transmission > 1e-12) {
-                                    auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay, std::numeric_limits<double>::infinity());
-                                    if (shadowDist && *shadowDist < distanceToLight) {
-                                        const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
-                                        double occAlpha = occColor ? occColor->a() : 1.0;
-                                        if (occAlpha >= 1.0 - 1e-12) {
-                                            transmission = 0.0; // Early exit when fully occluded
-                                        } else {
-                                            transmission *= (1.0 - occAlpha);
-                                        }
-                                    }
-                                }
-                            }, shapes[j]);
-                        }
-                    }
-
-                    if (transmission > 1e-12) {
-                        double nDotL = std::max(0.0, normal.dot(lightDir));
-                        const RGBA_Color& lightColor = light.getColor();
-                        double intensity = light.getIntensity();
-                        double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
-                        
-                        // Avoid creating temporary RGBA_Color objects
-                        double lightContrib = transmission * nDotL * distanceAtten * intensity;
-                        lightAccR += lightColor.r() * lightContrib;
-                        lightAccG += lightColor.g() * lightContrib;
-                        lightAccB += lightColor.b() * lightContrib;
-                    }
-                }
+                accumulatedLight = calculateLighting(hitPoint, normal, lights, shapes, i);
 
                 // Get surface color (avoid repeated comparisons)
                 const RGBA_Color* shapeColor = shape.getMaterial() ? &shape.getMaterial()->getAlbedo() : nullptr;
@@ -160,9 +120,9 @@ namespace rendering {
 
                 double srcA = surfColor.a();
                 // Calculate lit surface color directly without temporary objects
-                double litR = surfColor.r() * lightAccR;
-                double litG = surfColor.g() * lightAccG;
-                double litB = surfColor.b() * lightAccB;
+                double litR = surfColor.r() * accumulatedLight.r();
+                double litG = surfColor.g() * accumulatedLight.g();
+                double litB = surfColor.b() * accumulatedLight.b();
 
                 // premultiplied source color
                 double srcR = litR * srcA;
@@ -185,8 +145,8 @@ namespace rendering {
         return finalColor.clamp();
     }
 
-    RGBA_Color Camera::processRayHitRegression(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> index_to_test, double remaining, double accR, double accG, double accB, double accA) {
-        if (remaining <= 1e-6) {
+    RGBA_Color Camera::processRayHitRegression(const Hit& closest_hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, math::Vector<size_t> excluded_indexes, double remaining, double accR, double accG, double accB, double accA) {
+        if (remaining <= EPSILON_REMAINING) {
             // Fully opaque already
             double finalA = 1.0 - remaining;
             RGBA_Color finalColor(accR, accG, accB, finalA);
@@ -201,51 +161,11 @@ namespace rendering {
             Vector3D hitPoint = hitRay.getPointAt(closest_hit.t);
             Vector3D normal = shape.getNormalAt(hitPoint);
 
-            RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
-            // #pragma omp parallel for schedule(dynamic)
-            for (const Light &light : lights) {
-                Vector3D hitToLight = (light.getPosition() - hitPoint);
-                double distanceToLight = hitToLight.length();
-                Vector3D lightDir = hitToLight.normal();
-
-                const double epsilon = 1e-4;
-                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
-
-                double transmission = 1.0;
-
-                // Check for occlusions
-                // #pragma omp parallel for schedule(dynamic)
-                for (size_t j = 0; j < shapes.size(); ++j) {
-                    if (i != j && transmission > 1e-12) {
-                        std::visit([&](auto&& otherShape) {
-                            if (otherShape.getGeometry()) {
-                                auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay, std::numeric_limits<double>::infinity());
-                                if (shadowDist && *shadowDist < distanceToLight) {
-                                    const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
-                                    double occAlpha = occColor ? occColor->a() : 1.0;
-                                    if (occAlpha >= 1.0 - 1e-12) {
-                                        transmission = 0.0;
-                                    } else {
-                                        transmission *= (1.0 - occAlpha);
-                                    }
-                                }
-                            }
-                        }, shapes[j]);
-                    }
-                }
-
-                if (transmission > 1e-12) {
-                    double nDotL = std::max(0.0, normal.dot(lightDir));
-                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
-                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
-                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
-                    accumulatedLight = accumulatedLight + contrib;
-                }
-            }
+            RGBA_Color accumulatedLight = calculateLighting(hitPoint, normal, lights, shapes, i);
 
             // No ambient
 
-            RGBA_Color surfColor = *shape.getColor();
+            RGBA_Color surfColor = shape.getMaterial() ? shape.getMaterial()->getAlbedo() : RGBA_Color(1,0,1,1);
 
             RGBA_Color litSurface = surfColor * accumulatedLight;
 
@@ -265,16 +185,11 @@ namespace rendering {
         }, shapes[i]);
 
         // Find next hit
-        for (size_t idx = 0; idx < index_to_test.size(); ++idx) {
-            if (index_to_test[idx] == closest_hit.shapeIndex) {
-                index_to_test.erase(idx);
-                break;
-            }
-        }
+        excluded_indexes.append(i);
 
-        std::optional<Hit> next_hit = findNextHit(hitRay, shapes, index_to_test);
+        std::optional<Hit> next_hit = findNextHit(hitRay, shapes, excluded_indexes);
         if (next_hit) {
-            return processRayHitRegression(*next_hit, hitRay, shapes, lights, index_to_test, remaining,  accR, accG, accB, accA);
+            return processRayHitRegression(*next_hit, hitRay, shapes, lights, excluded_indexes, remaining,  accR, accG, accB, accA);
         }
 
         // No more hits, build final color
@@ -283,18 +198,18 @@ namespace rendering {
         return finalColor.clamp();
     }
 
-    RGBA_Color* Camera::processRayHitAdvanced(const Hit& hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, int recursivity_depth){
-        // Add recursivity depth check
+    RGBA_Color Camera::processRayHitAdvanced(const Hit& hit, const Ray& hitRay, const math::Vector<ShapeVariant>& shapes, const math::Vector<Light>& lights, int recursivity_depth){
+        // Add recursivity depth check | Moved to later to return local color with no processing
         // if (recursivity_depth <= 0) {
         //     return new RGBA_Color(0,0,0,1); // Black if max depth
         // }
 
-        if (hit.t == std::numeric_limits<double>::infinity()) return new RGBA_Color(1,0,1,1); // Magenta for no hit
+        if (hit.t == std::numeric_limits<double>::infinity()) return RGBA_Color(1,0,1,1); // Magenta for no hit
         
-        RGBA_Color* Local_color = new RGBA_Color(0,0,0,1);
-        RGBA_Color* Transparency_color = new RGBA_Color(1,0,1,1);
-        RGBA_Color* Reflection_color = new RGBA_Color(1,0,1,1);
-        RGBA_Color *final_color = new RGBA_Color(1,0,1,1);
+        RGBA_Color Local_color(0,0,0,1);
+        RGBA_Color Transparency_color(1,0,1,1);
+        RGBA_Color Reflection_color(1,0,1,1);
+        RGBA_Color final_color(1,0,1,1);
 
         // Access the shape
         size_t i = hit.shapeIndex;
@@ -309,55 +224,15 @@ namespace rendering {
             Vector3D hitPoint = hitRay.getPointAt(hit.t);
             Vector3D normal = shape.getNormalAt(hitPoint);
 
-            RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
-            // #pragma omp parallel for schedule(dynamic)
-            for (const Light &light : lights) {
-                Vector3D hitToLight = (light.getPosition() - hitPoint);
-                double distanceToLight = hitToLight.length();
-                Vector3D lightDir = hitToLight.normal();
-
-                const double epsilon = 1e-4;
-                Ray lightRay(hitPoint + lightDir * epsilon, lightDir);
-
-                double transmission = 1.0;
-
-                // Check for occlusions
-                // #pragma omp parallel for schedule(dynamic)
-                for (size_t j = 0; j < shapes.size(); ++j) {
-                    if (i != j && transmission > 1e-12) {
-                        std::visit([&](auto&& otherShape) {
-                            if (otherShape.getGeometry()) {
-                                auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay, std::numeric_limits<double>::infinity());
-                                if (shadowDist && *shadowDist < distanceToLight) {
-                                    const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
-                                    double occAlpha = occColor ? occColor->a() : 1.0;
-                                    if (occAlpha >= 1.0 - 1e-12) {
-                                        transmission = 0.0;
-                                    } else {
-                                        transmission *= (1.0 - occAlpha);
-                                    }
-                                }
-                            }
-                        }, shapes[j]);
-                    }
-                }
-
-                if (transmission > 1e-12) {
-                    double nDotL = std::max(0.0, normal.dot(lightDir));
-                    RGBA_Color lightCol = light.getColor() * light.getIntensity();
-                    double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
-                    RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
-                    accumulatedLight = accumulatedLight + contrib;
-                }
-            }
+            RGBA_Color accumulatedLight = calculateLighting(hitPoint, normal, lights, shapes, i);
 
             // No ambient
 
             RGBA_Color surfColor = material ? material->getAlbedo() : RGBA_Color(1,0,1,1);
-            *Local_color = (surfColor * accumulatedLight).clamp();
+            Local_color = (surfColor * accumulatedLight).clamp();
 
             if (recursivity_depth <= 0) {
-                *final_color = Local_color->clamp();
+                final_color = Local_color.clamp();
                 return;
             }
 
@@ -373,18 +248,17 @@ namespace rendering {
                     std::optional<Hit> next_hit = findClosestHit(refractRay, shapes, i);
 
                     if (next_hit) {
-                        RGBA_Color* behindColor = processRayHitAdvanced(*next_hit, refractRay, shapes, lights, recursivity_depth - 1);
+                        RGBA_Color behindColor = processRayHitAdvanced(*next_hit, refractRay, shapes, lights, recursivity_depth - 1);
                         // Apply material color as a filter to the light passing through
                         RGBA_Color materialFilter = material->getAlbedo();
-                        Transparency_color = new RGBA_Color(
-                            behindColor->r() * materialFilter.r(),
-                            behindColor->g() * materialFilter.g(), 
-                            behindColor->b() * materialFilter.b(),
-                            behindColor->a()
+                        Transparency_color = RGBA_Color(
+                            behindColor.r() * materialFilter.r(),
+                            behindColor.g() * materialFilter.g(), 
+                            behindColor.b() * materialFilter.b(),
+                            behindColor.a()
                         );
-                        delete behindColor;
                     } else {
-                        Transparency_color = new RGBA_Color(1,0,1,1); // Debug color
+                        Transparency_color = RGBA_Color(1,0,1,1); // Debug color
                     }
                 }
 
@@ -398,30 +272,22 @@ namespace rendering {
                     if (next_hit) {
                         Reflection_color = processRayHitAdvanced(*next_hit, reflectRay, shapes, lights, recursivity_depth - 1);
                     } else {
-                        Reflection_color = new RGBA_Color(1,0,1,1); // Debug color
+                        Reflection_color = RGBA_Color(1,0,1,1); // Debug color
                     }
                 }
             } // End of material processing
 
             // Combine colors based on material properties
             // Blend local color with reflection and transmission based on material properties
-            *final_color = *Local_color;
+            final_color = Local_color;
             
             if (material) {
                 double metalness = material->getMetalness();
                 double transmission = material->getTransmission();
                 double roughness = material->getRoughness();
                 
-                // For metallic materials, blend more reflection
-                if (material->isReflective() && Reflection_color) {
-                    // Fresnel-like reflection mixing based on metalness and roughness
-                    double reflectionStrength = metalness * (1.0 - roughness * 0.8);
-                    // Manual alpha blending: result = src * (1-alpha) + dst * alpha
-                    *final_color = (*final_color) * (1.0 - reflectionStrength) + (*Reflection_color) * reflectionStrength;
-                }
-                
                 // For transparent materials, blend with transmitted light
-                if (material->isTransparent() && Transparency_color) {
+                if (material->isTransparent() && Transparency_color!= RGBA_Color(1,0,1,1)) {
                     // Transmission strength based on material transmission property or alpha channel
                     double transmissionStrength = transmission;
                     if (transmissionStrength == 0.0 && material->hasAlbedo()) {
@@ -430,34 +296,75 @@ namespace rendering {
                     }
                     transmissionStrength *= (1.0 - metalness); // Metals don't transmit light
                     // Manual alpha blending for transparency
-                    *final_color = (*final_color) * (1.0 - transmissionStrength) + (*Transparency_color) * transmissionStrength;
+                    final_color = final_color * (1.0 - transmissionStrength) + Transparency_color * transmissionStrength;
+                }
+
+                // For metallic materials, blend more reflection
+                if (material->isReflective() && Reflection_color!= RGBA_Color(1,0,1,1)) {
+                    // Fresnel-like reflection mixing based on metalness and roughness
+                    double reflectionStrength = metalness * (1.0 - roughness * 0.8);
+                    // Manual alpha blending: result = src * (1-alpha) + dst * alpha
+                    final_color = final_color * (1.0 - reflectionStrength) + Reflection_color * reflectionStrength;
                 }
                 
                 // Add emissive contribution if material is emissive
                 if (material->isEmissive()) {
                     RGBA_Color emissiveContrib = material->getEmissive() * material->getEmissiveIntensity();
-                    *final_color = *final_color + emissiveContrib;
+                    final_color = final_color + emissiveContrib;
                 }
             }
             
             // Apply clamping to final color
-            *final_color = final_color->clamp();
-            
-            // Clean up temporary colors
-            if (Transparency_color && Transparency_color != final_color) {
-                delete Transparency_color;
-            }
-            if (Reflection_color && Reflection_color != final_color) {
-                delete Reflection_color;
-            }
-            if (Local_color && Local_color != final_color) {
-                delete Local_color;
-            }
+            final_color = final_color.clamp();
 
         }, shapes[i]);
         return final_color;
         
         // Fallback return (should not reach here)
-        return new RGBA_Color(1, 0, 1, 1); // Magenta for error
+        return RGBA_Color(1, 0, 1, 1); // Magenta for error
+    }
+
+    RGBA_Color Camera::calculateLighting(const Vector3D& hitPoint, const Vector3D& normal, const math::Vector<Light>& lights, const math::Vector<ShapeVariant>& shapes, size_t selfIndex){
+        RGBA_Color accumulatedLight(0.0, 0.0, 0.0, 1.0);
+        
+        // #pragma omp parallel for schedule(dynamic)
+        for (const Light &light : lights) {
+            Vector3D hitToLight = (light.getPosition() - hitPoint);
+            double distanceToLight = hitToLight.length();
+            Vector3D lightDir = hitToLight.normal();
+
+            Ray lightRay(hitPoint + lightDir * SHADOW_EPSILON, lightDir);
+            double transmission = 1.0;
+
+            // Check for occlusions
+            // #pragma omp parallel for schedule(dynamic)
+            for (size_t j = 0; j < shapes.size(); ++j) {
+                if (selfIndex != j && transmission > TRANSMISSION_THRESHOLD) {
+                    std::visit([&](auto&& otherShape) {
+                        if (otherShape.getGeometry()) {
+                            auto shadowDist = otherShape.getGeometry()->rayIntersectDepth(lightRay, std::numeric_limits<double>::infinity());
+                            if (shadowDist && *shadowDist < distanceToLight) {
+                                const RGBA_Color* occColor = otherShape.getMaterial() ? &otherShape.getMaterial()->getAlbedo() : nullptr;
+                                double occAlpha = occColor ? occColor->a() : 1.0;
+                                if (occAlpha >= 1.0 - TRANSMISSION_THRESHOLD) {
+                                    transmission = 0.0;
+                                } else {
+                                    transmission *= (1.0 - occAlpha);
+                                }
+                            }
+                        }
+                    }, shapes[j]);
+                }
+            }
+
+            if (transmission > TRANSMISSION_THRESHOLD) {
+                double nDotL = std::max(0.0, normal.dot(lightDir));
+                RGBA_Color lightCol = light.getColor() * light.getIntensity();
+                double distanceAtten = 1.0 / (1.0 + 0.03 * distanceToLight * distanceToLight);
+                RGBA_Color contrib = lightCol * (transmission * nDotL * distanceAtten);
+                accumulatedLight = accumulatedLight + contrib;
+            }
+        }
+        return accumulatedLight;
     }
 }
